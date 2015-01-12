@@ -1,7 +1,7 @@
 ; Matthew Kneiser's .emacs
 ;
 ; Date Compiled: 11/06/2014
-; Date Modified: 12/09/2014
+; Date Modified: 01/11/2015
 
 ; Show column numbers
 (setq column-number-mode t)

@@ -3,7 +3,7 @@
 #
 # Author:       Matt Kneiser
 # Created:      02/06/2014
-# Last updated: 12/01/2014
+# Last updated: 01/11/2015
 
 cat <<WELCOME_MSG
      ___          ___                       ___          ___          ___          ___

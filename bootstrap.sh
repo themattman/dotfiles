@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Install dotfiles
 #
-# Author: Matthew Kneiser
-# Date:   01/11/2015
+# Author:       Matthew Kneiser
+# Date Created: 01/11/2015
 
 VERSION="1.3.1"
 EXTENSION=".tar.bz2"
