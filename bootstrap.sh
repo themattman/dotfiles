@@ -6,16 +6,18 @@
 VERSION="1.3.1"
 EXTENSION=".tar.bz2"
 AUTO_COMPLETE="auto-complete-${VERSION}"
-AUTO_COMPLETE_PKG="${AUTOCOMPLETE}${EXTENSION}"
+AUTO_COMPLETE_PKG="${AUTO_COMPLETE}${EXTENSION}"
 INSTALL_FROM_SOURCE=0
 NO_BACKUP=0
 GREEN=""
+CYAN=""
+RED=""
 ENDCOLOR=""
 
 # Command-line Parsing
-usage() { echo "Usage: $0 [-h] [-cn]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-h] [-sn]" 1>&2; exit 1; }
 
-while getopts "hs" flag; do
+while getopts "hsn" flag; do
     case "${flag}" in
 	h)
 	    usage
@@ -34,11 +36,15 @@ done
 
 case $OSTYPE in
     linux*)
-	GREEN="\e[0;36m"
+	GREEN="\e[1;32m"
+	CYAN="\e[1;36m"
+	RED="\e[1;31m"
 	ENDCOLOR="\e[0m"
 	;;
     darwin*)
 	GREEN="\033[0;92m"
+	CYAN="\033[0;96m"
+	RED="\033[0;91m"
 	ENDCOLOR="\033[0m"
 	;;
 esac
@@ -48,24 +54,34 @@ set -e
 
 pushd "$(dirname "${BASH_SOURCE}")"
 
-if [[ "$INSTALL_FROM_SOURCE" ]]; then
+if [[ "$INSTALL_FROM_SOURCE" -eq 1 ]]; then
     echo "Installing dotfiles from source..."
-#     wget "http://cx4a.org/pub/auto-complete/${AUTO_COMPLETE_PKG}"
-#     tar xvf "${AUTO_COMPLETE_PKG}"
-#     cd "${AUTO_COMPLETE}"
-#     make install DIR=$HOME/.emacs.d/
+    set -x
+    curl -O "http://cx4a.org/pub/auto-complete/${AUTO_COMPLETE_PKG}"
+    tar xvf "${AUTO_COMPLETE_PKG}"
+    pushd "${AUTO_COMPLETE}"
+    CURRENT_DATETIME=$(date +"%F_at_%T")
+    mkdir "$HOME/.emacs.d" || :
+    make install DIR=$HOME/.emacs.d/ $> "makeoutput.$CURRENT_DATETIME"
+    popd
+    rm -rf "${AUTO_COMPLETE_PKG}"
+    set +x
 fi
 
 for DOTFILE in $(find . -maxdepth 1 -name '.?*'); do
-    if [[ "${DOTFILE}" != "./.gitignore" ]]; then
-# 	echo "dotfile: ${DOTFILE}"
-	if [[ "${NO_BACKUP}" ]]; then
-	    rm -r "${HOME}/${DOTFILE}"
-	else
+    DOTFILE=${DOTFILE#./} #strip leading ./ from paths
+    if [[ "${DOTFILE}" != ".gitignore" && "${DOTFILE}" != ".git" ]]; then
+	echo "${DOTFILE}"
+	if [[ "${NO_BACKUP}" -eq 1 || -h "${HOME}/${DOTFILE}" ]]; then
+	    echo -ne "\t${RED}removing ${HOME}/${DOTFILE}${ENDCOLOR} "
+	    rm -r "${HOME}/${DOTFILE}" && echo " ...done"
+	elif [[ -e "${HOME}/${DOTFILE}" ]]; then
+	    echo -ne "\t${CYAN}backing up ${HOME}/${DOTFILE}${ENDCOLOR} "
 	    CURRENT_DATETIME=$(date +"%F_at_%T")
-	    mv "${HOME}/${DOTFILE}" "${HOME}/${DOTFILE}.${CURRENT_DATETIME}"
+	    mv "${HOME}/${DOTFILE}" "${HOME}/${DOTFILE}.${CURRENT_DATETIME}" && echo "...done"
 	fi
-	ln -s "${HOME}/${DOTFILE}" "${PWD}/${DOTFILE}"
+	echo -ne "\tsoftlinking dotfile "
+	ln -s "${PWD}/${DOTFILE}" "${HOME}/${DOTFILE}" && echo "...done"
     fi
 done
 
