@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install dotfiles from source
+# Install dotfiles
+#
 # Author: Matthew Kneiser
 # Date:   01/11/2015
 
@@ -15,12 +16,22 @@ RED=""
 ENDCOLOR=""
 
 # Command-line Parsing
-usage() { echo "Usage: $0 [-h] [-sn]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-h] [-ns]" 1>&2; exit 1; }
+print_help() {
+    echo "bootstrap.sh, Install Dotfiles";
+    echo "";
+    echo "Usage: $0 [-h] [-ns]";
+    echo "";
+    echo -e "\th : this help menu";
+    echo -e "\tn : no backup - overwrite previous dotfiles";
+    echo -e "\ts : source - install everything from the source";
+    exit 1;
+}
 
 while getopts "hsn" flag; do
     case "${flag}" in
 	h)
-	    usage
+	    print_help
 	    ;;
 	s)
 	    INSTALL_FROM_SOURCE=1

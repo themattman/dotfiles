@@ -122,6 +122,7 @@ alias y="yes"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 alias f="fg"       # Yes, I'm really lazy
+alias v="fg -"
 alias j="jobs -l"  # Switched these two logically, because
 alias jl="jobs"    #  I always want to see the jobs' pids
 alias kl="kill %%" # Kill most recent background job
@@ -253,7 +254,6 @@ alias tarv="tar tvf"  # View an archive
 alias tarc="tar caf"  # Compress an archive
 alias untar="tar xvf" # Uncompress an archive
 # Vim
-alias v="vim"
 alias vmi="vim"
 alias mvi="vim"
 alias miv="vim"
