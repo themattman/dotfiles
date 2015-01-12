@@ -11,7 +11,7 @@
 
 ; Do not create tilde backup files
 ;(setq make-backup-files nil) ;(Don't make annoying ~ files)
-;(setq auto-save-default nil) ;stop creating those #autosave# files
+(setq auto-save-default nil) ;stop creating those #autosave# files
 
 ; Run emacs in server mode, so that we can connect from commandline
 ;(server-start)
