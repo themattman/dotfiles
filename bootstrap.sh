@@ -64,6 +64,7 @@ esac
 set -e
 
 pushd "$(dirname "${BASH_SOURCE}")"
+mkdir "$HOME/.emacs.d" || :
 
 if [[ "$INSTALL_FROM_SOURCE" -eq 1 ]]; then
     echo "Installing dotfiles from source..."
@@ -72,10 +73,13 @@ if [[ "$INSTALL_FROM_SOURCE" -eq 1 ]]; then
     tar xvf "${AUTO_COMPLETE_PKG}"
     pushd "${AUTO_COMPLETE}"
     CURRENT_DATETIME=$(date +"%F_at_%T")
-    mkdir "$HOME/.emacs.d" || :
-    make install DIR=$HOME/.emacs.d/ $> "makeoutput.$CURRENT_DATETIME"
+    make install DIR=$HOME/.emacs.d/ &> "makeoutput.$CURRENT_DATETIME"
     popd
     rm -rf "${AUTO_COMPLETE_PKG}"
+    set +x
+else
+    set -x
+    cp -r ${AUTO_COMPLETE}/* "${HOME}/.emacs.d"
     set +x
 fi
 
@@ -98,4 +102,5 @@ done
 
 popd
 
+echo -e "\nNow run: $ . ~/.bash_profile"
 echo -e "${GREEN}Dotfiles installation succesful.${ENDCOLOR}"
