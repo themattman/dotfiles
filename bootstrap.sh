@@ -4,16 +4,16 @@
 # Author:       Matthew Kneiser
 # Date Created: 01/11/2015
 
-VERSION="1.3.1"
-EXTENSION=".tar.bz2"
-AUTO_COMPLETE="auto-complete-${VERSION}"
-AUTO_COMPLETE_PKG="${AUTO_COMPLETE}${EXTENSION}"
-INSTALL_FROM_SOURCE=0
-NO_BACKUP=0
-GREEN=""
-CYAN=""
-RED=""
-ENDCOLOR=""
+version="1.3.1"
+extension=".tar.bz2"
+auto_complete="auto-complete-${version}"
+auto_complete_pkg="${auto_complete}${extension}"
+install_from_source=0
+no_backup=0
+green=""
+cyan=""
+red=""
+endcolor=""
 
 # Command-line Parsing
 usage() { echo "Usage: $0 [-h] [-ns]" 1>&2; exit 1; }
@@ -34,10 +34,10 @@ while getopts "hsn" flag; do
 	    print_help
 	    ;;
 	s)
-	    INSTALL_FROM_SOURCE=1
+	    install_from_source=1
 	    ;;
 	n)
-	    NO_BACKUP=1
+	    no_backup=1
 	    ;;
 	*)
 	    usage
@@ -45,62 +45,80 @@ while getopts "hsn" flag; do
     esac
 done
 
-case $OSTYPE in
+case $ostype in
     linux*)
-	GREEN="\e[1;32m"
-	CYAN="\e[1;36m"
-	RED="\e[1;31m"
-	ENDCOLOR="\e[0m"
+	green="\e[1;32m"
+	cyan="\e[1;36m"
+	red="\e[1;31m"
+	endcolor="\e[0m"
 	;;
     darwin*)
-	GREEN="\033[0;92m"
-	CYAN="\033[0;96m"
-	RED="\033[0;91m"
-	ENDCOLOR="\033[0m"
+	green="\033[0;92m"
+	cyan="\033[0;96m"
+	red="\033[0;91m"
+	endcolor="\033[0m"
 	;;
 esac
 
 
 set -e
 
-pushd "$(dirname "${BASH_SOURCE}")"
+pushd "$(dirname "${bash_source}")"
 mkdir "$HOME/.emacs.d" || :
+mkdir "$HOME/tmp" || :
 
-if [[ "$INSTALL_FROM_SOURCE" -eq 1 ]]; then
+if [[ "$install_from_source" -eq 1 ]]; then
     echo "Installing dotfiles from source..."
     set -x
-    curl -O "http://cx4a.org/pub/auto-complete/${AUTO_COMPLETE_PKG}"
-    tar xvf "${AUTO_COMPLETE_PKG}"
-    pushd "${AUTO_COMPLETE}"
-    CURRENT_DATETIME=$(date +"%F_at_%T")
-    make install DIR=$HOME/.emacs.d/ &> "makeoutput.$CURRENT_DATETIME"
+    curl -O "http://cx4a.org/pub/auto-complete/${auto_complete_pkg}"
+    tar xvf "${auto_complete_pkg}"
+    pushd "${auto_complete}"
+    current_datetime=$(date +"%F_at_%T")
+    make install DIR=$HOME/.emacs.d/ &> "makeoutput.$current_datetime"
     popd
-    rm -rf "${AUTO_COMPLETE_PKG}"
+    rm -rf "${auto_complete_pkg}"
     set +x
 else
     set -x
-    cp -r ${AUTO_COMPLETE}/* "${HOME}/.emacs.d"
+    cp -r ${auto_complete}/* "${HOME}/.emacs.d"
     set +x
 fi
 
-for DOTFILE in $(find . -maxdepth 1 -name '.?*'); do
-    DOTFILE=${DOTFILE#./} #strip leading ./ from paths
-    if [[ "${DOTFILE}" != ".gitignore" && "${DOTFILE}" != ".git" ]]; then
-	echo "${DOTFILE}"
-	if [[ "${NO_BACKUP}" -eq 1 || -h "${HOME}/${DOTFILE}" ]]; then
-	    echo -ne "\t${RED}removing ${HOME}/${DOTFILE}${ENDCOLOR} "
-	    rm -r "${HOME}/${DOTFILE}" && echo " ...done"
-	elif [[ -e "${HOME}/${DOTFILE}" ]]; then
-	    echo -ne "\t${CYAN}backing up ${HOME}/${DOTFILE}${ENDCOLOR} "
-	    CURRENT_DATETIME=$(date +"%F_at_%T")
-	    mv "${HOME}/${DOTFILE}" "${HOME}/${DOTFILE}.${CURRENT_DATETIME}" && echo "...done"
-	fi
-	echo -ne "\tsoftlinking dotfile "
-	ln -s "${PWD}/${DOTFILE}" "${HOME}/${DOTFILE}" && echo "...done"
+function safely_softlink_file() {
+    # Softlinks $1 to $2
+    #  or to ${HOME}/$1 if $2 isn't provided.
+    # Backs up the target ($2 or ${HOME}/$1) if $no_backup is 0.
+    local file=$1
+    local to_location="$2/${file}"
+    if [[ "${no_backup}" -eq 1 || -h "${HOME}/${file}" ]]; then
+	echo -ne "\t${red}removing ${HOME}/${file}${endcolor} "
+	rm -r "${HOME}/${file}" && echo " ...done"
+    elif [[ -e "${HOME}/${file}" ]]; then
+	echo -ne "\t${cyan}backing up ${HOME}/${file}${endcolor} "
+	current_datetime=$(date +"%F_at_%T")
+	mv "${HOME}/${file}" "${HOME}/${file}.${current_datetime}" && echo "...done"
+    fi
+
+    if [[ -z ${to_location} ]]; then
+	to_location="${HOME}/${file}"
+    fi
+
+    echo -ne "\tsoftlinking file "
+    ln -s "${PWD}/${file}" "${to_location}" && echo "...done"
+}
+
+for dotfile in $(find . -maxdepth 1 -name '.?*'); do
+    dotfile=${dotfile#./} #strip leading ./ from paths
+    if [[ "${dotfile}" != ".gitignore" && "${dotfile}" != ".git" ]]; then
+	echo "${dotfile}"
+	safely_softlink_file ${dotfile}
     fi
 done
+
+safely_softlink_file template.py ${HOME}/tmp
+
 
 popd
 
 echo -e "\nNow run: $ . ~/.bash_profile"
-echo -e "${GREEN}Dotfiles installation succesful.${ENDCOLOR}"
+echo -e "${green}Dotfiles installation succesful.${endcolor}"

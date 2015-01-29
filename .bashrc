@@ -461,6 +461,47 @@ export -f hooks
 HOOK_SRC="/path/to/hook" #modifyme
 alias hook="cp \${HOOK_SRC} \`findgit\`/hooks"
 
+# Rapid Python Prototyping
+function safely_call() {
+    local temp_dir="${HOME}/tmp"
+    if [[ -d "${temp_dir}" ]]; then
+       $1
+    else
+        echo "Error: ${temp_dir} doesn't exist" >&2
+    fi
+}
+function create_temp_py_file() {
+    local temp_dir="${HOME}/tmp"
+    local tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX)" || exit 1;
+    # These sed's are designed to be cross-platform
+    sed -e "s/# Created:/# Created: $(date)/" ${temp_dir}/template.py \
+	| sed -e "s/# Author:/# Author:  $(echo $USER)/" > ${tmpfile}
+    emacs -nw ${tmpfile}
+}
+function tmp() {
+    safely_call create_temp_py_file
+}
+export -f tmp
+function remove_all_empty_temp_files() {
+    local temp_dir="${HOME}/tmp"
+    for file in $(ls "${temp_dir}"); do
+        file="${temp_dir}/${file}"
+        if [[ $file != "${temp_dir}/template.py" ]]; then
+            if [[ ( -z $(diff "${temp_dir}/template.py" "${file}") ) || ( ! -s "${file}" ) ]]; then
+		echo -n "removing ${file}..."
+		rm -rf ${file}
+		echo -e "\tDone."
+            fi
+        fi
+    done
+}
+function rmp() {
+    safely_call remove_all_empty_temp_files
+}
+export -f rmp
+
+alias temp="\emacs -nw ${HOME}/tmp/template.py"
+
 
 ## 5) Miscellaneous
 # SSH auto-completion based on entries in known_hosts.
