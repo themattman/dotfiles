@@ -182,12 +182,13 @@ alias gss="git status"
 alias gs="git status -s"
 alias gsu="git status -s -uno" # Don't show untracked files
 alias gd="git diff"
-alias gds="git diff --stat"
+alias gds="git diff --staged"
+alias gdss="git diff --stat"
 alias gl="git log"
 alias gls="git log --stat"
 alias gll='git log --graph --pretty=oneline --abbrev-commit'
 alias gg="git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
-alias ggs="gg -stat"
+alias ggs="gg --stat"
 alias gsl="git shortlog -sn"            # All authors in this branch's history
 alias gnew="git log HEAD@{1}..HEAD@{0}" # Show commits since last pull
 alias gc="git checkout"

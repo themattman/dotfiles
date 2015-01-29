@@ -97,6 +97,7 @@ function safely_softlink_file() {
     fi
 
     echo "${file}"
+    # If user specifies "no backup" or the current target is a symlink
     if [[ "${no_backup}" -eq 1 || -h "${to_location}" ]]; then
 	echo -ne "\t${red}removing ${to_location}${endcolor} "
 	rm -r "${to_location}" && echo " ...done"
