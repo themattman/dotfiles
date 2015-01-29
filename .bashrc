@@ -472,7 +472,7 @@ function safely_call() {
 }
 function create_temp_py_file() {
     local temp_dir="${HOME}/tmp"
-    local tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX)" || exit 1;
+    local tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.py)" || exit 1;
     # These sed's are designed to be cross-platform
     sed -e "s/# Created:/# Created: $(date)/" ${temp_dir}/template.py \
 	| sed -e "s/# Author:/# Author:  $(echo $USER)/" > ${tmpfile}
@@ -484,10 +484,10 @@ function tmp() {
 export -f tmp
 function remove_all_empty_temp_files() {
     local temp_dir="${HOME}/tmp"
-    for file in $(ls "${temp_dir}"); do
+    for file in $(\ls "${temp_dir}"); do
         file="${temp_dir}/${file}"
         if [[ $file != "${temp_dir}/template.py" ]]; then
-            if [[ ( -z $(diff "${temp_dir}/template.py" "${file}") ) || ( ! -s "${file}" ) ]]; then
+            if [[ ( -z $(\diff "${temp_dir}/template.py" "${file}") ) || ( ! -s "${file}" ) ]]; then
 		echo -n "removing ${file}..."
 		rm -rf ${file}
 		echo -e "\tDone."

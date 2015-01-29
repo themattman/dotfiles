@@ -89,28 +89,32 @@ function safely_softlink_file() {
     #  or to ${HOME}/$1 if $2 isn't provided.
     # Backs up the target ($2 or ${HOME}/$1) if $no_backup is 0.
     local file=$1
-    local to_location="$2/${file}"
-    if [[ "${no_backup}" -eq 1 || -h "${HOME}/${file}" ]]; then
-	echo -ne "\t${red}removing ${HOME}/${file}${endcolor} "
-	rm -r "${HOME}/${file}" && echo " ...done"
-    elif [[ -e "${HOME}/${file}" ]]; then
-	echo -ne "\t${cyan}backing up ${HOME}/${file}${endcolor} "
-	current_datetime=$(date +"%F_at_%T")
-	mv "${HOME}/${file}" "${HOME}/${file}.${current_datetime}" && echo "...done"
-    fi
-
+    local to_location="$2"
     if [[ -z ${to_location} ]]; then
 	to_location="${HOME}/${file}"
+    else
+	to_location="${to_location}/${file}"
+    fi
+
+    echo "${file}"
+    if [[ "${no_backup}" -eq 1 || -h "${to_location}" ]]; then
+	echo -ne "\t${red}removing ${to_location}${endcolor} "
+	rm -r "${to_location}" && echo " ...done"
+    elif [[ -e "${to_location}" ]]; then
+	echo -ne "\t${cyan}backing up ${to_location}${endcolor} "
+	current_datetime=$(date +"%F_at_%T")
+	mv "${to_location}" "${to_location}.${current_datetime}" && echo "...done"
     fi
 
     echo -ne "\tsoftlinking file "
     ln -s "${PWD}/${file}" "${to_location}" && echo "...done"
 }
 
+echo -ne "\n"
+
 for dotfile in $(find . -maxdepth 1 -name '.?*'); do
     dotfile=${dotfile#./} #strip leading ./ from paths
     if [[ "${dotfile}" != ".gitignore" && "${dotfile}" != ".git" ]]; then
-	echo "${dotfile}"
 	safely_softlink_file ${dotfile}
     fi
 done
@@ -118,6 +122,7 @@ done
 safely_softlink_file template.py ${HOME}/tmp
 
 
+echo -ne "\n"
 popd
 
 echo -e "\nNow run: $ . ~/.bash_profile"
