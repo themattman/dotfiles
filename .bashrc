@@ -108,6 +108,8 @@ alias body="cat -n \$1,\$2p \$3"
 alias rem="remove_trailing_spaces"
 alias !="sudo !!"
 alias c="cd -"    # Use Ctrl-L instead of aliasing this to clear
+alias cp="cp -i"
+alias mv="mv -i"
 alias d="diff"
 alias a="alias"
 alias pu="pushd"
@@ -119,6 +121,7 @@ alias chax="chmod a+x"
 alias chux="chmod u+x"
 alias bell="tput bel"
 alias y="yes"
+alias tab="expand --tabs=4" # Tabs -> spaces
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 alias f="fg"       # Yes, I'm really lazy
@@ -153,12 +156,7 @@ esac
 
 ## 2c) Short program aliases
 # CD
-alias .="dot #" # My epic cd alias
-                #  The trailing hash is meant to comment out the rest of the
-                #  command. The dots that follow the original dot will be used
-                #  when searching through the history.
-alias ..="cd .."
-alias ...="cd ../.."
+#  See `Section 4 Bash Functions'
 # ECHO
 alias ec="echo"
 alias ep="echo \$PATH"
@@ -179,15 +177,15 @@ alias ga="git add"
 alias gco="git commit"
 alias gm="git commit -m"
 alias gss="git status"
-alias gs="git status -s"
-alias gsu="git status -s -uno" # Don't show untracked files
+alias gsu="git status -s"
+alias gs="git status -s -uno" # Don't show untracked files
 alias gd="git diff"
 alias gds="git diff --staged"
 alias gdss="git diff --stat"
 alias gl="git log"
 alias gls="git log --stat"
 alias gll='git log --graph --pretty=oneline --abbrev-commit'
-alias gg="git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
+alias gg="git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cblue%an %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 alias ggs="gg --stat"
 alias gsl="git shortlog -sn"            # All authors in this branch's history
 alias gnew="git log HEAD@{1}..HEAD@{0}" # Show commits since last pull
@@ -219,8 +217,8 @@ export HISTCONTROL="erasedups"
 # Give history timestamps
 export HISTTIMEFORMAT="[%F %T] "
 # Johannes Gutenberg's Bible
-export HISTSIZE=10000
-export HISTFILESIZE=10000
+export HISTSIZE=100000
+export HISTFILESIZE=100000
  # Easily re-execute the last history command
 alias r="fc -s"
 # LESS
@@ -303,10 +301,11 @@ linux*)
     WHITE="${PRE}1${DELIM}37${POST}"
 
     # Prompt String
-    STARTCOLOR="${CYAN}"
-    export PS1="${PS_PRE}${STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${ENDCOLOR}${PS_POST} "
-    alias ps1="export PS1=\"${PS_PRE}${STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${ENDCOLOR}${PS_POST} \""
-    alias ps2="export PS1=\"${PS_PRE}${STARTCOLOR}\u:\w\$${ENDCOLOR}${PS_POST} \""
+    PS_STARTCOLOR="${PS_PRE}${CYAN}${PS_POST}"
+    PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
+    export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+    alias ps1="export PS1=\"${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} \""
+    alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
 darwin*)
     # Bash Colors
@@ -361,10 +360,11 @@ darwin*)
     HBWHITE="${REG}107${POST}"
 
     # Prompt String
-    STARTCOLOR="${GREEN}"
-    export PS1="${PS_PRE}${STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${ENDCOLOR}${PS_POST} "
-    alias ps1="export PS1=\"${PS_PRE}${STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${ENDCOLOR}${PS_POST} \""
-    alias ps2="export PS1=\"${PS_PRE}${STARTCOLOR}\u:\w\$${ENDCOLOR}${PS_POST} \""
+    PS_STARTCOLOR="${PS_PRE}${GREEN}${PS_POST}"
+    PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
+    export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+    alias ps1="export PS1=\"${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} \""
+    alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
 esac
 
@@ -430,21 +430,28 @@ function remove_trailing_spaces() {
 # Generic `cd` alias function
 # Input: Number of dots that represent number of directories to go down
 # Usage: $ . .+
-# Example:
-#  $ . ...
-#  ++ cd ../../../
-#
-# TODO: BROKEN WITH THE NEW HISTORY FORMAT
-#
-function dot() {
-    command="cd "
-    str="`history 1 | perl -pe 's/^ *[0-9]+ +[^ ]+ //'`"
-    for (( i=0; i<${#str}; i++)); do
-	command="$command../"
-    done
-    echo "+ ${command}"
-    ${command}
-} # aliased, no need to export
+
+# Usage: $ cd [.]+
+# Source:
+#  http://www.quora.com
+#   /What-are-some-time-saving-tips-that-every-Linux-user-should-know
+#   /answer
+#   /Sasha-Matijasic
+function cd() {
+local -ri n=${#*};
+  # Don't modify cd's behavior if
+  #  $ cd
+  #  $ cd <dir>
+  #  $ cd -
+  if [ $n -eq 0 -o -d "${!n}" -o "${!n}" == "-" ]; then
+    builtin cd "$@";
+    # Condense dotted paths to dots
+  else
+    local e="s:\.\.\.:../..:g";
+    builtin cd "${@:1:$n-1}" $(sed -e$e -e$e -e$e <<< "${!n}");
+  fi
+}
+export -f cd
 
 # Git Hook Checker
 # Input: None
@@ -507,7 +514,7 @@ alias temp="\emacs -nw ${HOME}/tmp/template.py"
 ## 5) Miscellaneous
 # SSH auto-completion based on entries in known_hosts.
 if [[ -e ~/.ssh/known_hosts ]]; then
-    complete -o default -W "$(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | sort | uniq | grep -v '[0-9]\.' | grep -v '\[')" ssh scp
+    complete -o default -W "$(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | sort | uniq | grep -v '[0-9]\.' | grep -v '\[')" ssh scp host
 fi
 # Git auto-completion of branch names, need to know which git dir you're *currently* in
 #complete -o default -W "$(git for-each-ref --format='%(refname:short)' refs/heads/)" git push
