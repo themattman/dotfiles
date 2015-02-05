@@ -3,6 +3,9 @@
 #
 # Author:       Matthew Kneiser
 # Date Created: 01/11/2015
+#
+# Softlinks all dotfiles in current directory to
+#  the user's home directory, except git files.
 
 version="1.3.1"
 extension=".tar.bz2"

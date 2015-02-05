@@ -528,7 +528,7 @@ xterm*|rxvt*)
 esac
 
 ## 6) Machine-Specific
-if [ -f ~/.machine_specific ]; then
-    echo ".:Success: sourced machine-specific configs:."
-    source ~/.machine_specific
+if [ -f ~/.machine ]; then
+    echo ".:Success! Sourced ~/.machine configs:."
+    source ~/.machine
 fi
