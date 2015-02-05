@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  01/11/2015
+# Last updated:  02/04/2015
 # Configuration: MACHINE_NAME # a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -260,11 +260,11 @@ alias imv="vim"
 alias ivm="vim"
 
 ## 2d) Common
-alias ed="\emacs -nw ~/.diary" # Programmer's Diary
-alias eb="\emacs -nw ~/.bashrc"
-alias ebb="\emacs -nw ~/.bash_profile"
-alias ee="\emacs -nw ~/.emacs"
-alias es="\emacs -nw ~/.ssh/config"
+alias ed="\$EDITOR ~/.diary" # Programmer's Diary
+alias eb="\$EDITOR ~/.bashrc"
+alias ebb="\$EDITOR ~/.bash_profile"
+alias ee="\$EDITOR ~/.emacs"
+alias es="\$EDITOR ~/.ssh/config"
 alias vb="vim ~/.bashrc"
 alias sb="source ~/.bashrc"
 alias sbb="source ~/.bash_profile"
@@ -528,3 +528,7 @@ xterm*|rxvt*)
 esac
 
 ## 6) Machine-Specific
+if [ -f ~/.machine_specific ]; then
+    echo ".:Success: sourced machine-specific configs:."
+    source ~/.machine_specific
+fi
