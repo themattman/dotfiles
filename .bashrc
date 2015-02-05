@@ -303,7 +303,11 @@ linux*)
     # Prompt String
     PS_STARTCOLOR="${PS_PRE}${CYAN}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
-    export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+    if [ -z "$SSH_CONNECTION" ]; then
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u:\W\$${PS_ENDCOLOR} "
+    else
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+    fi
     alias ps1="export PS1=\"${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} \""
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
@@ -362,7 +366,11 @@ darwin*)
     # Prompt String
     PS_STARTCOLOR="${PS_PRE}${GREEN}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
-    export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+    if [ -z "$SSH_CONNECTION" ]; then
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u:\W\$${PS_ENDCOLOR} "
+    else
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+    fi
     alias ps1="export PS1=\"${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} \""
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
