@@ -3,6 +3,12 @@ My configuration files.
 
 ## Installation
 
+In one mighty step:
+
+    $ git clone https://github.com/themattman/dotfiles.git ~/.dotfiles && cd ~/.dotfiles && ./bootstrap.sh
+    
+Or in three:
+
     $ git clone https://github.com/themattman/dotfiles.git ~/.dotfiles
     $ cd ~/.dotfiles
     $ ./bootstrap.sh
