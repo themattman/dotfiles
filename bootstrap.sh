@@ -81,7 +81,9 @@ if [[ $install_from_source -eq 1 ]]; then
     popd
     rm -rf "${auto_complete_pkg}"
 else
-    cp -r ${auto_complete}/* "${HOME}/.emacs.d"
+    if [[ -d $auto_complete ]]; then
+	cp -r ${auto_complete}/* "${HOME}/.emacs.d"
+    fi
 fi
 set +x
 

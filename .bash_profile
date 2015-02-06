@@ -3,7 +3,7 @@
 #
 # Author:       Matt Kneiser
 # Created:      02/06/2014
-# Last updated: 01/11/2015
+# Last updated: 02/06/2015
 
 cat <<WELCOME_MSG
      ___          ___                       ___          ___          ___          ___
@@ -31,3 +31,4 @@ cat <<WELCOME_MSG
 WELCOME_MSG
 
 source ~/.bashrc
+export EDITOR="emacs -nw"
