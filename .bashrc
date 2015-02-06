@@ -22,15 +22,24 @@
 #  OSX & Ubuntu 12.04 LTS supported
 #
 # Table of Contents:
-# 1) Polyfills
-# 2) My world famous aliases
-# 3) Prompt String
-# 4) Bash Functions
-# 5) Miscellaneous
-# 6) Machine-Specific
+# 1) Internal Functions
+# 2) Polyfills
+# 3) My world famous aliases
+# 4) Prompt String
+# 5) Bash Functions
+# 6) Miscellaneous
+# 7) Machine-Specific
 
 
-## 1) Polyfills
+## 1) Internal Functions
+function source_file (){
+    if [[ -f $1 ]]; then
+	source $1 && echo ".:Success! Sourced $1 configs:."
+    fi
+}
+
+
+## 2) Polyfills
 # Tree
 if [ ! -x "$(which tree 2>/dev/null)" ]
 then
@@ -43,13 +52,13 @@ alias wget="curl -O"
 alias icurl="curl -I"
 
 
-## 2) My world famous aliases
+## 3) My world famous aliases
 #   a) OS-specific
 #   b) Basic bash
 #   c) Short program
 #   d) Common
 
-## 2a) OS-specific aliases
+## 3a) OS-specific aliases
 case $OSTYPE in
 linux*)
     # tree
@@ -103,15 +112,17 @@ darwin*)
 ;;
 esac
 
-## 2b) Basic bash aliases
+## 3b) Basic bash aliases
 alias body="cat -n \$1,\$2p \$3"
 alias rem="remove_trailing_spaces"
-alias !="sudo !!"
+#alias !="sudo !!" # This is a terrible alias and breaks a lot of shit
 alias c="cd -"    # Use Ctrl-L instead of aliasing this to clear
-alias cp="cp -i"
-alias mv="mv -i"
+alias cp="cp -i"  # Warn when overwriting
+alias mv="mv -i"  # Warn when overwriting
 alias d="diff"
 alias a="alias"
+# Clear all aliases, useful when they get in the way
+alias una="unalias -a && alias sbb=\"source ~/.bash_profile\""
 alias pu="pushd"
 alias po="popd"
 alias wh="which"
@@ -154,9 +165,9 @@ darwin*)
 ;;
 esac
 
-## 2c) Short program aliases
+## 3c) Short program aliases
 # CD
-#  See `Section 4 Bash Functions'
+#  See `Section 5 Bash Functions'
 # ECHO
 alias ec="echo"
 alias ep="echo \$PATH"
@@ -167,6 +178,20 @@ alias e="\emacs -nw"     # Escape emacs so that -nw only
 alias emasc="\emacs -nw" #  gets appended once
 alias emacs="\emacs -nw"
 # Git
+source_file ~/.git-completion
+__git_complete ga _git_add
+__git_complete gb _git_branch
+__git_complete gc _git_checkout
+__git_complete gcl _git_clone
+__git_complete gd _git_diff
+__git_complete gdr _git_diff
+__git_complete gl _git_log
+__git_complete g _git_pull
+__git_complete gp _git_push
+__git_complete gpo _git_push
+__git_complete gr _git_reset
+__git_complete gsh _git_show
+
 alias g="git rev-parse --abbrev-ref HEAD | xargs -I{} git pull origin {}"
 alias gp="git push"
 alias gb="git branch"
@@ -259,7 +284,7 @@ alias miv="vim"
 alias imv="vim"
 alias ivm="vim"
 
-## 2d) Common
+## 3d) Common
 alias ed="\$EDITOR ~/.diary" # Programmer's Diary
 alias eb="\$EDITOR ~/.bashrc"
 alias ebb="\$EDITOR ~/.bash_profile"
@@ -270,7 +295,8 @@ alias sb="source ~/.bashrc"
 alias sbb="source ~/.bash_profile"
 
 
-## 3) Prompt String
+## 4) Prompt String
+source_file ~/.git-prompt
 case $OSTYPE in
 linux*)
     # Bash Colors
@@ -301,14 +327,15 @@ linux*)
     WHITE="${PRE}1${DELIM}37${POST}"
 
     # Prompt String
-    PS_STARTCOLOR="${PS_PRE}${CYAN}${PS_POST}"
+    STARTCOLOR="${CYAN}"
+    PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
     if [ -z "$SSH_CONNECTION" ]; then
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
     else
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
     fi
-    alias ps1="export PS1=\"${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} \""
+    alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
 darwin*)
@@ -364,20 +391,21 @@ darwin*)
     HBWHITE="${REG}107${POST}"
 
     # Prompt String
-    PS_STARTCOLOR="${PS_PRE}${GREEN}${PS_POST}"
+    STARTCOLOR="${GREEN}"
+    PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
     if [ -z "$SSH_CONNECTION" ]; then
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
     else
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
     fi
-    alias ps1="export PS1=\"${PS_STARTCOLOR}[\D{%m/%d/%y %r}] \u@\h:\W\$${PS_ENDCOLOR} \""
+    alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
 esac
 
 
-## 4) Bash Functions
+## 5) Bash Functions
 
 # Kill Child Processes
 # Input: PID
@@ -437,8 +465,6 @@ function remove_trailing_spaces() {
 
 # Generic `cd` alias function
 # Input: Number of dots that represent number of directories to go down
-# Usage: $ . .+
-
 # Usage: $ cd [.]+
 # Source:
 #  http://www.quora.com
@@ -478,6 +504,8 @@ HOOK_SRC="/path/to/hook" #modifyme
 alias hook="cp \${HOOK_SRC} \`findgit\`/hooks"
 
 # Rapid Python Prototyping
+# Usage: $ tmp    # creates temp python file
+#        $ rmp    # removes it
 function safely_call() {
     local temp_dir="${HOME}/tmp"
     if [[ -d "${temp_dir}" ]]; then
@@ -492,7 +520,7 @@ function create_temp_py_file() {
     # These sed's are designed to be cross-platform
     sed -e "s/# Created:/# Created: $(date)/" ${temp_dir}/template.py \
 	| sed -e "s/# Author:/# Author:  $(echo $USER)/" > ${tmpfile}
-    emacs -nw ${tmpfile}
+    ${EDITOR} ${tmpfile}
 }
 function tmp() {
     safely_call create_temp_py_file
@@ -515,11 +543,22 @@ function rmp() {
     safely_call remove_all_empty_temp_files
 }
 export -f rmp
+alias temp="${EDITOR} ${HOME}/tmp/template.py"
 
-alias temp="\emacs -nw ${HOME}/tmp/template.py"
+function search_bashrc() {
+    \grep --color=always -in $1 ~/.bashrc
+}
+function se() {
+    if [ -n "$1" ]; then
+	search_bashrc $1
+    else
+	echo "Error: Missing argument to search for."
+    fi
+}
+export -f se
 
 
-## 5) Miscellaneous
+## 6) Miscellaneous
 # SSH auto-completion based on entries in known_hosts.
 if [[ -e ~/.ssh/known_hosts ]]; then
     complete -o default -W "$(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | sort | uniq | grep -v '[0-9]\.' | grep -v '\[')" ssh scp host
@@ -535,8 +574,6 @@ xterm*|rxvt*)
    ;;
 esac
 
-## 6) Machine-Specific
-if [ -f ~/.machine ]; then
-    echo ".:Success! Sourced ~/.machine configs:."
-    source ~/.machine
-fi
+
+## 7) Machine-Specific
+source_file ~/.machine
