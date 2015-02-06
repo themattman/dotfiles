@@ -41,8 +41,7 @@ function source_file (){
 
 ## 2) Polyfills
 # Tree
-if [ ! -x "$(which tree 2>/dev/null)" ]
-then
+if [[ ! -x $(which tree 2>/dev/null) ]]; then
   alias tree="find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'"
 fi
 # Readlink replacement (for non-Ubuntu)
@@ -62,7 +61,7 @@ alias icurl="curl -I"
 case $OSTYPE in
 linux*)
     # tree
-    if [[ "$(type -P tree)" ]]; then
+    if [[ $(type -P tree) ]]; then
 	alias ll="tree --dirsfirst -aLpughDFiC 1"
 	alias lsd="ll -d"
     fi
@@ -257,7 +256,7 @@ alias pi="pip install"
 alias vv="virtualenv"
 # PS
 alias psa="ps aux"
-alias p="ps aux | grep -v grep | grep `echo \$USER`"
+alias p="ps aux | grep -v grep | grep \$(echo \$USER)"
 alias psm="ps aux | grep mongo"
 alias pse="ps fe -o \"%c %p %P\""
 alias pe="ps fe -o \"%p\" --no-headers --ppid"
@@ -330,7 +329,7 @@ linux*)
     STARTCOLOR="${CYAN}"
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
-    if [ -z "$SSH_CONNECTION" ]; then
+    if [[ -z $SSH_CONNECTION ]]; then
 	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
     else
 	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
@@ -394,7 +393,7 @@ darwin*)
     STARTCOLOR="${GREEN}"
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
-    if [ -z "$SSH_CONNECTION" ]; then
+    if [[ -z $SSH_CONNECTION ]]; then
 	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
     else
 	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
@@ -445,7 +444,7 @@ export -f mkd
 # Input: Max number of chars per line and the name of the file to check
 # Usage: $ longer line_length filename
 function longer() {
-    if [ ! -n "$2" ]; then
+    if [[ -z $2 ]]; then
 	echo "usage: $ longer <length_of_line> <file>" && return 1
     fi
     command="sed -n /^.\{$1\}/p $2"
@@ -457,7 +456,7 @@ export -f longer
 # Input: Filename
 # Usage: $ rem filename
 function remove_trailing_spaces() {
-    if [ ! -n "$1" ]; then
+    if [[ -z $1 ]]; then
 	echo "usage: $ rem <file>" && return 1
     fi
     sed -i 's/[ \t]*$//' $1
@@ -477,7 +476,7 @@ local -ri n=${#*};
   #  $ cd
   #  $ cd <dir>
   #  $ cd -
-  if [ $n -eq 0 -o -d "${!n}" -o "${!n}" == "-" ]; then
+  if [ "$n" -eq 0 -o -d "${!n}" -o "${!n}" == "-" ]; then
     builtin cd "$@";
     # Condense dotted paths to dots
   else
@@ -491,9 +490,9 @@ export -f cd
 # Input: None
 # Usage: $ hooks
 function hooks() {
-    if [[ `git rev-parse --is-bare-repository` == "false" ]]; then
-	if [[ `git rev-parse --is-inside-work-tree` == "true" ]]; then
-	    gitdir=`git rev-parse --git-dir`
+    if [[ $(git rev-parse --is-bare-repository) == "false" ]]; then
+	if [[ $(git rev-parse --is-inside-work-tree) == "true" ]]; then
+	    gitdir=$(git rev-parse --git-dir)
 	    echo $(realpath "${gitdir}/hooks/")
 	    ls -lh "${gitdir}/hooks/"
 	fi
@@ -501,14 +500,14 @@ function hooks() {
 }
 export -f hooks
 HOOK_SRC="/path/to/hook" #modifyme
-alias hook="cp \${HOOK_SRC} \`findgit\`/hooks"
+alias hook="cp \${HOOK_SRC} \$(findgit)/hooks"
 
 # Rapid Python Prototyping
 # Usage: $ tmp    # creates temp python file
 #        $ rmp    # removes it
 function safely_call() {
     local temp_dir="${HOME}/tmp"
-    if [[ -d "${temp_dir}" ]]; then
+    if [[ -d $temp_dir ]]; then
        $1
     else
         echo "Error: ${temp_dir} doesn't exist" >&2
