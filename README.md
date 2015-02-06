@@ -5,9 +5,9 @@ My configuration files.
 
     $ git clone https://github.com/themattman/dotfiles.git ~/.dotfiles
     $ cd ~/.dotfiles
-    $ ./bootstrap.py
+    $ ./bootstrap.sh
 
-Provide `-h` to bootstrap.py to get the help menu for the installation script.
+Provide `-h` to `bootstrap.sh` to get the help menu for the installation script.
 
 ## Requirements
 Python 2.7.x
