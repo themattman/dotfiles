@@ -1,10 +1,13 @@
-# dotfiles
+# .:dotfiles:.
 My configuration files.
 
 ## Installation
-`$ ./bootstrap.py -h`
 
-Will give you the help menu for the installation script.
+    $ git clone https://github.com/themattman/dotfiles.git ~/.dotfiles
+    $ cd ~/.dotfiles
+    $ ./bootstrap.py
+
+Provide `-h` to bootstrap.py to get the help menu for the installation script.
 
 ## Requirements
 Python 2.7.x
