@@ -70,9 +70,9 @@ pushd "$(dirname "${bash_source}")"
 mkdir "$HOME/.emacs.d" || :
 mkdir "$HOME/tmp" || :
 
-if [[ "$install_from_source" -eq 1 ]]; then
+set -x
+if [[ $install_from_source -eq 1 ]]; then
     echo "Installing dotfiles from source..."
-    set -x
     curl -O "http://cx4a.org/pub/auto-complete/${auto_complete_pkg}"
     tar xvf "${auto_complete_pkg}"
     pushd "${auto_complete}"
@@ -80,12 +80,10 @@ if [[ "$install_from_source" -eq 1 ]]; then
     make install DIR=$HOME/.emacs.d/ &> "makeoutput.$current_datetime"
     popd
     rm -rf "${auto_complete_pkg}"
-    set +x
 else
-    set -x
     cp -r ${auto_complete}/* "${HOME}/.emacs.d"
-    set +x
 fi
+set +x
 
 function safely_softlink_file() {
     # Softlinks $1 to $2
@@ -93,7 +91,7 @@ function safely_softlink_file() {
     # Backs up the target ($2 or ${HOME}/$1) if $no_backup is 0.
     local file=$1
     local to_location="$2"
-    if [[ -z ${to_location} ]]; then
+    if [[ -z $to_location ]]; then
 	to_location="${HOME}/${file}"
     else
 	to_location="${to_location}/${file}"
@@ -101,10 +99,10 @@ function safely_softlink_file() {
 
     echo "${file}"
     # If user specifies "no backup" or the current target is a symlink
-    if [[ "${no_backup}" -eq 1 || -h "${to_location}" ]]; then
+    if [[ $no_backup -eq 1 || -h $to_location ]]; then
 	echo -ne "\t${red}removing ${to_location}${endcolor} "
 	rm -r "${to_location}" && echo " ...done"
-    elif [[ -e "${to_location}" ]]; then
+    elif [[ -e $to_location ]]; then
 	echo -ne "\t${cyan}backing up ${to_location}${endcolor} "
 	current_datetime=$(date +"%F_at_%T")
 	mv "${to_location}" "${to_location}.${current_datetime}" && echo "...done"
@@ -118,7 +116,7 @@ echo -ne "\n"
 
 for dotfile in $(find . -maxdepth 1 -name '.?*'); do
     dotfile=${dotfile#./} #strip leading ./ from paths
-    if [[ "${dotfile}" != ".gitignore" && "${dotfile}" != ".git" ]]; then
+    if [[ $dotfile != ".gitignore" && $dotfile != ".git" ]]; then
 	safely_softlink_file ${dotfile}
     fi
 done
