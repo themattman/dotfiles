@@ -7,13 +7,14 @@ My configuration files.
 
 In one mighty step:
 
-    $ git clone https://github.com/themattman/dotfiles.git ~/.dotfiles && cd ~/.dotfiles && ./bootstrap.sh
+    $ git clone https://github.com/themattman/dotfiles.git ~/.dotfiles && cd ~/.dotfiles && ./bootstrap.sh && source ~/.bash_profile
     
-Or in three:
+Or in four:
 
     $ git clone https://github.com/themattman/dotfiles.git ~/.dotfiles
     $ cd ~/.dotfiles
     $ ./bootstrap.sh
+    $ source ~/.bash_profile
 
 Provide `-h` to `bootstrap.sh` to get the help menu for the installation script.
 
