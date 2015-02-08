@@ -120,6 +120,7 @@ alias cp="cp -i"  # Warn when overwriting
 alias mv="mv -i"  # Warn when overwriting
 alias d="diff"
 alias a="alias"
+alias un="unalias"
 # Clear all aliases, useful when they get in the way
 alias una="unalias -a && alias sbb=\"source ~/.bash_profile\""
 alias pu="pushd"
@@ -157,9 +158,11 @@ alias reboot="shutdown -r now"
 alias sleep="shutdown -s now"
 case $OSTYPE in
 linux*)
+    # Ctrl-Alt-l also locks screen in Ubuntu or use this alias
     alias afk="gnome-screensaver-command -l"
 ;;
 darwin*)
+    # Ctrl-Shift- (<Power Button> or <Eject Button>) locks screen in OSX
     alias afk=""
 ;;
 esac
@@ -206,6 +209,7 @@ alias gs="git status -s -uno" # Don't show untracked files
 alias gd="git diff"
 alias gds="git diff --staged"
 alias gdss="git diff --stat"
+alias gdr="git diff -R"      # Reverse the diff so you can see removed whitespace
 alias gl="git log"
 alias gls="git log --stat"
 alias gll='git log --graph --pretty=oneline --abbrev-commit'
@@ -222,7 +226,8 @@ alias gsh="git show"
 alias gshh="git show HEAD"
 alias gv="git remote -v"
 alias gr="git reset"
-alias grh="git reset HEAD~1"
+alias grh="git reset HEAD"
+alias grhh="git reset HEAD~1"
 alias g--="git --version"
 alias ge="git config user.email"
 alias gu="git config user.name"
@@ -327,12 +332,21 @@ linux*)
 
     # Prompt String
     STARTCOLOR="${CYAN}"
+    # For colorizing your prompt, please use $PS_PRE and $PS_POST around the
+    #  beginning of all color definitions and at the very end of the prompt
+    #  string around the final terminating $ENDCOLOR.
+    # It took me over 6 months to figure this out. If you don't have the proper
+    #  escaping in your prompt string using $PS_PRE and $PS_POST, scrolling up
+    #  for at least 20 commands causes all sorts of issues with getting bash to
+    #  write the correct prompt string. Ctrl-l will clear the screen and re-draw
+    #  the prompt string correctly in that case.
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
-    PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
+    PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
+    PS_BRANCHCOLOR="${PS_PRE}${LIGHTCYAN}${PS_POST}"
     if [[ -z $SSH_CONNECTION ]]; then
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
     else
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
     fi
     alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
@@ -391,12 +405,14 @@ darwin*)
 
     # Prompt String
     STARTCOLOR="${GREEN}"
+    # ~~See note above in the `Prompt String' section for Linux~~
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
-    PS_ENDCOLOR="${PS_PRE}${PRE}0${POST}${PS_POST}"
+    PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
+    PS_BRANCHCOLOR="${PS_PRE}${CYAN}${PS_POST}"
     if [[ -z $SSH_CONNECTION ]]; then
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
     else
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${CYAN}\$(__git_ps1)${ENDCOLOR} ${STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
     fi
     alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
