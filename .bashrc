@@ -574,18 +574,28 @@ function se() {
 export -f se
 
 function unset_custom_functions() {
-    echo "unsetting!"
-    for i in $(env); do
-	if [[ $i =~ "__BASH_FUNC" ]]; then
-	    partial_strip=${i##*<}
-	    function_name=${partial_strip%>*}
-	    echo "unset $function_name"
-	fi
-    done
-
+    counter=0
+    if [[ $1 == "f" ]]; then
+	echo -n "unsetting all..."
+	for i in $(compgen -A function); do
+	    unset $i
+	    counter=$((counter+1))
+	done
+    else
+	echo -n "unsetting non-essential..."
+	for i in $(compgen -A function); do
+	    if [[ ! $i =~ "_git" ]]; then
+		unset $i
+		counter=$((counter+1))
+	    fi
+	done
+    fi
+    echo " done. ($counter functions unset)"
 }
 function uns() { unset_custom_functions; }
+function unsf() { unset_custom_functions f; }
 export -f uns
+export -f unsf
 
 
 ## 6) Miscellaneous
