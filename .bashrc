@@ -32,7 +32,7 @@
 
 
 ## 1) Internal Functions
-function source_file (){
+function source_file() {
     if [[ -f $1 ]]; then
 	source $1 && echo ".:Success! Sourced $1 configs:."
     fi
@@ -170,6 +170,7 @@ esac
 ## 3c) Short program aliases
 # CD
 #  See `Section 5 Bash Functions'
+alias ..="cd .."
 # ECHO
 alias ec="echo"
 alias ep="echo \$PATH"
@@ -571,6 +572,20 @@ function se() {
     fi
 }
 export -f se
+
+function unset_custom_functions() {
+    echo "unsetting!"
+    for i in $(env); do
+	if [[ $i =~ "__BASH_FUNC" ]]; then
+	    partial_strip=${i##*<}
+	    function_name=${partial_strip%>*}
+	    echo "unset $function_name"
+	fi
+    done
+
+}
+function uns() { unset_custom_functions; }
+export -f uns
 
 
 ## 6) Miscellaneous
