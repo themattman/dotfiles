@@ -76,6 +76,12 @@
 ; Revert Buffer
 (global-set-key (kbd "C-c C-r") 'revert-buffer)
 
+; Shell-script-mode
+(global-set-key (kbd "C-c C-s") 'shell-script-mode)
+
+; Makefile-mode
+(global-set-key (kbd "C-c C-m") 'makefile-mode)
+
 ; Take care of trailing whitespace
 (setq-default show-trailing-whitespace t)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
