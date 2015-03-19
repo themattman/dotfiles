@@ -1,7 +1,7 @@
 ; Matthew Kneiser's .emacs
 ;
 ; Date Compiled: 11/06/2014
-; Date Modified: 01/11/2015
+; Date Modified: 03/18/2015
 
 ; Show column numbers
 (setq column-number-mode t)
@@ -11,10 +11,10 @@
 
 ; Do not create tilde backup files
 ;(setq make-backup-files nil) ;(Don't make annoying ~ files)
-(setq auto-save-default nil) ;stop creating those #autosave# files
+(setq auto-save-default nil) ;Stop creating those #autosave# files
 
 ; Run emacs in server mode, so that we can connect from commandline
-;(server-start)
+;(server-start) ;Didn't initally work for me. Will figure out later.
 
 ; Consider putting all these tilde files into a dir under home
 ;  that has a structure that mirrors the fs. If a tilde file
@@ -30,16 +30,20 @@
 (if (not (file-exists-p backup-directory))
     (make-directory backup-directory t))
 (setq backup-directory-alist `(("." . ,backup-directory)))
-(setq make-backup-files t ;backup of a file the first time it is saved.
+(setq make-backup-files t ; backup of a file the first time it is saved
       backup-by-copying t ; don't clobber symlinks
       version-control t ; version numbers for backup files
       delete-old-versions t ; delete excess backup files silently
       delete-by-moving-to-trash t
-      kept-old-versions 5 ; oldest versions to keep when a new numbered backup is made (default: 2)
-      kept-new-versions 5 ; newest versions to keep when a new numbered backup is made (default: 2)
+      kept-old-versions 5 ; oldest versions to keep when a new numbered backup is
+			  ;  made (default: 2)
+      kept-new-versions 5 ; newest versions to keep when a new numbered backup is
+			  ;  made (default: 2)
       auto-save-default t ; auto-save every buffer that visits a file
-      ;auto-save-timeout 20 ; number of seconds idle time before auto-save (default: 30)
-      auto-save-interval 200 ; number of keystrokes between auto-saves (default: 300)
+      ;auto-save-timeout 20 ; number of seconds idle time before auto-save
+			   ;  (default: 30)
+      auto-save-interval 200 ; number of keystrokes between auto-saves
+			     ;  (default: 300)
 )
 
 ; Newline at end of file
@@ -51,6 +55,35 @@
 ; yes/no -> y/n
 (fset 'yes-or-no-p 'y-or-n-p)
 
+; Navigate Buffers Backwards
+(global-set-key "\C-xp" (lambda ()
+                          (interactive)
+                          (other-window -1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;The following section is from:;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;https://sites.google.com/site/steveyegge2/effective-emacs;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Easier killing
+(global-set-key "\C-w" 'backward-kill-word)
+(global-set-key "\C-x\C-k" 'kill-region)
+(global-set-key "\C-c\C-k" 'kill-region)
+
+; Bind Alternate M-x's
+(global-set-key "\C-x\C-m" 'execute-extended-command)
+(global-set-key "\C-c\C-m" 'execute-extended-command)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;End Section;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Proper Undo
+;  since OSX doesn't default to the same shortcut as Ubuntu
+;  C-_ is always undo, but it requires the user to press <shift>
+;(global-set-key "\C-\/" 'undo);Doesn't work.
+; This is an X11 issue on OSX:
+;  http://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control
+;  -slash-to-the-terminal#comment27461_24282
+
 ; Better Scrolling
 ; http://stackoverflow.com/questions/3631220/fix-to-get-smooth-scrolling-in-emacs
 (setq redisplay-dont-pause t
@@ -60,7 +93,8 @@
   scroll-preserve-screen-position 1)
 
 ; On startup, open multiple files vertically instead of horizontally
-; http://stackoverflow.com/questions/6697514/when-opening-2-files-in-emacs-how-can-i-have-them-appear-side-by-side
+;  http://stackoverflow.com/questions/6697514/when-opening-2-files-in-emacs-how-c
+;  an-i-have-them-appear-side-by-side
 (defun 2-windows-vertical-to-horizontal ()
   (let ((buffers (mapcar 'window-buffer (window-list))))
     (when (= 2 (length buffers))
@@ -79,17 +113,21 @@
 ; Shell-script-mode
 (global-set-key (kbd "C-c C-s") 'shell-script-mode)
 
-; Makefile-mode
-(global-set-key (kbd "C-c C-m") 'makefile-mode)
+; Makefile-mode (remap this)
+;(global-set-key (kbd "C-c C-m") 'makefile-mode)
 
 ; Take care of trailing whitespace
 (setq-default show-trailing-whitespace t)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-;; http://stackoverflow.com/questions/6344474/how-can-i-make-emacs-highlight-lines-that-go-over-80-chars
-;; free of trailing whitespace and to use 80-column width, standard indentation
-(setq whitespace-style '(trailing lines space-before-tab
-                                  indentation space-after-tab)
-      whitespace-line-column 80)
+; http://stackoverflow.com/questions/6344474/how-can-i-make-emacs-highlight-lines
+; -that-go-over-80-chars
+; free of trailing whitespace and to use 80-column width, standard indentation
+(setq whitespace-line-column 80)
+(setq whitespace-style '(trailing
+			 lines
+			 space-before-tab
+			 indentation
+			 space-after-tab))
 
 ; Copy everything in current buffer w/C-c C-a
 (defun copy-all ()
@@ -126,9 +164,19 @@
 ; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
 ;(global-set-key [(control h)] 'delete-backward-char)
 
-;
-; Junkyard
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;Shortcuts to Remember;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; C-x +: balance-windows
+; M-t: transpose word (remap this)
+; C-t: transpose letter
+; fill-paragraph (wrap to 80 chars, map this!)
+; C-x C-o: delete-blank-lines
+; M-z: zap-to-char (remap this)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;Junkyard;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Sublime-text color theme, likely doesn't work
 ;(setq color-theme-is-global t)
