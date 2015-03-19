@@ -65,7 +65,7 @@
 ;;;https://sites.google.com/site/steveyegge2/effective-emacs;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Easier killing
-(global-set-key "\C-w" 'backward-kill-word)
+(global-set-key "\C-w" 'backward-kill-word) ;Added Bonus: Matches shell behavior
 (global-set-key "\C-x\C-k" 'kill-region)
 (global-set-key "\C-c\C-k" 'kill-region)
 
@@ -173,6 +173,8 @@
 ; fill-paragraph (wrap to 80 chars, map this!)
 ; C-x C-o: delete-blank-lines
 ; M-z: zap-to-char (remap this)
+; M-^: delete-indentation (remap this)
+; normal-mode (gets you out of the wrong mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Junkyard;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
