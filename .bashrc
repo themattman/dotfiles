@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  02/04/2015
+# Last updated:  06/11/2015
 # Configuration: MACHINE_NAME # a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -63,7 +63,9 @@ linux*)
     # tree
     if [[ $(type -P tree) ]]; then
 	alias ll="tree --dirsfirst -aLpughDFiC 1"
+	alias lk="tree --dirsfirst -LpughDFiC 1"
 	alias lsd="ll -d"
+	alias treel="tree | less"
     fi
     # ls
     alias sl="ls -F --color"
@@ -133,6 +135,7 @@ alias chux="chmod u+x"
 alias bell="tput bel"
 alias y="yes"
 alias tab="expand --tabs=4" # Tabs -> spaces
+alias tmake="(time make) &> \$(date +%F__%T | tr '-' '_' | tr ':' '_')"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 alias f="fg"       # Yes, I'm really lazy
@@ -180,20 +183,24 @@ alias el="echo \$LD_LIBRARY_PATH"
 alias e="\emacs -nw"     # Escape emacs so that -nw only
 alias emasc="\emacs -nw" #  gets appended once
 alias emacs="\emacs -nw"
+# Repo
+alias rs="repo sync -j\$(cores)"
 # Git
 source_file ~/.git-completion
-__git_complete ga _git_add
-__git_complete gb _git_branch
-__git_complete gc _git_checkout
-__git_complete gcl _git_clone
-__git_complete gd _git_diff
-__git_complete gdr _git_diff
-__git_complete gl _git_log
-__git_complete g _git_pull
-__git_complete gp _git_push
-__git_complete gpo _git_push
-__git_complete gr _git_reset
-__git_complete gsh _git_show
+if [[ -f ~/.git-completion ]]; then
+    __git_complete ga _git_add
+    __git_complete gb _git_branch
+    __git_complete gc _git_checkout
+    __git_complete gcl _git_clone
+    __git_complete gd _git_diff
+    __git_complete gdr _git_diff
+    __git_complete gl _git_log
+    __git_complete g _git_pull
+    __git_complete gp _git_push
+    __git_complete gpo _git_push
+    __git_complete gr _git_reset
+    __git_complete gsh _git_show
+fi
 
 alias g="git rev-parse --abbrev-ref HEAD | xargs -I{} git pull origin {}"
 alias gp="git push"
@@ -210,7 +217,12 @@ alias gs="git status -s -uno" # Don't show untracked files
 alias gd="git diff"
 alias gds="git diff --staged"
 alias gdss="git diff --stat"
+alias gdsss="git diff --staged --stat"
 alias gdr="git diff -R"      # Reverse the diff so you can see removed whitespace
+alias gdrs="git diff -R --staged"
+alias gdbb="git diff -b"
+alias gdsb="git diff --staged -b"
+alias gdc="echo 'Staged files:' && git diff --name-only --cached"
 alias gl="git log"
 alias gls="git log --stat"
 alias gll='git log --graph --pretty=oneline --abbrev-commit'
@@ -225,6 +237,10 @@ alias gpo="git rev-parse --abbrev-ref HEAD | xargs -I{} git push origin {}"
 alias gbr="git rev-parse --abbrev-ref HEAD" # Works on 1.7.x & 1.8.x
 alias gsh="git show"
 alias gshh="git show HEAD"
+alias gshhs="git show HEAD --stat"
+alias gshhn="git show HEAD --name-only"
+alias gshn="git show --name-only"
+alias gshs="git show --stat"
 alias gv="git remote -v"
 alias gr="git reset"
 alias grh="git reset HEAD"
@@ -235,10 +251,14 @@ alias gu="git config user.name"
 alias gcon="git config"
 alias gconl="git config --list"
 alias findgit="git rev-parse --git-dir"
+alias gitdir="git rev-parse --git-dir"
+alias toplevel="dirname \$(git rev-parse --git-dir)"
 alias findgits="find . -name .git -type d"
 # GREP
-alias gre="grep -Iirsn --color=always" # case-insensitive
+alias gre="grep -Iirsn --color=always"   # case-insensitive
+alias grel="grep -Iirsnl --color=always" # case-insensitive
 alias gree="grep -Irsn --color=always"
+alias greel="grep -Irsnl --color=always"
 # HISTORY
 alias h="history"
 alias hist="history | grep -P --color=always \"^.*?]\" | less -FRX +G"
@@ -293,6 +313,7 @@ alias ivm="vim"
 alias ed="\$EDITOR ~/.diary" # Programmer's Diary
 alias eb="\$EDITOR ~/.bashrc"
 alias ebb="\$EDITOR ~/.bash_profile"
+alias em="\$EDITOR ~/.machine"
 alias ee="\$EDITOR ~/.emacs"
 alias es="\$EDITOR ~/.ssh/config"
 alias vb="vim ~/.bashrc"
@@ -344,10 +365,18 @@ linux*)
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
     PS_BRANCHCOLOR="${PS_PRE}${LIGHTCYAN}${PS_POST}"
-    if [[ -z $SSH_CONNECTION ]]; then
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
-    else
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+    if [[ ! -f ~/.git-prompt ]]; then
+        if [[ -z $SSH_CONNECTION ]]; then
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+        else
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+        fi
+     else
+        if [[ -z $SSH_CONNECTION ]]; then
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+        else
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+        fi
     fi
     alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
@@ -410,15 +439,29 @@ darwin*)
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
     PS_BRANCHCOLOR="${PS_PRE}${CYAN}${PS_POST}"
-    if [[ -z $SSH_CONNECTION ]]; then
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
-    else
-	export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+    if [[ ! -f ~/.git-prompt ]]; then
+        if [[ -z $SSH_CONNECTION ]]; then
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+        else
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+        fi
+     else
+        if [[ -z $SSH_CONNECTION ]]; then
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+        else
+               export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+        fi
     fi
     alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
 esac
+if [[ -z $SSH_CONNECTION ]]; then
+    export GIT_PS1_SHOWUNTRACKEDFILES=1
+    export GIT_PS1_SHOWDIRTYSTATE=1
+    export GIT_PS1_SHOWCOLORHINTS=1
+    export GIT_PS1_SHOWUPSTREAM="auto"
+fi
 
 
 ## 5) Bash Functions
@@ -597,11 +640,23 @@ function unsf() { unset_custom_functions f; }
 export -f uns
 export -f unsf
 
+function create_shortcut() {
+    if [[ $# -ne "2" ]]; then
+        echo "usage: $ short <shortcut_destination> <shortcut_alias>"
+        return
+    fi
+    echo "alias $2=\"cd $1\" #generated by alias 'short'" >> ~/.machine
+    source_file ~/.machine
+    echo "alias $2=\"cd $1\" #generated by alias 'short'"
+}
+function short() { create_shortcut "$@"; }
+export -f short
+
 
 ## 6) Miscellaneous
 # SSH auto-completion based on entries in known_hosts.
 if [[ -e ~/.ssh/known_hosts ]]; then
-    complete -o default -W "$(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | sort | uniq | grep -v '[0-9]\.' | grep -v '\[')" ssh scp host
+    complete -o default -W "$(cat <(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | grep -v '[0-9]\.' | grep -v '\[') <(grep "^HOST" ~/.ssh/config | awk '{print $2}') | sort | uniq)" ssh scp host
 fi
 # Git auto-completion of branch names, need to know which git dir you're *currently* in
 #complete -o default -W "$(git for-each-ref --format='%(refname:short)' refs/heads/)" git push
