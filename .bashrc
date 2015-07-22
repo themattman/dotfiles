@@ -109,6 +109,9 @@ linux*)
     # System Info
     alias cores="cat /proc/cpuinfo | grep -c processor"
     alias os="lsb_release -d | cut -d: -f 2 | sed 's/^\s*//'" # Linux Distro
+
+    # Tabs -> Spaces
+    alias tab="expand -i --tabs=4"
 ;;
 darwin*)
     # ls
@@ -127,6 +130,9 @@ darwin*)
 
     # System Info
     alias cores="sysctl hw.ncpu | awk '{print \$2}'"
+
+    # Tabs -> Spaces
+    alias tab="expand -t 4"
 ;;
 esac
 
@@ -155,7 +161,6 @@ alias chax="chmod a+x"
 alias chux="chmod u+x"
 alias bell="tput bel"
 alias y="yes"
-alias tab="expand -i --tabs=4" # Tabs -> spaces
 alias tmake="(time make) &> \$(date +%F__%T | tr '-' '_' | tr ':' '_')"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
@@ -698,7 +703,7 @@ export -f line
 
 function tabs() {
     if [[ $# -eq 1 && -f $1 ]]; then
-        diff -U 0 <(expand -i --tabs=4 "${1}") "${1}"
+        diff -U 0 <(tab "${1}") "${1}"
     else
         echo -e "Error: File does not exist.\nUsage: $ tab <file>" 1>&2
     fi
@@ -707,7 +712,7 @@ export -f tabs
 
 function numtabs() {
     if [[ $# -eq 1 ]]; then
-        diff -U 0 <(expand -i --tabs=4 "${1}") "${1}" | grep -v ^@ | tail -n +3 | wc -l
+        diff -U 0 <(tab "${1}") "${1}" | grep -v ^@ | tail -n +3 | wc -l
     else
         echo -e "Error: Incorrect number of args." 1>&2
         echo -e "Usage: $ numtabs <file>" 1>&2
@@ -719,7 +724,7 @@ function untabify() {
     if [[ $# -eq 1 ]]; then
         echo "Tabs -> 4 spaces in [${1}]..."
         tmpfilename="${1}.expanded4.$(date +%F__%T | tr '-' '_' | tr ':' '_')"
-        expand -i --tabs=4 "${1}" > "${tmpfilename}"
+        tab "${1}" > "${tmpfilename}"
         \mv -i "${tmpfilename}" "${1}"
     else
         echo -e "Usage: $ untabify <file>" 1>&2
