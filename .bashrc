@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  07/20/2015
+# Last updated:  07/22/2015
 # Configuration: MACHINE_NAME # a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -22,6 +22,7 @@
 #  OSX & Ubuntu 12.04 LTS supported
 #
 # Table of Contents:
+# 0) Bashrc Guard
 # 1) Internal Functions
 # 2) Polyfills
 # 3) My world famous aliases
@@ -31,10 +32,26 @@
 # 7) Machine-Specific
 
 
+## 0) Bashrc Guard
+if [ -z "${PS1}" ]; then
+    return
+fi
+
 ## 1) Internal Functions
 function source_file() {
     if [[ -f $1 ]]; then
-        source $1 && echo ".:Success! Sourced $1 configs:."
+	# Printing anything to stdout from a .bashrc breaks scp
+	# (and probably other things as well)
+	# https://en.wikipedia.org
+	#  /wiki
+	#  /Secure_copy
+	#  #Issues_using_talkative_shell_profiles
+        if [[ -n $SSH_TTY ]]; then
+	    echo "SSH_TTY - [${SSH_TTY}]"
+	    source $1 && echo ".:Success! Sourced $1 configs:."
+	else
+	    source $1
+	fi
     fi
 }
 
@@ -713,9 +730,9 @@ export -f untabify
 
 ## 6) Miscellaneous
 # SSH auto-completion based on entries in known_hosts.
-ssh_complete="$(cat <(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | grep -v '[0-9]\.' | grep -v '\[') <(grep "^Host" ~/.ssh/config | cut -d ' ' -f 2-) | sort | uniq)"
-alias hosts="echo \${ssh_complete}"
 if [[ -f ~/.ssh/known_hosts && -f ~/.ssh/config ]]; then
+    ssh_complete="$(cat <(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | grep -v '[0-9]\.' | grep -v '\[') <(grep "^Host" ~/.ssh/config | cut -d ' ' -f 2-) | sort | uniq)"
+    alias hosts="echo \${ssh_complete}"
     complete -o default -W "${ssh_complete}" ssh scp host
 fi
 

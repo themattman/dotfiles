@@ -3,8 +3,14 @@
 #
 # Author:       Matt Kneiser
 # Created:      02/06/2014
-# Last updated: 02/06/2015
+# Last updated: 07/22/2015
 
+# Bashrc Guard
+if [ -z "${PS1}" ]; then
+    return
+fi
+
+if [[ -n "${SSH_TTY}" ]]; then
 cat <<WELCOME_MSG
      ___          ___                       ___          ___          ___          ___
     /\  \        /\__\                     /\__\        /\  \        /\  \        /\__\\
@@ -29,6 +35,12 @@ cat <<WELCOME_MSG
      /:/  /        /:/  /                              /:/  /        /:/  /        /:/  /
      \/__/         \/__/                               \/__/         \/__/         \/__/
 WELCOME_MSG
+fi
 
-source ~/.bashrc
+# Make backspace work
+#stty erase ^H
+
 export EDITOR="emacs -nw"
+export GIT_EDITOR="emacs -nw"
+export MAN_PAGER="less -i"
+source ~/.bashrc
