@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  07/22/2015
+# Last updated:  07/27/2015
 # Configuration: MACHINE_NAME # a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -33,6 +33,8 @@
 
 
 ## 0) Bashrc Guard
+# The prompt string only gets set on interactive shells.
+# Don't apply custom configs if this is the case.
 if [ -z "${PS1}" ]; then
     return
 fi
@@ -40,14 +42,14 @@ fi
 ## 1) Internal Functions
 function source_file() {
     if [[ -f $1 ]]; then
-	# Printing anything to stdout from a .bashrc breaks scp
+        # Printing anything to stdout from a .bashrc breaks scp
 	# (and probably other things as well)
 	# https://en.wikipedia.org
 	#  /wiki
 	#  /Secure_copy
 	#  #Issues_using_talkative_shell_profiles
-        if [[ -n $SSH_TTY ]]; then
-	    echo "SSH_TTY - [${SSH_TTY}]"
+        if [[ -n "${SSH_TTY}" ]]; then
+            # echo "SSH_TTY - [${SSH_TTY}]"
 	    source $1 && echo ".:Success! Sourced $1 configs:."
 	else
 	    source $1
@@ -130,6 +132,7 @@ darwin*)
 
     # System Info
     alias cores="sysctl hw.ncpu | awk '{print \$2}'"
+    alias os="sw_vers" # -productVersion
 
     # Tabs -> Spaces
     alias tab="expand -t 4"
@@ -156,12 +159,15 @@ alias po="popd"
 alias wh="which"
 alias m="man"
 alias tlf="tail -f"
+alias tl="tail -f"
 alias t="tail"
 alias chax="chmod a+x"
 alias chux="chmod u+x"
 alias bell="tput bel"
 alias y="yes"
+
 alias tmake="(time make) &> \$(date +%F__%T | tr '-' '_' | tr ':' '_')"
+alias cdate="date +%F__%T | tr '-' '_' | tr ':' '_'"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 alias f="fg"       # Yes, I'm really lazy
@@ -232,7 +238,7 @@ if [[ -f ~/.git-completion ]]; then
     __git_complete gsh _git_show
 fi
 
-alias g="git rev-parse --abbrev-ref HEAD | xargs -I{} git pull origin {}"
+alias g="git pull origin \$(git rev-parse --abbrev-ref HEAD)"
 alias gp="git push"
 alias gb="git branch"
 alias gba="git branch -a"
@@ -263,7 +269,7 @@ alias gnew="git log HEAD@{1}..HEAD@{0}" # Show commits since last pull
 alias gc="git checkout"
 alias gch="git checkout -- ."
 alias gcl="git clone"
-alias gpo="git rev-parse --abbrev-ref HEAD | xargs -I{} git push origin {}"
+alias gpo="git push origin \$(git rev-parse --abbrev-ref HEAD)"
 alias gbr="git rev-parse --abbrev-ref HEAD" # Works on 1.7.x & 1.8.x
 alias grf="git reflog" # List all commits current branch points to
 alias gsh="git show"
@@ -303,8 +309,8 @@ export HISTFILESIZE=100000
  # Easily re-execute the last history command
 alias r="fc -s"
 # LESS
-alias less="less -iFXR" # I typically don't like aliasing program names
-alias les="less -iFXR"
+alias less="\less -iFXR" # I typically don't like aliasing program names
+alias les="\less -iFXR"
 # Node.js
 alias n="node"
 alias nd="node server"
@@ -532,8 +538,13 @@ alias gen="genpasswd"
 #        /questions
 #        /1853946
 #        /getting-the-last-argument-passed-to-a-shell-script
-function mkd() { mkdir -p $@ && cd ${@: -1}; }
+function mkd() { mkdir -p "${@}" && cd "${@: -1}"; }
+function mkdd() {
+    local dir=$(date +%F__%T | tr '-' '_' | tr ':' '_');
+    mkdir -p "${dir}" && cd "${dir}";
+}
 export -f mkd
+export -f mkdd
 
 # 80 Char Line Checker
 # Input: Max number of chars per line and the name of the file to check
@@ -677,6 +688,24 @@ function unsf() { unset_custom_functions f; }
 export -f uns
 export -f unsf
 
+function gpa() {
+    # Git Push to all remotes
+    if [[ ("function" = $(type -t __git_remotes)) && ("function" = $(type -t __git_ps1)) ]]; then
+        current_branch=$(__git_ps1)
+        for ith_remote in $(__git_remotes); do
+            set -x
+            git push "${ith_remote}" "${current_branch}"
+            { set +x; } 2>/dev/null
+        done
+    else
+        echo "Error: You need to have the ~/.git-completion and ~/.git-prompt files." >&2
+        echo "They are located at:" >&2
+        echo "  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash" >&2
+        echo "  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh" >&2
+    fi
+}
+export -f gpa
+
 function create_shortcut() {
     if [[ $# -ne "1" ]]; then
         echo "usage: $ short <shortcut_alias>"
@@ -703,7 +732,7 @@ export -f line
 
 function tabs() {
     if [[ $# -eq 1 && -f $1 ]]; then
-        diff -U 0 <(tab "${1}") "${1}"
+        diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}"
     else
         echo -e "Error: File does not exist.\nUsage: $ tab <file>" 1>&2
     fi
@@ -712,7 +741,7 @@ export -f tabs
 
 function numtabs() {
     if [[ $# -eq 1 ]]; then
-        diff -U 0 <(tab "${1}") "${1}" | grep -v ^@ | tail -n +3 | wc -l
+        diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}" | wc -l
     else
         echo -e "Error: Incorrect number of args." 1>&2
         echo -e "Usage: $ numtabs <file>" 1>&2
@@ -722,9 +751,10 @@ export -f numtabs
 
 function untabify() {
     if [[ $# -eq 1 ]]; then
+        echo "There are [$(numtabs ${1})] tabs in [${1}]"
         echo "Tabs -> 4 spaces in [${1}]..."
         tmpfilename="${1}.expanded4.$(date +%F__%T | tr '-' '_' | tr ':' '_')"
-        tab "${1}" > "${tmpfilename}"
+        expand -i --tabs=4 "${1}" > "${tmpfilename}"
         \mv -i "${tmpfilename}" "${1}"
     else
         echo -e "Usage: $ untabify <file>" 1>&2
@@ -734,11 +764,33 @@ export -f untabify
 
 
 ## 6) Miscellaneous
+# Auto-complete only the most recently modified file
+function _complete_tl() {
+    # For debugging:
+    # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]"
+    if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
+        latest_filename=$(find "${2}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
+        if [[ -n "${latest_filename}" ]]; then
+            if [[ "${2}" == */ ]]; then
+                COMPREPLY="${2}${latest_filename}"
+            else
+                COMPREPLY="${2}/${latest_filename}"
+            fi
+        fi
+    elif [[ "${COMP_CWORD}" -eq 1 ]]; then
+        COMPREPLY=$(ls -t | head -n 1)
+    fi
+}
+export -f _complete_tl
+complete -o default -F _complete_tl tl
+complete -o default -F _complete_tl l
+complete -o default -F _complete_tl les
+
 # SSH auto-completion based on entries in known_hosts.
 if [[ -f ~/.ssh/known_hosts && -f ~/.ssh/config ]]; then
     ssh_complete="$(cat <(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | grep -v '[0-9]\.' | grep -v '\[') <(grep "^Host" ~/.ssh/config | cut -d ' ' -f 2-) | sort | uniq)"
-    alias hosts="echo \${ssh_complete}"
     complete -o default -W "${ssh_complete}" ssh scp host
+    alias hosts="echo \${ssh_complete}"
 fi
 
 complete -o default -W "$(compgen -A function | grep -v ^_)" func
@@ -761,7 +813,7 @@ function sem() {
     if [ -n "$1" ]; then
         search_file $1 ~/.machine
     else
-        echo "Error: Missing argument to search for."
+        echo "Error: Missing argument to search for." >&2
     fi
 }
 export -f sem
