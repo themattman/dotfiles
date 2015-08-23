@@ -22,10 +22,7 @@ emacs_packages=($auto_complete_url $python_mode_url)
 
 install_from_source=0
 no_backup=0
-green=""
-cyan=""
-red=""
-endcolor=""
+declare green cyan red endcolor
 
 # Command-line Parsing
 usage() { echo "Usage: $0 [-h] [-ns]" 1>&2; exit 1; }
@@ -72,12 +69,14 @@ case $ostype in
 	;;
 esac
 
-function safely_softlink_file() {
+safely_softlink_file() {
     # Softlinks $1 to $2
     #  or $1 to ${HOME}/$1 if only one argument is given
     # Backs up the target ($2 or ${HOME}/$1) if $no_backup is 0.
     local file=$1
     local to_location=$2
+
+    # Set default softlink target if needed
     if [[ -z $to_location ]]; then
 	to_location="${HOME}/${file}"
     else
@@ -125,9 +124,9 @@ if [[ $install_from_source -eq 1 ]]; then
     done
 else
     for pkg in $emacs_packages; do
-    if [[ -d $pkg ]]; then
-	cp -r ${auto_complete}/* "${HOME}/.emacs.d"
-    fi
+	if [[ -d $pkg ]]; then
+	    cp -r ${auto_complete}/* "${HOME}/.emacs.d"
+	fi
     done
 fi
 set +x
@@ -136,11 +135,11 @@ set +x
 # Install dotfiles except .git and .gitignore
 #
 echo -ne "\n"
+hostname=$(hostname)
 for dotfile in $(find . -maxdepth 1 -name '.?*'); do
     dotfile=${dotfile#./} #strip leading ./ from paths
     if [[ $dotfile != ".gitignore" && $dotfile != ".git" ]]; then
 	safely_softlink_file ${dotfile}
-	local hostname=$(hostname)
 	if [[ $dotfile == ".bashrc" &&  -n $hostname ]]; then
 	    sed -e "s/MACHINE_NAME .*/${hostname}/" $dotfile
 	fi
