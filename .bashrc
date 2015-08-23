@@ -730,37 +730,40 @@ function line() {
 }
 export -f line
 
-function tabs() {
-    if [[ $# -eq 1 && -f $1 ]]; then
-        diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}"
-    else
-        echo -e "Error: File does not exist.\nUsage: $ tab <file>" 1>&2
-    fi
-}
-export -f tabs
+case $OSTYPE in
+linux*)
+    function tabs() {
+	if [[ $# -eq 1 && -f $1 ]]; then
+	    diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}"
+	else
+	    echo -e "Error: File does not exist.\nUsage: $ tab <file>" 1>&2
+	fi
+    }
+    export -f tabs
 
-function numtabs() {
-    if [[ $# -eq 1 ]]; then
-        diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}" | wc -l
-    else
-        echo -e "Error: Incorrect number of args." 1>&2
-        echo -e "Usage: $ numtabs <file>" 1>&2
-    fi
-}
-export -f numtabs
+    function numtabs() {
+	if [[ $# -eq 1 ]]; then
+	    diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}" | wc -l
+	else
+	    echo -e "Error: Incorrect number of args." 1>&2
+	    echo -e "Usage: $ numtabs <file>" 1>&2
+	fi
+    }
+    export -f numtabs
 
-function untabify() {
-    if [[ $# -eq 1 ]]; then
-        echo "There are [$(numtabs ${1})] tabs in [${1}]"
-        echo "Tabs -> 4 spaces in [${1}]..."
-        tmpfilename="${1}.expanded4.$(date +%F__%T | tr '-' '_' | tr ':' '_')"
-        expand -i --tabs=4 "${1}" > "${tmpfilename}"
-        \mv -i "${tmpfilename}" "${1}"
-    else
-        echo -e "Usage: $ untabify <file>" 1>&2
-    fi
-}
-export -f untabify
+    function untabify() {
+	if [[ $# -eq 1 ]]; then
+            echo "There are [$(numtabs ${1})] tabs in [${1}]"
+            echo "Tabs -> 4 spaces in [${1}]..."
+            tmpfilename="${1}.expanded4.$(date +%F__%T | tr '-' '_' | tr ':' '_')"
+            expand -i --tabs=4 "${1}" > "${tmpfilename}"
+            \mv -i "${tmpfilename}" "${1}"
+	else
+            echo -e "Usage: $ untabify <file>" 1>&2
+	fi
+    }
+    export -f untabify
+esac
 
 
 ## 6) Miscellaneous
