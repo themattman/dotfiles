@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  07/27/2015
+# Last updated:  12/08/2015
 # Configuration: MACHINE_NAME # a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -28,32 +28,35 @@
 # 3) My world famous aliases
 # 4) Prompt String
 # 5) Bash Functions
-# 6) Miscellaneous
-# 7) Machine-Specific
+# 6) Bash Completion
+# 7) Miscellaneous
+# 8) Machine-Specific
+# 9) Cleanup
 
 
 ## 0) Bashrc Guard
 # The prompt string only gets set on interactive shells.
 # Don't apply custom configs if this is the case.
-if [ -z "${PS1}" ]; then
+if [ -z "$PS1" ]; then
     return
 fi
+
 
 ## 1) Internal Functions
 function source_file() {
     if [[ -f $1 ]]; then
         # Printing anything to stdout from a .bashrc breaks scp
-	# (and probably other things as well)
-	# https://en.wikipedia.org
-	#  /wiki
-	#  /Secure_copy
-	#  #Issues_using_talkative_shell_profiles
+        # (and probably other things as well)
+        # https://en.wikipedia.org
+        #  /wiki
+        #  /Secure_copy
+        #  #Issues_using_talkative_shell_profiles
         if [[ -n "${SSH_TTY}" ]]; then
             # echo "SSH_TTY - [${SSH_TTY}]"
-	    source $1 && echo ".:Success! Sourced $1 configs:."
-	else
-	    source $1
-	fi
+            source $1 && echo ".:Success! Sourced $1 configs:."
+        else
+            source $1
+        fi
     fi
 }
 
@@ -66,7 +69,9 @@ fi
 # Readlink replacement (for non-Ubuntu)
 alias realpath="python -c 'import os, sys; print os.path.realpath(sys.argv[1])'"
 # Bash Polyfills
-alias wget="curl -LO"
+if [[ ! -x $(which wget 2>/dev/null) ]]; then
+    alias wget="curl -LO"
+fi
 alias icurl="curl -I"
 
 
@@ -88,7 +93,6 @@ linux*)
     fi
     # ls
     alias sl="ls -F --color"
-    alias s="ls -F --color"
     alias ls="ls -F --color"
     alias lsl="ls -F --color -lh"
     alias lh="ls -F --color -alh"
@@ -97,6 +101,7 @@ linux*)
     alias asl="ls -F --color -alth"
     alias las="ls -F --color -alth"
     alias lsa="ls -F --color -alth"
+    alias lsar="ls -F --color -alth -r"
     alias sal="ls -F --color -alth"
     alias sla="ls -F --color -alth"
     alias lg="ls -F --color -alth --group-directories-first"
@@ -108,6 +113,8 @@ linux*)
     alias acs="sudo apt-cache search"
     alias agi="sudo apt-get install"
 
+    alias wa="watch -n 1"
+
     # System Info
     alias cores="cat /proc/cpuinfo | grep -c processor"
     alias os="lsb_release -d | cut -d: -f 2 | sed 's/^\s*//'" # Linux Distro
@@ -118,7 +125,6 @@ linux*)
 darwin*)
     # ls
     alias sl="ls -FGS" # sorted by size
-    alias s="ls -FG"
     alias lsl="ls -lh -FG"
     alias lh="ls -alh -FGS"
     alias l="ls -alth -FG"
@@ -140,6 +146,7 @@ darwin*)
 esac
 
 ## 3b) Basic bash aliases
+DATE_FORMAT="+%Y_%m_%d__%H_%M_%S"
 alias rem="remove_trailing_spaces"
 #alias !="sudo !!" # This is a terrible alias and breaks a lot of stuff
 alias c="cd -"     # Use Ctrl-L instead of aliasing this to clear
@@ -147,9 +154,13 @@ alias cp="cp -i"   # Warn when overwriting
 alias mv="mv -i"   # Warn when overwriting
 alias d="diff -U 0"
 alias dw="diff -U 0 -w" # Ignore whitespace differences
+alias dff="diff --changed-group-format='%<' --unchanged-group-format=''"
+alias s="source"
 alias a="alias"
 alias un="unalias"
 alias rd="readlink -f"
+alias dx="dos2unix"
+alias sum="paste -sd+ - | bc" # A column of numbers should be piped into this one
 # Prepare Build Environment
 alias pb="ps2 && unsf && una && echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 # Clear all aliases, useful when they get in the way
@@ -165,9 +176,10 @@ alias chax="chmod a+x"
 alias chux="chmod u+x"
 alias bell="tput bel"
 alias y="yes"
-
-alias tmake="(time make) &> \$(date +%F__%T | tr '-' '_' | tr ':' '_')"
-alias cdate="date +%F__%T | tr '-' '_' | tr ':' '_'"
+alias no="yes | tr 'y' 'n'"
+alias tmake="(\time -v make -j\$(cores)) &> \$(date $DATE_FORMAT)"
+alias cdate="date $DATE_FORMAT"
+alias nof="find ./ -maxdepth 1 -type f | wc -l" # Faster than: alias nof="ls -l . | egrep -c '^-'"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 alias f="fg"       # Yes, I'm really lazy
@@ -177,7 +189,8 @@ alias jl="jobs"    #  I always want to see the jobs' pids
 alias kl="kill %%" # Kill most recent background job
 # Print out definition of bash function
 alias func="declare -f"  # could also be "type" but more succinct output.
-alias funcu="declare -f" # only useful for auto-complete. See `6) Miscellaneous`
+alias funcu="declare -f" # only useful for auto-complete. See `7) Miscellaneous`
+alias comp="complete -p"
 # Optional Shell Behavior
 shopt -s cdable_vars
 shopt -s cdspell
@@ -221,6 +234,12 @@ alias emasc="\emacs -nw" #  gets appended once
 alias emacs="\emacs -nw"
 # Repo
 alias rs="repo sync -j\$(cores)"
+# Screen
+alias scr="screen -r"
+alias sc="screen -S"
+alias scl="screen -ls"
+alias scd="screen -D -R" # Re-attach to screen that is attached
+alias detach="screen -d -m" # Run a command inside screen
 # Git
 source_file ~/.git-completion
 if [[ -f ~/.git-completion ]]; then
@@ -247,6 +266,9 @@ alias gbl="git blame"
 alias ga="git add"
 alias gco="git commit"
 alias gm="git commit -m"
+alias gma="git commit --amend"
+alias gmn="git commit --no-verify -m"
+alias gmna="git commit --no-verify --amend"
 alias gss="git status"
 alias gsu="git status -s"
 alias gs="git status -s -uno" # Don't show untracked files
@@ -268,6 +290,7 @@ alias gsl="git shortlog -sn"            # All authors in this branch's history
 alias gnew="git log HEAD@{1}..HEAD@{0}" # Show commits since last pull
 alias gc="git checkout"
 alias gch="git checkout -- ."
+alias gcf="git config --list" # List all inherited Git config values
 alias gcl="git clone"
 alias gpo="git push origin \$(git rev-parse --abbrev-ref HEAD)"
 alias gbr="git rev-parse --abbrev-ref HEAD" # Works on 1.7.x & 1.8.x
@@ -310,7 +333,8 @@ export HISTFILESIZE=100000
 alias r="fc -s"
 # LESS
 alias less="\less -iFXR" # I typically don't like aliasing program names
-alias les="\less -iFXR"
+alias les="\less -iFXR +G" # +G goes to end of file
+
 # Node.js
 alias n="node"
 alias nd="node server"
@@ -321,7 +345,7 @@ alias vv="virtualenv"
 # PS
 alias psa="ps aux"
 alias p="ps aux | grep -v grep | grep \$(echo \$USER)"
-alias psm="ps aux | grep mongo"
+alias psm="ps aux | grep mongo | grep -v grep"
 alias pse="ps fe -o \"%c %p %P\""
 alias pe="ps fe -o \"%p\" --no-headers --ppid"
 alias pid="ps fe --pid"
@@ -332,6 +356,7 @@ alias wdp="pwd"
 alias wpd="pwd"
 alias dpw="pwd"
 alias dwp="pwd"
+alias ppwd="echo \${HOSTNAME}:\$(pwd)"
 # Python
 alias py="python"
 alias pys="python -m SimpleHTTPServer"
@@ -353,6 +378,7 @@ alias eb="\$EDITOR ~/.bashrc"
 alias ebb="\$EDITOR ~/.bash_profile"
 alias em="\$EDITOR ~/.machine"
 alias ee="\$EDITOR ~/.emacs"
+alias eg="\$EDITOR ~/.gitconfig"
 alias es="\$EDITOR ~/.ssh/config"
 alias vb="vim ~/.bashrc"
 alias sb="source ~/.bashrc"
@@ -403,20 +429,37 @@ linux*)
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
     PS_BRANCHCOLOR="${PS_PRE}${LIGHTCYAN}${PS_POST}"
+    PS_STYCOLOR="${PS_PRE}${LIGHTPURPLE}${PS_POST}"
     if [[ ! -f ~/.git-prompt ]]; then
         if [[ -z $SSH_CONNECTION ]]; then
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            fi
         else
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            fi
         fi
     else
         if [[ -z $SSH_CONNECTION ]]; then
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            fi
         else
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            fi
         fi
     fi
-    alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
+    alias ps1="export PS1='${PS1}'" # Intentionally not escaping $PS1 varname
     alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
 ;;
 darwin*)
@@ -477,21 +520,38 @@ darwin*)
     PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
     PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
     PS_BRANCHCOLOR="${PS_PRE}${CYAN}${PS_POST}"
+    PS_STYCOLOR="${PS_PRE}${HPURPLE}${PS_POST}"
     if [[ ! -f ~/.git-prompt ]]; then
         if [[ -z $SSH_CONNECTION ]]; then
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            fi
         else
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            fi
         fi
     else
         if [[ -z $SSH_CONNECTION ]]; then
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+            fi
         else
-            export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            if [[ -n "$STY" ]]; then
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            else
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            fi
         fi
     fi
-    alias ps1="export PS1=\"${PS1}\"" # Intentionally not escaping $PS1 varname
-    alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
+    alias ps1="export PS1='${PS1}'" # Intentionally not escaping $PS1 varname
+    alias ps2="export PS1='${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
 ;;
 esac
 if [[ -z $SSH_CONNECTION ]]; then
@@ -540,7 +600,7 @@ alias gen="genpasswd"
 #        /getting-the-last-argument-passed-to-a-shell-script
 function mkd() { mkdir -p "${@}" && cd "${@: -1}"; }
 function mkdd() {
-    local dir=$(date +%F__%T | tr '-' '_' | tr ':' '_');
+    local dir=$(date $DATE_FORMAT);
     mkdir -p "${dir}" && cd "${dir}";
 }
 export -f mkd
@@ -688,20 +748,19 @@ function unsf() { unset_custom_functions f; }
 export -f uns
 export -f unsf
 
+# Git Push to all remotes
 function gpa() {
-    # Git Push to all remotes
-    if [[ ("function" = $(type -t __git_remotes)) && ("function" = $(type -t __git_ps1)) ]]; then
-        current_branch=$(__git_ps1)
+        if [[ "function" = $(type -t __git_remotes) ]]; then
+        local current_branch=$(git rev-parse --abbrev-ref HEAD)
         for ith_remote in $(__git_remotes); do
             set -x
             git push "${ith_remote}" "${current_branch}"
             { set +x; } 2>/dev/null
         done
     else
-        echo "Error: You need to have the ~/.git-completion and ~/.git-prompt files." >&2
-        echo "They are located at:" >&2
-        echo "  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash" >&2
-        echo "  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh" >&2
+        echo "Error: You need to have the well-known ~/.git-completion file." >&2
+        echo "It is located at:" >&2
+        echo "  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash" >&2 && return 1
     fi
 }
 export -f gpa
@@ -733,40 +792,166 @@ export -f line
 case $OSTYPE in
 linux*)
     function tabs() {
-	if [[ $# -eq 1 && -f $1 ]]; then
-	    diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}"
-	else
-	    echo -e "Error: File does not exist.\nUsage: $ tab <file>" 1>&2
-	fi
+        if [[ $# -ne 1 ]]; then
+            echo "Usage: tabs FILE" >&2 && return 1
+        elif [[ ! -f $1 ]]; then
+            echo "Error: $1 is not a regular file." >&2 && return 1
+        fi
+        diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}"
     }
     export -f tabs
 
     function numtabs() {
-	if [[ $# -eq 1 ]]; then
-	    diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}" | wc -l
-	else
-	    echo -e "Error: Incorrect number of args." 1>&2
-	    echo -e "Usage: $ numtabs <file>" 1>&2
-	fi
+        if [[ $# -ne 1 ]]; then
+            echo "Usage: numtabs FILE" >&2 && return 1
+        elif [[ ! -f $1 ]]; then
+            echo "Error: $1 is not a regular file." >&2 && return 1
+        fi
+        diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}" | wc -l
     }
     export -f numtabs
 
     function untabify() {
-	if [[ $# -eq 1 ]]; then
-            echo "There are [$(numtabs ${1})] tabs in [${1}]"
-            echo "Tabs -> 4 spaces in [${1}]..."
-            tmpfilename="${1}.expanded4.$(date +%F__%T | tr '-' '_' | tr ':' '_')"
-            expand -i --tabs=4 "${1}" > "${tmpfilename}"
-            \mv -i "${tmpfilename}" "${1}"
-	else
-            echo -e "Usage: $ untabify <file>" 1>&2
-	fi
+        if [[ $# -eq 1 ]]; then
+            echo -e "Usage: untabify FILE" >&2 && return 1
+        fi
+        echo "There are [$(numtabs ${1})] tabs in [${1}]"
+        echo "Tabs -> 4 spaces in [${1}]..."
+        local tmpfilename="${1}.expanded4.$(date $DATE_FORMAT)"
+        tab "${1}" > "${tmpfilename}"
+        \mv -i "${tmpfilename}" "${1}"
     }
     export -f untabify
 esac
 
+function search_file() { \grep --color=always -in $1 $2; }
+# 1: Number of args to calling script
+# 2: First arg to calling script (search term)
+# 3: File to search
+function search_file_wrapper() {
+    if [[ $1 -ne 1 ]]; then
+        echo "Usage: ${FUNCNAME[1]} SEARCH_TERM" >&2 && return 1
+    elif [[ ! -f "$3" ]]; then
+        echo "Error: $3 is not a regular file" >&2 && return 1
+    fi
+    search_file $2 $3
+}
+function se() { search_file_wrapper $# $1 ~/.bashrc; }
+export -f se
 
-## 6) Miscellaneous
+# Tell if something is a new alias
+function al() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: al ALIAS" >&2 && return 1
+    fi
+    is_defined=$(type -t $1)
+    if [[ -n "${is_defined}" ]]; then
+        echo "Yes"
+    else
+        echo "No"
+    fi
+}
+export -f al
+
+# Generate a TAGS file for emacs
+function gentags() {
+    if [[ 'c' = $1 ]]; then
+        time find . -iname "*.[ch]" -o -iname "*.cc" 2>/dev/null | xargs etags -a 2>/dev/null &
+    else
+        time find . -iname "*.[ch]" -o -iname "*.cc" -o -iname "*.[ch]pp" 2>/dev/null | xargs etags -a 2>/dev/null &
+    fi
+}
+export -f gentags
+
+
+## 6) Bash Completion
+# enable bash completion in interactive shells
+# recursively sources everything in /etc/bash_completion.d/
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+   . /etc/bash_completion
+fi
+
+function _add_completion_function() {
+    for i in ${@}; do
+        # echo "${i}"
+        # echo "*${_custom_user_functions[@]}*"
+        _custom_user_functions=("${_custom_user_functions[@]}" "${i}")
+        # echo "=${_custom_user_functions[@]}="
+    done
+    alias cust="echo \${_custom_user_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
+}
+export -f _add_completion_function
+
+function remove_all_completion_functions() {
+    # echo "REMOVING ALL [${_custom_user_functions[@]}]"
+    if [[ "${#_custom_user_functions}" -gt 0 ]]; then
+        for i in "${_custom_user_functions[@]}"; do
+            # echo "r - $i"
+            complete -r $i 2>/dev/null
+        done
+    fi
+    unset _custom_user_functions
+}
+export -f remove_all_completion_functions
+
+# Auto-complete only the most recently modified file
+function _complete_tl() {
+    # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
+    if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
+        local latest_filename=$(find "${2}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
+        if [[ -n "${latest_filename}" ]]; then
+            if [[ "${2}" == */ ]]; then
+                COMPREPLY="${2}${latest_filename}"
+            else
+                COMPREPLY="${2}/${latest_filename}"
+            fi
+        fi
+    elif [[ "${COMP_CWORD}" -eq 1 ]]; then
+        COMPREPLY=$(\ls -t --color=never | head -n 1)
+    fi
+}
+export -f _complete_tl
+complete -o default -F _complete_tl tl l les dx \
+    && _add_completion_function tl l les dx
+
+_mkneiser_ssh_completion () {
+    # SSH auto-completion based on entries in known_hosts.
+    if [[ -f ~/.ssh/known_hosts && -f ~/.ssh/config ]]; then
+        ssh_complete="$(cat <(sed 's/[, ].*//' ~/.ssh/known_hosts | grep -v '[0-9]\.' | grep -v '\[') <(grep "^Host" ~/.ssh/config | cut -d ' ' -f 2-) | sort | uniq)"
+        alias hosts="echo \${ssh_complete}"
+    fi
+}
+
+complete -o default -W '$(compgen -A function | grep -v ^_)' func && _add_completion_function func
+# Include functions that are prefixed with an underscore
+complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completion_function funcu
+
+# Add bash auto-completion to `screen -r` alias
+function _complete_scr() {
+    local does_screen_exist=$(type -t _screen_sessions)
+    local cur=$2 # Needed by _screen_sessions
+    if [[ "function" = "${does_screen_exist}" ]]; then
+        _screen_sessions "Detached"
+    fi
+}
+export -f _complete_scr
+complete -F _complete_scr scr && _add_completion_function scr
+# Add bash auto-completion to `screen -D -R` alias
+function _complete_scd() {
+    local does_screen_exist=$(type -t _screen_sessions)
+    local cur=$2 # Needed by _screen_sessions
+    if [[ "function" = "${does_screen_exist}" ]]; then
+        _screen_sessions "Attached"
+    fi
+}
+export -f _complete_scd
+complete -F _complete_scd scd && _add_completion_function scd
+
+# Man page auto-completion
+complete -W "$(find /usr/share/man/man* -type f | cut -d'/' -f6- | cut -d'.' -f1 | sort | uniq)" man m && _add_completion_function m
+
+
+## 7) Miscellaneous
 # Auto-complete only the most recently modified file
 function _complete_tl() {
     # For debugging:
@@ -810,13 +995,11 @@ xterm*|rxvt*)
 esac
 
 
-## 7) Machine-Specific
+## 8) Machine-Specific
 source_file ~/.machine
-function sem() {
-    if [ -n "$1" ]; then
-        search_file $1 ~/.machine
-    else
-        echo "Error: Missing argument to search for." >&2
-    fi
-}
+function sem() { search_file_wrapper $# $1 ~/.machine; }
 export -f sem
+
+
+## 9) Cleanup
+unset DATE_FORMAT
