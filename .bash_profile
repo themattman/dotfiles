@@ -3,7 +3,7 @@
 #
 # Author:       Matt Kneiser
 # Created:      02/06/2014
-# Last updated: 07/22/2015
+# Last updated: 04/15/2016
 
 # Bashrc Guard
 if [ -z "${PS1}" ]; then
@@ -37,10 +37,14 @@ cat <<WELCOME_MSG
 WELCOME_MSG
 fi
 
+# Make sure IFS is set correctly
+unset IFS
+
 # Make backspace work
 #stty erase ^H
 
 export EDITOR="emacs -nw"
 export GIT_EDITOR="emacs -nw"
 export MAN_PAGER="less -i"
+export USER_EMAIL="" # Set this
 source ~/.bashrc
