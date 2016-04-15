@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  12/08/2015
+# Last updated:  04/15/2016
 # Configuration: MACHINE_NAME # a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -33,7 +33,6 @@
 # 8) Machine-Specific
 # 9) Cleanup
 
-
 ## 0) Bashrc Guard
 # The prompt string only gets set on interactive shells.
 # Don't apply custom configs if this is the case.
@@ -43,7 +42,7 @@ fi
 
 
 ## 1) Internal Functions
-function source_file() {
+source_file() {
     if [[ -f $1 ]]; then
         # Printing anything to stdout from a .bashrc breaks scp
         # (and probably other things as well)
@@ -51,8 +50,8 @@ function source_file() {
         #  /wiki
         #  /Secure_copy
         #  #Issues_using_talkative_shell_profiles
-        if [[ -n "${SSH_TTY}" ]]; then
-            # echo "SSH_TTY - [${SSH_TTY}]"
+        if [[ ((-n "${SSH_TTY}") || (-n "${DESKTOP_SESSION}")) && (-z $2) ]]; then
+            # echo "TTY - [${SSH_TTY}], DESKTOP - [${DESKTOP_SESSION}]"
             source $1 && echo ".:Success! Sourced $1 configs:."
         else
             source $1
@@ -92,7 +91,7 @@ linux*)
         alias treel="tree | less -iFXR"
     fi
     # ls
-    alias sl="ls -F --color"
+    alias sl="ls -Slh"
     alias ls="ls -F --color"
     alias lsl="ls -F --color -lh"
     alias lh="ls -F --color -alh"
@@ -119,7 +118,7 @@ linux*)
     alias cores="cat /proc/cpuinfo | grep -c processor"
     alias os="lsb_release -d | cut -d: -f 2 | sed 's/^\s*//'" # Linux Distro
 
-    # Tabs -> Spaces
+    # Tabs -> spaces
     alias tab="expand -i --tabs=4"
 ;;
 darwin*)
@@ -140,7 +139,7 @@ darwin*)
     alias cores="sysctl hw.ncpu | awk '{print \$2}'"
     alias os="sw_vers" # -productVersion
 
-    # Tabs -> Spaces
+    # Tabs -> spaces
     alias tab="expand -t 4"
 ;;
 esac
@@ -152,6 +151,7 @@ alias rem="remove_trailing_spaces"
 alias c="cd -"     # Use Ctrl-L instead of aliasing this to clear
 alias cp="cp -i"   # Warn when overwriting
 alias mv="mv -i"   # Warn when overwriting
+alias ln="ln -i"   # Warn when overwriting
 alias d="diff -U 0"
 alias dw="diff -U 0 -w" # Ignore whitespace differences
 alias dff="diff --changed-group-format='%<' --unchanged-group-format=''"
@@ -161,10 +161,6 @@ alias un="unalias"
 alias rd="readlink -f"
 alias dx="dos2unix"
 alias sum="paste -sd+ - | bc" # A column of numbers should be piped into this one
-# Prepare Build Environment
-alias pb="ps2 && unsf && una && echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
-# Clear all aliases, useful when they get in the way
-alias una="unalias -a && alias sbb=\"source ~/.bash_profile\""
 alias pu="pushd"
 alias po="popd"
 alias wh="which"
@@ -233,6 +229,11 @@ alias e="\emacs -nw"     # Escape emacs so that -nw only
 alias emasc="\emacs -nw" #  gets appended once
 alias emacs="\emacs -nw"
 # Repo
+alias rf="repo forall -c"
+alias rfs="repo forall -c 'pwd && git status -s -uno'"
+alias rfps="repo forall -c 'pwd && git status -s'"
+alias rfg="repo forall -c 'pwd && git remote | xargs -I{} git pull {}'"
+#alias rfg="repo forall -c 'pwd && git rev-parse --abbrev-ref HEAD | xargs -I{} git pull origin {}'"
 alias rs="repo sync -j\$(cores)"
 # Screen
 alias scr="screen -r"
@@ -241,12 +242,13 @@ alias scl="screen -ls"
 alias scd="screen -D -R" # Re-attach to screen that is attached
 alias detach="screen -d -m" # Run a command inside screen
 # Git
-source_file ~/.git-completion
+source_file ~/.git-completion no_output # Will have to re-source this file later
 if [[ -f ~/.git-completion ]]; then
     __git_complete ga _git_add
     __git_complete gb _git_branch
     __git_complete gc _git_checkout
     __git_complete gcl _git_clone
+    __git_complete gt _git_stash
     __git_complete gd _git_diff
     __git_complete gdr _git_diff
     __git_complete gl _git_log
@@ -257,21 +259,32 @@ if [[ -f ~/.git-completion ]]; then
     __git_complete gsh _git_show
 fi
 
+alias branches="for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
 alias g="git pull origin \$(git rev-parse --abbrev-ref HEAD)"
+alias gf="git fetch"
 alias gp="git push"
 alias gb="git branch"
 alias gba="git branch -a"
 alias gvv="git branch -vv"
 alias gbl="git blame"
 alias ga="git add"
+alias gaf="git add -f"
 alias gco="git commit"
 alias gm="git commit -m"
 alias gma="git commit --amend"
 alias gmn="git commit --no-verify -m"
 alias gmna="git commit --no-verify --amend"
+alias gmam="git commit --amend -C HEAD"
+alias gmamn="git commit --amend -C HEAD --no-verify"
+alias gt="git stash"
+alias gtc="git stash clear"
+alias gtd="git stash drop"
+alias gtl="git stash list"
+alias gts="git stash show"
 alias gss="git status"
-alias gsu="git status -s"
-alias gs="git status -s -uno" # Don't show untracked files
+alias gssi="git status --ignored"   # Show ignored files
+alias gsu="git status -s --ignored" # Show ignored files
+alias gs="git status -s -uno"       # Don't show untracked files
 alias gd="git diff"
 alias gds="git diff --staged"
 alias gdss="git diff --stat"
@@ -291,7 +304,6 @@ alias gnew="git log HEAD@{1}..HEAD@{0}" # Show commits since last pull
 alias gc="git checkout"
 alias gch="git checkout -- ."
 alias gcf="git config --list" # List all inherited Git config values
-alias gcl="git clone"
 alias gpo="git push origin \$(git rev-parse --abbrev-ref HEAD)"
 alias gbr="git rev-parse --abbrev-ref HEAD" # Works on 1.7.x & 1.8.x
 alias grf="git reflog" # List all commits current branch points to
@@ -313,7 +325,8 @@ alias gconl="git config --list"
 alias findgit="git rev-parse --git-dir"
 alias gitdir="git rev-parse --git-dir"
 alias toplevel="dirname \$(git rev-parse --git-dir)"
-alias findgits="find . -name .git -type d"
+alias findgits="find . -name .git -type d -prune | tee gits.txt" # Once found, don't continue to descend under git dir
+alias findtags="find . -name .git -type d -prune | xargs -I % sh -c 'echo -en \"%: \"; git --git-dir=% describe --tags --abbrev=0'"
 # GREP
 alias gre="grep -Iirsn --color=always"   # case-insensitive
 alias grel="grep -Iirsnl --color=always" # case-insensitive
@@ -334,7 +347,6 @@ alias r="fc -s"
 # LESS
 alias less="\less -iFXR" # I typically don't like aliasing program names
 alias les="\less -iFXR +G" # +G goes to end of file
-
 # Node.js
 alias n="node"
 alias nd="node server"
@@ -371,6 +383,10 @@ alias mvi="vim"
 alias miv="vim"
 alias imv="vim"
 alias ivm="vim"
+# Android
+alias gass="./gradlew assemble"
+alias gid="./gradlew installDebug"
+alias gaid="./gradlew assemble installDebug"
 
 ## 3d) Common
 alias ed="\$EDITOR ~/.diary" # Programmer's Diary
@@ -381,8 +397,13 @@ alias ee="\$EDITOR ~/.emacs"
 alias eg="\$EDITOR ~/.gitconfig"
 alias es="\$EDITOR ~/.ssh/config"
 alias vb="vim ~/.bashrc"
-alias sb="source ~/.bashrc"
-alias sbb="source ~/.bash_profile"
+alias sb="ps2; remove_all_completion_functions; source ~/.bashrc"
+# This command should wipe out the previous environment and start over
+alias sbb="ps2; remove_all_completion_functions; unsf; unalias -a; source ~/.bash_profile"
+# Clear all aliases, useful when they get in the way
+alias una="ps2; unsf; unalias -a; alias sbb=\"source ~/.bash_profile\""
+# Prepare Build Environment
+alias pb="una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 
 
 ## 4) Prompt String
@@ -430,18 +451,19 @@ linux*)
     PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
     PS_BRANCHCOLOR="${PS_PRE}${LIGHTCYAN}${PS_POST}"
     PS_STYCOLOR="${PS_PRE}${LIGHTPURPLE}${PS_POST}"
+    # export PS4="${LIGHTPURPLE}+${ENDCOLOR} " #messes up scripts :/
     if [[ ! -f ~/.git-prompt ]]; then
         if [[ -z $SSH_CONNECTION ]]; then
             if [[ -n "$STY" ]]; then
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             else
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             fi
         else
             if [[ -n "$STY" ]]; then
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
             else
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
             fi
         fi
     else
@@ -460,7 +482,7 @@ linux*)
         fi
     fi
     alias ps1="export PS1='${PS1}'" # Intentionally not escaping $PS1 varname
-    alias ps2="export PS1=\"${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} \""
+    alias ps2="export PS1='${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
 ;;
 darwin*)
     # Bash Colors
@@ -524,15 +546,15 @@ darwin*)
     if [[ ! -f ~/.git-prompt ]]; then
         if [[ -z $SSH_CONNECTION ]]; then
             if [[ -n "$STY" ]]; then
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             else
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             fi
         else
             if [[ -n "$STY" ]]; then
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
             else
-                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\ ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                export PS1="${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
             fi
         fi
     else
@@ -565,11 +587,13 @@ fi
 ## 5) Bash Functions
 
 # Kill Child Processes
-# Input: PID
-# Usage: $ kcp 9540
-function kcp() {
+# TODO: Check PID of process after the SIGTERM before SIGKILLing
+kcp() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: kcp PID" >&2 && return 1
+    fi
     echo "Killing children of: ${1}."
-    command="ps fe -o %p --no-headers --ppid ${1}"
+    local command="ps fe -o %p --no-headers --ppid ${1}"
     ${command} | xargs kill -15
     echo "Done."
     echo "Killing: ${1}."
@@ -580,9 +604,10 @@ function kcp() {
 export -f kcp
 
 # Generate "Random Enough" Password
-# Input: Number of chars for password length (optional)
-# Usage: $ genpasswd [num_chars=16]
-function genpasswd() {
+genpasswd() {
+    if [[ $# -gt 1 ]]; then
+        echo "Usage: genpasswd [LENGTH]" >&2 && return 1
+    fi
     local l=$1
     [ "$l" == "" ] && l=16
     LC_CTYPE=C tr -dc A-Za-z0-9_ < /dev/urandom | head -c ${l} | xargs
@@ -598,32 +623,40 @@ alias gen="genpasswd"
 #        /questions
 #        /1853946
 #        /getting-the-last-argument-passed-to-a-shell-script
-function mkd() { mkdir -p "${@}" && cd "${@: -1}"; }
-function mkdd() {
+mkd() { mkdir -p "${@}" && cd "${@: -1}"; }
+mkdd() {
     local dir=$(date $DATE_FORMAT);
     mkdir -p "${dir}" && cd "${dir}";
 }
 export -f mkd
 export -f mkdd
 
-# 80 Char Line Checker
-# Input: Max number of chars per line and the name of the file to check
-# Usage: $ longer line_length filename
-function longer() {
-    if [[ -z $2 ]]; then
-        echo "usage: $ longer <length_of_line> <file>" && return 1
+# 80 Char Line Checker. Prints lines that have more than LINE_LENGTH characters
+longer() {
+    if [[ $# -ne 2 ]]; then
+        if [[ $# -eq 1 ]]; then
+            line_length=80
+            file=$1
+        else
+            echo "Usage: longer LINE_LENGTH FILE" >&2 && return 1
+        fi
+    else
+        line_length=$1
+        file=$2
     fi
-    command="sed -n /^.\{$1\}/p $2"
-    ${command}
+    if [[ ! -f $file ]]; then
+        echo "Error: $file is not a regular file" >&2 && return 1
+    fi
+    grep -nE ^.{82} $file | cut -f1 -d: | xargs -I{} sh -c "echo -n "{}:" && sed -n {},{}p $file | grep --color=always -E ^.{81}"
 }
 export -f longer
 
 # Trailing Whitespace Remover
-# Input: Filename
-# Usage: $ rem filename
-function remove_trailing_spaces() {
-    if [[ -z $1 ]]; then
-        echo "usage: $ rem <file>" && return 1
+remove_trailing_spaces() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: rem FILE" >&2 && return 1
+    elif [[ ! -f $1 ]]; then
+        echo "Error: $1 is not a regular file" >&2 && return 1
     fi
     sed -i 's/[ \t]*$//' $1
 } # aliased, no need to export
@@ -636,64 +669,65 @@ function remove_trailing_spaces() {
 #   /What-are-some-time-saving-tips-that-every-Linux-user-should-know
 #   /answer
 #   /Sasha-Matijasic
-function cd() {
-local -ri n=${#*};
-  # Don't modify cd's behavior if
-  #  $ cd
-  #  $ cd <dir>
-  #  $ cd -
-  if [ "$n" -eq 0 -o -d "${!n}" -o "${!n}" == "-" ]; then
-    builtin cd "$@";
-    # Condense dotted paths to dots
-  else
-    local e="s:\.\.\.:../..:g";
-    builtin cd "${@:1:$n-1}" $(sed -e$e -e$e -e$e <<< "${!n}");
-  fi
+cd() {
+    local -ri n=${#*};
+    # Don't modify cd's behavior if
+    #  $ cd
+    #  $ cd <dir>
+    #  $ cd -
+    if [ "$n" -eq 0 -o -d "${!n}" -o "${!n}" == "-" ]; then
+        builtin cd "$@";
+    else
+        # Condense dotted paths to dots
+        local e="s:\.\.\.:../..:g";
+        builtin cd "${@:1:$n-1}" $(sed -e$e -e$e -e$e <<< "${!n}");
+    fi
 }
 export -f cd
 
 # Git Hook Checker
-# Input: None
-# Usage: $ hooks
-function hooks() {
+hooks() {
     if [[ $(git rev-parse --is-bare-repository) == "false" ]]; then
-    if [[ $(git rev-parse --is-inside-work-tree) == "true" ]]; then
-        gitdir=$(git rev-parse --git-dir)
-        echo $(realpath "${gitdir}/hooks/")
-        ls -lh "${gitdir}/hooks/"
-    fi
+        if [[ $(git rev-parse --is-inside-work-tree) == "true" ]]; then
+            local gitdir=$(git rev-parse --git-dir)
+            echo $(realpath "${gitdir}/hooks/")
+            ls -lh "${gitdir}/hooks/"
+        else
+            echo "Error: not inside working tree." >&2 && return 1
+        fi
+    else
+        echo "Error: cannot be in a bare repository." >&2 && return 1
     fi
 }
 export -f hooks
 HOOK_SRC="\$(git config --get init.templatedir)"
-if [ -n "${HOOK_SRC}" ]; then
+if [[ -n "${HOOK_SRC}" ]]; then
     alias hook="cp -rp \${HOOK_SRC}/hooks \$(findgit)/hooks"
 fi
 
 # Rapid Python Prototyping
 # Usage: $ tmp    # creates temp python file
 #        $ rmp    # removes it
-function safely_call() {
+safely_call() {
     local temp_dir="${HOME}/tmp"
-    if [[ -d $temp_dir ]]; then
-       $1
-    else
-        echo "Error: ${temp_dir} doesn't exist" >&2
+    if [[ ! -d $temp_dir ]]; then
+        echo "Error: ${temp_dir} doesn't exist" >&2 && return 1
     fi
+    $1
 }
-function create_temp_py_file() {
+create_temp_py_file() {
     local temp_dir="${HOME}/tmp"
-    local tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.py)" || exit 1;
+    local tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.py)" || return 1;
     # These sed's are designed to be cross-platform
     sed -e "s/# Created:/# Created: $(date)/" ${temp_dir}/template.py \
-    | sed -e "s/# Author:/# Author:  $(echo $USER)/" > ${tmpfile}
+        | sed -e "s/# Author:/# Author:  $(echo $USER)/" > ${tmpfile}
     ${EDITOR} ${tmpfile}
 }
-function tmp() {
+tmp() {
     safely_call create_temp_py_file
 }
 export -f tmp
-function remove_all_empty_temp_files() {
+remove_all_empty_temp_files() {
     local temp_dir="${HOME}/tmp"
     for file in $(\ls "${temp_dir}"); do
         file="${temp_dir}/${file}"
@@ -706,51 +740,39 @@ function remove_all_empty_temp_files() {
         fi
     done
 }
-function rmp() {
+rmp() {
     safely_call remove_all_empty_temp_files
 }
 export -f rmp
 alias temp="${EDITOR} ${HOME}/tmp/template.py"
 
-function search_file() {
-    \grep --color=always -in $1 $2
-}
-function se() {
-    if [ -n "$1" ]; then
-        search_file $1 ~/.bashrc
-    else
-        echo "Error: Missing argument to search for."
-    fi
-}
-export -f se
-
-function unset_custom_functions() {
-    counter=0
+unset_custom_functions() {
+    local counter=0
     if [[ $1 == "f" ]]; then
-        echo -n "unsetting all..."
+        echo -n "unsetting all custom user functions..."
         for i in $(compgen -A function); do
-            unset $i
+            unset $i &> /dev/null || unset -f $i
             counter=$((counter+1))
         done
     else
-        echo -n "unsetting non-essential..."
+        echo -n "unsetting non-essential custom user functions..."
         for i in $(compgen -A function); do
             if [[ ! $i =~ "_git" ]]; then
-                unset $i
+                unset $i &>/dev/null || unset -f $i
                 counter=$((counter+1))
             fi
         done
     fi
     echo " done. ($counter functions unset)"
 }
-function uns() { unset_custom_functions; }
-function unsf() { unset_custom_functions f; }
+uns() { unset_custom_functions; }
+unsf() { unset_custom_functions f; }
 export -f uns
 export -f unsf
 
 # Git Push to all remotes
-function gpa() {
-        if [[ "function" = $(type -t __git_remotes) ]]; then
+gpa() {
+    if [[ "function" = $(type -t __git_remotes) ]]; then
         local current_branch=$(git rev-parse --abbrev-ref HEAD)
         for ith_remote in $(__git_remotes); do
             set -x
@@ -765,33 +787,46 @@ function gpa() {
 }
 export -f gpa
 
-function create_shortcut() {
+create_shortcut() {
     if [[ $# -ne "1" ]]; then
-        echo "usage: $ short <shortcut_alias>"
-        return
+        echo "Usage: short NEW_ALIAS" >&2 && return 1
     fi
-    echo "alias $1=\"cd ${PWD}\" #generated by alias 'short'" >> ~/.machine
+
+    is_alias=$(type -t $1)
+    if [[ "${is_alias}" = "alias" ]]; then
+        echo "Error: $1 is already an alias." >&2 && return 1
+    fi
+    echo "alias $1=\"cd ${PWD// /\\ }\" #generated by alias 'short'" >> ~/.machine
     source_file ~/.machine
-    echo "alias $1=\"cd ${PWD}\" #generated by alias 'short'"
+    echo "alias $1=\"cd ${PWD// /\\ }\" #generated by alias 'short'"
 }
-function short() { create_shortcut "$@"; }
+short() { create_shortcut "$@"; }
 export -f short
 
-#TODO: error check number of args, print usage, --help
-function body() {
+body() {
+    if [[ $# -ne 3 ]]; then
+        echo "Usage: body START FINISH FILE" >&2 && return 1
+    elif [[ ! -f $3 ]]; then
+        echo "Error: $3 is not a regular file." >&2 && return 1
+    fi
     sed -n ${1},${2}p ${3}
+
 }
 export -f body
 
-#TODO: error check number of args, print usage, --help
-function line() {
+line() {
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: line LINE_NUMBER_TO_ECHO FILE" >&2 && return 1
+    elif [[ ! -f $2 ]]; then
+        echo "Error: $2 is not a regular file." >&2 && return 1
+    fi
     sed -n ${1},${1}p ${2}
 }
 export -f line
 
 case $OSTYPE in
 linux*)
-    function tabs() {
+    tabs() {
         if [[ $# -ne 1 ]]; then
             echo "Usage: tabs FILE" >&2 && return 1
         elif [[ ! -f $1 ]]; then
@@ -801,7 +836,7 @@ linux*)
     }
     export -f tabs
 
-    function numtabs() {
+    numtabs() {
         if [[ $# -ne 1 ]]; then
             echo "Usage: numtabs FILE" >&2 && return 1
         elif [[ ! -f $1 ]]; then
@@ -811,7 +846,7 @@ linux*)
     }
     export -f numtabs
 
-    function untabify() {
+    untabify() {
         if [[ $# -eq 1 ]]; then
             echo -e "Usage: untabify FILE" >&2 && return 1
         fi
@@ -824,23 +859,27 @@ linux*)
     export -f untabify
 esac
 
-function search_file() { \grep --color=always -in $1 $2; }
+search_file() { echo "grep [$1] [$2]" >&2; \grep --color=always -in "$1" $2; }
 # 1: Number of args to calling script
 # 2: First arg to calling script (search term)
 # 3: File to search
-function search_file_wrapper() {
+search_file_wrapper() {
+    echo -e "searching for [${LIGHTCYAN}${2}${ENDCOLOR}] in [${LIGHTCYAN}${3}${ENDCOLOR}]" >&2
     if [[ $1 -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[1]} SEARCH_TERM" >&2 && return 1
     elif [[ ! -f "$3" ]]; then
         echo "Error: $3 is not a regular file" >&2 && return 1
     fi
-    search_file $2 $3
+    search_file "$2" $3
 }
-function se() { search_file_wrapper $# $1 ~/.bashrc; }
+se() { search_file_wrapper $# "$1" ~/.bashrc; }
 export -f se
 
+seb() { search_file_wrapper $# "$1" ~/.emacs; }
+export -f seb
+
 # Tell if something is a new alias
-function al() {
+al() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: al ALIAS" >&2 && return 1
     fi
@@ -854,7 +893,7 @@ function al() {
 export -f al
 
 # Generate a TAGS file for emacs
-function gentags() {
+gentags() {
     if [[ 'c' = $1 ]]; then
         time find . -iname "*.[ch]" -o -iname "*.cc" 2>/dev/null | xargs etags -a 2>/dev/null &
     else
@@ -863,6 +902,41 @@ function gentags() {
 }
 export -f gentags
 
+# Similar to mkd() but for Git Clone
+gcl() {
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: gcl URL" >&2 && return 1
+    fi
+    # echo "\$#: [$#] \$@: [$@] \${!#%.git}: ${!#%.git} basename: $(basename ${!#%.git})"
+    git clone $@
+    if [[ $# -gt 1 ]]; then
+        cd $(basename ${!#%.git})
+    else
+        cd $(basename ${1%.git})
+    fi
+}
+export -f gcl
+
+# Similar to mkd() but for unzip(1)
+unz() {
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: unz URL" >&2 && return 1
+    fi
+    unzip $1 -d ${1%.zip}
+    cd $(basename ${1%.zip})
+}
+export -f unz
+
+bk() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: bk PATH" >&2 && return 1
+    fi
+    set -x
+    cp -ipr ${1%/} ${1%/}.bk
+    { set +x; } 2>/dev/null
+}
+export -f bk
+
 
 ## 6) Bash Completion
 # enable bash completion in interactive shells
@@ -870,8 +944,10 @@ export -f gentags
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
    . /etc/bash_completion
 fi
+source_file ~/.git-completion # This needs to be re-sourced after
+                              #  the previous line. TODO: Consider moving above line
 
-function _add_completion_function() {
+_add_completion_function() {
     for i in ${@}; do
         # echo "${i}"
         # echo "*${_custom_user_functions[@]}*"
@@ -882,7 +958,7 @@ function _add_completion_function() {
 }
 export -f _add_completion_function
 
-function remove_all_completion_functions() {
+remove_all_completion_functions() {
     # echo "REMOVING ALL [${_custom_user_functions[@]}]"
     if [[ "${#_custom_user_functions}" -gt 0 ]]; then
         for i in "${_custom_user_functions[@]}"; do
@@ -894,8 +970,7 @@ function remove_all_completion_functions() {
 }
 export -f remove_all_completion_functions
 
-# Auto-complete only the most recently modified file
-function _complete_tl() {
+_complete_most_recently_modified_file() {
     # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
     if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
         local latest_filename=$(find "${2}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
@@ -910,24 +985,15 @@ function _complete_tl() {
         COMPREPLY=$(\ls -t --color=never | head -n 1)
     fi
 }
-export -f _complete_tl
-complete -o default -F _complete_tl tl l les dx \
-    && _add_completion_function tl l les dx
-
-_mkneiser_ssh_completion () {
-    # SSH auto-completion based on entries in known_hosts.
-    if [[ -f ~/.ssh/known_hosts && -f ~/.ssh/config ]]; then
-        ssh_complete="$(cat <(sed 's/[, ].*//' ~/.ssh/known_hosts | grep -v '[0-9]\.' | grep -v '\[') <(grep "^Host" ~/.ssh/config | cut -d ' ' -f 2-) | sort | uniq)"
-        alias hosts="echo \${ssh_complete}"
-    fi
-}
-
+export -f _complete_most_recently_modified_file
+complete -o default -F _complete_most_recently_modified_file tl l les dx unz \
+    && _add_completion_function tl l les dx unz
 complete -o default -W '$(compgen -A function | grep -v ^_)' func && _add_completion_function func
 # Include functions that are prefixed with an underscore
 complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completion_function funcu
 
 # Add bash auto-completion to `screen -r` alias
-function _complete_scr() {
+_complete_scr() {
     local does_screen_exist=$(type -t _screen_sessions)
     local cur=$2 # Needed by _screen_sessions
     if [[ "function" = "${does_screen_exist}" ]]; then
@@ -937,7 +1003,7 @@ function _complete_scr() {
 export -f _complete_scr
 complete -F _complete_scr scr && _add_completion_function scr
 # Add bash auto-completion to `screen -D -R` alias
-function _complete_scd() {
+_complete_scd() {
     local does_screen_exist=$(type -t _screen_sessions)
     local cur=$2 # Needed by _screen_sessions
     if [[ "function" = "${does_screen_exist}" ]]; then
@@ -946,45 +1012,44 @@ function _complete_scd() {
 }
 export -f _complete_scd
 complete -F _complete_scd scd && _add_completion_function scd
+complete -f bk && _add_completion_function bk
+complete -W '$(compgen -a)' a && _add_completion_function a
+complete -F _apt_get_install agi && _add_completion_function agi
+_apt_get_install() {
+    local cur prev special i;
+    COMPREPLY=();
+    _get_comp_words_by_ref cur prev;
+    if [[ ${#COMP_WORDS[@]} -gt 2 ]]; then
+        # Once one package name has been completed, stop
+        COMPREPLY=()
+    else
+        COMPREPLY=($( apt-cache --no-generate pkgnames "$cur" ))
+    fi
+}
+export -f _apt_get_install
+complete -F _mail_addresses mail && _add_completion_function mail
+_mail_addresses() {
+    local cur prev special i;
+    COMPREPLY=();
+    _get_comp_words_by_ref cur prev;
+    email_address="${USER_EMAIL}"
+    email_host="@${USER_EMAIL#*@}"
+    # If you have typed a "@" in the most recent word, autocomplete the
+    #  USER's email domain.
+    # Also if you have typed a subset of my email address, autocomplete the rest
+    if [[ $cur == *"@"* ]]; then
+        COMPREPLY=("${cur%@*}${email_host}")
+    elif [[ (-z $cur || $email_address =~ $cur) && $prev != $email_address ]]; then
+        COMPREPLY=($email_address)
+    fi
+}
 
 # Man page auto-completion
 complete -W "$(find /usr/share/man/man* -type f | cut -d'/' -f6- | cut -d'.' -f1 | sort | uniq)" man m && _add_completion_function m
+complete -c which wh && _add_completion_function wh
 
 
 ## 7) Miscellaneous
-# Auto-complete only the most recently modified file
-function _complete_tl() {
-    # For debugging:
-    # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]"
-    if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
-        latest_filename=$(find "${2}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
-        if [[ -n "${latest_filename}" ]]; then
-            if [[ "${2}" == */ ]]; then
-                COMPREPLY="${2}${latest_filename}"
-            else
-                COMPREPLY="${2}/${latest_filename}"
-            fi
-        fi
-    elif [[ "${COMP_CWORD}" -eq 1 ]]; then
-        COMPREPLY=$(ls -t | head -n 1)
-    fi
-}
-export -f _complete_tl
-complete -o default -F _complete_tl tl
-complete -o default -F _complete_tl l
-complete -o default -F _complete_tl les
-
-# SSH auto-completion based on entries in known_hosts.
-if [[ -f ~/.ssh/known_hosts && -f ~/.ssh/config ]]; then
-    ssh_complete="$(cat <(cat ~/.ssh/known_hosts | sed 's/[, ].*//' | grep -v '[0-9]\.' | grep -v '\[') <(grep "^Host" ~/.ssh/config | cut -d ' ' -f 2-) | sort | uniq)"
-    complete -o default -W "${ssh_complete}" ssh scp host
-    alias hosts="echo \${ssh_complete}"
-fi
-
-complete -o default -W "$(compgen -A function | grep -v ^_)" func
-# Include functions that are prefixed with an underscore
-complete -o default -W "$(compgen -A function)" funcu
-
 # Set XTERM window name
 case "$TERM" in
 xterm*|rxvt*)
@@ -997,7 +1062,7 @@ esac
 
 ## 8) Machine-Specific
 source_file ~/.machine
-function sem() { search_file_wrapper $# $1 ~/.machine; }
+sem() { search_file_wrapper $# "$1" ~/.machine; }
 export -f sem
 
 
