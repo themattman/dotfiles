@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  04/15/2016
+# Last updated:  06/30/2016
 # Configuration: MACHINE_NAME # a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -37,6 +37,13 @@
 # The prompt string only gets set on interactive shells.
 # Don't apply custom configs if this is the case.
 if [ -z "$PS1" ]; then
+    return
+fi
+
+# Not doing much at the moment (remember, .bashrc should only be sourced
+#  within bash), might want to try something else here
+if [[ ! $SHELL =~ "bash" ]]; then
+    echo "Not running bash. Exiting. Shell=[ $SHELL ]"
     return
 fi
 
@@ -153,6 +160,7 @@ alias cp="cp -i"   # Warn when overwriting
 alias mv="mv -i"   # Warn when overwriting
 alias ln="ln -i"   # Warn when overwriting
 alias d="diff -U 0"
+alias dr="diff -r"
 alias dw="diff -U 0 -w" # Ignore whitespace differences
 alias dff="diff --changed-group-format='%<' --unchanged-group-format=''"
 alias s="source"
@@ -176,6 +184,7 @@ alias no="yes | tr 'y' 'n'"
 alias tmake="(\time -v make -j\$(cores)) &> \$(date $DATE_FORMAT)"
 alias cdate="date $DATE_FORMAT"
 alias nof="find ./ -maxdepth 1 -type f | wc -l" # Faster than: alias nof="ls -l . | egrep -c '^-'"
+alias o="echo \$OLDPWD"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 alias f="fg"       # Yes, I'm really lazy
@@ -202,8 +211,8 @@ shopt -s progcomp # on by default
 alias k="kill -9"    # SIGKILL
 alias ke="kill -15"  # SIGTERM
 # Machine Control
-alias reboot="shutdown -r now"
-alias sleep="shutdown -s now"
+alias reboot="sudo shutdown -r now"
+alias sleep="sudo shutdown -s now"
 case $OSTYPE in
 linux*)
     # Ctrl-Alt-l also locks screen in Ubuntu or use this alias
@@ -245,18 +254,34 @@ alias detach="screen -d -m" # Run a command inside screen
 source_file ~/.git-completion no_output # Will have to re-source this file later
 if [[ -f ~/.git-completion ]]; then
     __git_complete ga _git_add
+    __git_complete gaf _git_add
+    __git_complete gau _git_add
     __git_complete gb _git_branch
     __git_complete gc _git_checkout
     __git_complete gcl _git_clone
     __git_complete gt _git_stash
     __git_complete gd _git_diff
+    __git_complete gdbb _git_diff
+    __git_complete gdsb _git_diff
     __git_complete gdr _git_diff
+    __git_complete gdrs _git_diff
+    __git_complete gds _git_diff
+    __git_complete gdss _git_diff
+    __git_complete gdsss _git_diff
     __git_complete gl _git_log
+    __git_complete gls _git_log
+    __git_complete gll _git_log
+    __git_complete gg _git_log
     __git_complete g _git_pull
     __git_complete gp _git_push
     __git_complete gpo _git_push
     __git_complete gr _git_reset
     __git_complete gsh _git_show
+    __git_complete gshh _git_show
+    __git_complete gshn _git_show
+    __git_complete gshs _git_show
+    __git_complete gshhs _git_show
+    __git_complete gshhn _git_show
 fi
 
 alias branches="for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
@@ -268,8 +293,10 @@ alias gba="git branch -a"
 alias gvv="git branch -vv"
 alias gbl="git blame"
 alias ga="git add"
+alias gau="git add -u"
 alias gaf="git add -f"
 alias gco="git commit"
+alias gcon="git commit --no-verify"
 alias gm="git commit -m"
 alias gma="git commit --amend"
 alias gmn="git commit --no-verify -m"
@@ -320,7 +347,7 @@ alias grhh="git reset HEAD~1"
 alias g--="git --version"
 alias ge="git config user.email"
 alias gu="git config user.name"
-alias gcon="git config"
+alias gcn="git config"
 alias gconl="git config --list"
 alias findgit="git rev-parse --git-dir"
 alias gitdir="git rev-parse --git-dir"
@@ -344,6 +371,8 @@ export HISTSIZE=100000
 export HISTFILESIZE=100000
  # Easily re-execute the last history command
 alias r="fc -s"
+# Networking
+alias getip="nslookup"
 # LESS
 alias less="\less -iFXR" # I typically don't like aliasing program names
 alias les="\less -iFXR +G" # +G goes to end of file
@@ -403,7 +432,7 @@ alias sbb="ps2; remove_all_completion_functions; unsf; unalias -a; source ~/.bas
 # Clear all aliases, useful when they get in the way
 alias una="ps2; unsf; unalias -a; alias sbb=\"source ~/.bash_profile\""
 # Prepare Build Environment
-alias pb="una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
+alias pb="remove_all_completion_functions; una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 
 
 ## 4) Prompt String
@@ -937,6 +966,27 @@ bk() {
 }
 export -f bk
 
+rtrav() {
+    test -e $2/$1 && echo $2 || { test $2 != / && rtrav $1 `dirname $2`;};
+}
+export -f rtrav
+
+wow() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: wow COMMAND" >&2 && return 1
+    fi
+    \ls  $(which "$1")
+}
+export -f wow
+
+wowz() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: wowz COMMAND" >&2 && return 1
+    fi
+    ls -alh $(which "$1")
+}
+export -f wowz
+
 
 ## 6) Bash Completion
 # enable bash completion in interactive shells
@@ -988,6 +1038,18 @@ _complete_most_recently_modified_file() {
 export -f _complete_most_recently_modified_file
 complete -o default -F _complete_most_recently_modified_file tl l les dx unz \
     && _add_completion_function tl l les dx unz
+
+# SSH auto-completion based on entries in known_hosts.
+if [[ -f ~/.ssh/known_hosts ]]; then
+    ssh_complete="$(sed 's/[, ].*//' ~/.ssh/known_hosts | grep -v '[0-9]\.' | grep -v '\[' | sort | uniq)"
+    alias hosts="echo \${ssh_complete}"
+fi
+if [[ -f ~/.ssh/config ]]; then
+    ssh_complete="$(cat <(echo $ssh_complete) <(grep \"^Host\" ~/.ssh/config | cut -d ' ' -f 2- | tr ' ' '\n') | sort | uniq)"
+fi
+
+complete -W '$(echo ${ssh_complete})' ssh scp host getip && _add_completion_function ssh scp host getip
+
 complete -o default -W '$(compgen -A function | grep -v ^_)' func && _add_completion_function func
 # Include functions that are prefixed with an underscore
 complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completion_function funcu
@@ -1014,7 +1076,7 @@ export -f _complete_scd
 complete -F _complete_scd scd && _add_completion_function scd
 complete -f bk && _add_completion_function bk
 complete -W '$(compgen -a)' a && _add_completion_function a
-complete -F _apt_get_install agi && _add_completion_function agi
+complete -F _apt_get_install agi acs && _add_completion_function agi acs
 _apt_get_install() {
     local cur prev special i;
     COMPREPLY=();
@@ -1022,6 +1084,16 @@ _apt_get_install() {
     if [[ ${#COMP_WORDS[@]} -gt 2 ]]; then
         # Once one package name has been completed, stop
         COMPREPLY=()
+    elif [[ "$cur" == -* ]]; then
+        COMPREPLY=($( compgen -W '-d -f -h -v -m -q -s -y -u -t -b -c -o \
+            --download-only --fix-broken --help --version --ignore-missing \
+            --fix-missing --no-download --quiet --simulate --just-print \
+            --dry-run --recon --no-act --yes --assume-yes --show-upgraded \
+            --only-source --compile --build --ignore-hold --target-release \
+            --no-upgrade --force-yes --print-uris --purge --reinstall \
+            --list-cleanup --default-release --trivial-only --no-remove \
+            --diff-only --no-install-recommends --tar-only --config-file \
+            --only-upgrade --option --auto-remove' -- "$cur" ));
     else
         COMPREPLY=($( apt-cache --no-generate pkgnames "$cur" ))
     fi
@@ -1045,8 +1117,17 @@ _mail_addresses() {
 }
 
 # Man page auto-completion
-complete -W "$(find /usr/share/man/man* -type f | cut -d'/' -f6- | cut -d'.' -f1 | sort | uniq)" man m && _add_completion_function m
+complete -W "\$(find /usr/share/man/man* -type f | cut -d'/' -f6- | cut -d'.' -f1 | sort | uniq)" man m && _add_completion_function m
 complete -c which wh && _add_completion_function wh
+complete -W "\$(complete -p | rev | cut -d' ' -f1 | rev)" comp && _add_completion_function comp
+# complete -c gre && _add_completion_function gre
+# complete -c grep gree && _add_completion_function gree
+_grep_completion() {
+    _longopt grep
+}
+export -f _grep_completion
+complete -F _grep_completion gre gree && _add_completion_function gre gree
+complete -F _command wow wowz && _add_completion_function wow wowz
 
 
 ## 7) Miscellaneous
