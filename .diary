@@ -1,0 +1,1429 @@
+##
+# Programmer's Diary of interesting commands and things learned
+#
+# Author:       Matthew Kneiser <mattknize@gmail.com>
+# Date Created: 11/04/2014
+
+#
+# Whiteboard Pre-11/04/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git log -S<string>                      # git pickaxe
+tput bel                                # makes system ding, good for chaining
+                                        #  with long-running commands so they
+                                        #  notify you on completion
+find ./ -type f -exec sed -i -e 's///g' {} \;
+                                        # Note the necessity of the trailing
+                                        #  backslash.
+grep --colors=always                    # colorize matches
+grep -H                                 # alias for --with-filename,
+                                        #  defaults to true for multifile
+grep -h                                 # alias for --no-filename
+:tabnew                                 # vim command for creating tabs
+gt                                      # switch between vim tabs
+g                                       # goto BOF in `less'
+G                                       # goto EOF in `less'
+:%s/\s\+$//                             # Removes all trailing whitespace in
+                                        #  vim. Last two slashes are optional
+M-x toggle-truncate-lines               # Emacs
+M-x delete-trailing-whitespace          # Emacs
+C-j                                     # Emacs for <enter> + <tab>
+C-x z                                   # Emacs for repeat last command
+
+
+#
+# 11/04/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+gd <branch> <branch>                    # diff branches
+gd <branch> <branch> <file>             # diff file between branches
+gd --name-only <branch> <branch>
+gd --name-status <branch> <branch>
+gbl -L <line>,<line> <file>
+gr --soft HEAD~1                        # rollback commit, changes unstaged
+                                        #  convenient for diff'ing changes
+gr [--mixed] HEAD~1                     # rollback commit, changes staged
+gc --track <remote_branch>              # checkout remote branch
+C-x ^                                   # Emacs for increase buffer vertically
+M-x shell                               # Emacs terminal that you can C-x o with
+M-x term                                # Emacs fully-functional bash. Remember
+                                        #  to "exit" to close the process.
+M-x dired                               # Emacs traverse the file system
+
+#
+# 11/05/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-x tabify                              # Emacs, converts spaces to tabs
+M-x untabify                            # Emacs, converts tabs to spaces
+git filter-branch --tree-filter 'rm -f password.txt' -- --all
+                                        # Delete a password file from git history
+git branch -d <branch>                  # Try this first, will likely error
+git branch -D <branch>                  # Delete a git branch
+grep -Iirsl "map_name\[" dir/subdir/ |
+     xargs -I{} sed -i "s/map_name\[/new_map_name\[map_key\]\[/g" {}
+                                        # find/replace in-place in a dir
+git rev-parse --abbrev-ref HEAD         # this is the most portable way to get a
+                        # git branch name for automation
+git symbolic-ref --short HEAD           # this method doesn't work < 1.8.x
+
+#
+# 11/06/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git diff -b                             # Ignores whitespace in the diff
+git diff -R                             # Reverse the diff, shows whitespace well
+egrep -Iirsl ".+ +$" . | xargs -I{} sed -i 's/[ \t]*$//' {}
+                                        # Remove all trailing spaces from the dir
+                                        #  Need to work on the sed part because
+                                        #  it matches lines without ^.+ whereas
+                                        #  the grep does not
+
+#
+# 11/19/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-x C-p                                 # Emacs, select all in buffer
+M-;                                     # Emacs, comment/uncomment region
+C-j                                     # Emacs, <Enter> + <Tab>
+C-g C-_                                 # Emacs, Undo
+G/gg                                    # Less, EOF/BOF
+cat `which body` = sed -n $1,$2p $3
+sed '$d' <file>                         # Removes last line of file (prints to
+                                        #  stdout obvi)
+
+#
+# 11/24/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+y                                       # Less, scroll backward 1
+<ENTER>                                 # Less, scroll forward 1
+
+d                                       # Less, scroll forward half-page
+u                                       # Less, scroll backward half-page
+
+<SPACE>                                 # Less, scroll forward one page
+b                                       # Less, scroll backward one page
+
+#
+# 12/01/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+${PWD##*/}                              # Current working dirname in bash
+                                        #  concept known as "parameter expansion"
+git rev-parse --is-inside-work-tree
+git rev-parse --is-inside-git-dir
+git rev-parse --git-dir
+git rev-parse --show-prefix
+git rev-parse --show-cdup
+
+#
+# 12/04/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-s C-w                                 # Hightlight rest of current word
+                                        #  follow with Ctrl-s to search for word
+trap 'func_name or command_name' SIG    # Trap signals in a bash script and call
+                                        #  the handler. EXIT can be used for SIG
+                                        #  if you want something called on exit.
+
+#
+# 12/05/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+complete -o default -W "$()" ssh scp    # Use this command to inform bash's
+                                        #  auto-complete for 2 cmds for example.
+${@: -1}                                # Last argument to a bash script
+${!#}                                   # Same as previous
+${#@}                                   # TODO: Figure out which is more portable
+
+#
+# 12/10/2014
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git add -p/--patch                      # Interactively add chunks of file to git
+
+#
+# 01/05/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+awk should be used for validating a file against a regex, not sed or grep
+Add -Is to the grep in the pre-commit hook. What if a file got deleted in the
+commit?
+
+#
+# 01/12/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Emacs rectangles...
+C-x r t                                 # Emacs, edit multiple lines at once
+                                        # http://stackoverflow.com
+                                        #  /questions
+                                        #  /761706
+                                        #  /in-emacs-edit-multiple-lines-at-once
+M-x delete-whitespace-rectangle         # Deletes leading whitespace of region?
+
+#
+# 01/14/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+tail -f -n +0 <file>                    # Continuously tail a file from the
+                                        #  beginning
+
+#
+# 01/15/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+:                                       # No-op in bash
+echo -e "\a"                            # Make audible bell, same as tput bel
+
+                                        # --Emacs--
+C-x C-x                                 # Swap point & mark when selecting
+C-x C-u                                 # Uppercase region
+C-x C-l                                 # Lowercase region
+C-w                                     # Kill region
+M-w                                     # Copy region
+M-u                                     # Uppercase next word
+M-l                                     # Lowercase next word
+M-c                                     # Capitalize next word
+M-x check-parens                        # Checks for unmatched parens or brackets
+
+                                        # Following commands DO NOT WORK in
+                                        #  python's major mode
+C-M-f                                   # Jump to closing paren/brace
+C-M-b                                   # Jump to opening paren/brace
+M-r                                     # Jump to beginning of middle line of
+                                        #  current screen
+
+#
+# 01/16/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+diff <(git show <sha1>) <(git diff -R)  # the <() creates a temp named pipe
+dir <(git status -s)                    # Shows the trickery behind the <()
+
+#
+# 01/19/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+2>&1                                    # Must follow a file redirection yet must
+                                        #  precede a pipe.
+
+#
+# 01/21/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Emacs, tabs aren't showing with (setq whitespace-style...)
+^^Likely because emacs should be inserting spaces instead of tab chars
+
+#
+# 01/23/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-\                                     # Sends SIGQUIT, stronger than SIGINT
+less +F <filename>                      # Equivalent to tail -f, but you get to
+                                        #  use less's features. Also, press F
+                                        #  in less to go to end of latest file.
+
+#
+# 01/28/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+mail -s "SUBJECT" -a <attachment> <TO-EMAIL-ADDR>
+<BODY>
+^D
+                                        # Send email from the command line, with
+                                        #  attachments too!
+
+#
+# 01/29/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+pydoc <python_module>                   # Access python docs from command line
+man test                                # Don't have to google bash conditionals
+
+
+#
+# 02/03/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+<<<                                     # Here String
+                                        #  Performs brace/tilde/var expansion etc
+                                        # http://www.gnu.org
+                                        #  /software
+                                        #  /bash
+                                        #  /manual
+                                        #  /bashref.html#Here-Strings
+
+${!varname}                             # Indirect reference
+                                        #  Introduced in Bash 2
+${#*} -or- ${#@}                        # Number of positional parameters
+git gc                                  # Git cleanup, should be run regularly
+GIT_TRACE=true <git_commad>             # Shows debug output of what git is doing
+logger                                  # Shell interface for syslog
+
+## Experiment ##
+$ logger hello world
+$ tail -fn +0 /var/log/syslog
+...
+Feb  3 16:34:33 <hostname> <user>: hello world
+...
+## End Experiment ##
+
+#
+# 02/04/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sys.exit(main())                        # Great convention for __main__ in python
+sys.exit(main(sys.argv[1:]))
+
+#
+# 02/09/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-t                                     # Flip the two chars behind the cursor
+M-t                                     # Flip the two words behind the cursor
+                                        #  ^^ These work in Bash and Emacs
+
+#
+# 02/12/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+find -iname                             # case-insensitive search
+
+#
+# 02/13/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-s C-w [C-w..]                         # Keep pressing C-w to highlight more
+
+#
+# 02/24/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+(time make) &> $(date +%F__%T | tr '-' '_' | tr ':' '_')
+                                        # Send time and make output to a
+                                        #  timestamped file
+
+#
+# 03/06/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git diff -w | grep diff | awk '{print $3}' | cut -d'/' -f2-
+                                        # Show names of changed files ignoring
+                                        #  whitespace changes.
+
+#
+# 03/11/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sed -i.matt '/something/{s/something/newtext/g; w /dev/stdout
+> }' filename
+                                        # Prints out each replaced word from sed
+                                        #  note the newline separating the cmds.
+                                        #  http://stackoverflow.com/a/8236897
+find . -name "*.matt" -exec rm {} \;    # Remove all accidental sed backup files.
+git diff -w | grep diff | awk '{print $3}' | cut -d'/' -f2-
+                                        # Names of all files with more than
+                                        #  whitespace changes
+git diff --name-only --cached           # Names of all staged files
+
+#
+# 03/12/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sed -n 'p;n'                            # Print even lines
+sed -n 'n;p'                            # Print odd lines
+
+#
+# 03/16/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git rebase -i HEAD~<number of commits to squash>
+                                        # git squash. The prompts walk you
+                                        #  through everything. Make sure
+                                        #  $GIT_EDITOR isn't set to vim.
+git branch --set-upstream-to=<upstream_branch_w/o_"remotes"> <local_branch>
+                                        # upstream branch name can be found with
+                                        #  $ git branch -a
+                                        #  from there, remove the word "remotes"
+git rebase                              # https://felipec.wordpress.com/2013/09/0
+                                        #  1/advanced-git-concepts-the-upstream-t
+                                        #  racking-branch/
+git show -R                             # Works just like "git diff -R"...
+                                        #  reverses the diff output so you can
+                                        #  see trimmed whitespaces
+git checkout <sha1-commit-id> -- <file_to_checkout>
+                                        # Checkout and commit an old version of
+                                        #  a file from the history.
+
+#
+# 03/17/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-m                                     # Emacs, go to first non-whitespace char
+                                        #  on current line
+
+#
+# 04/01/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git reflog                              # Git git history... (commits, checkouts,
+                                        #  etc.)
+
+#
+# 04/02/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-M-a                                   # Emacs, go to beginning of cur function
+C-M-e                                   # Emacs, go to end of current function
+grep something_interesting my_file | mail -s "Grep output" email@address.com
+                                        # Send output of command as an email
+C-s C-s                                 # Emacs, repeat last search
+M-e                                     # Emacs I-search, pause search to edit
+                                        #  the search string
+M-c                                     # Emacs I-search, toggle case-
+                                        #  sensitivity
+tr -s ' '                               # Squeeze repeats - condenses multiple
+                                        #  spaces into one
+M-h                                     # Emacs, mark region to closest empty
+                                        #  newlines
+
+#
+# 04/06/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+(time make) &> $(date +%F__%T | tr '-' '_' | tr ':' '_') && \
+echo -e "Finished at: $(date +%F__%T)\n$(pwd)" | \
+mail -s "Your build is finished, $USER." <EMAIL>
+                                        # Email myself when a build is finished
+# on one line:
+(time make) &> $(date +%F__%T | tr '-' '_' | tr ':' '_') && echo -e "Finished at: $(date +%F__%T)\n$(pwd)" | mail -s "Your build is finished, $USER." <EMAIL>
+
+
+(START_TIME=$(date +%F__%T | tr '-' '_' | tr ':' '_'); echo "Start time: $START_TIME"; (time make) &> "$START_TIME"; echo -e "Finished at: $(date +%F__%T)\n$(pwd)/$START_TIME\n$(tail -n 30 $(pwd)/$START_TIME)" | mail -s "Your build has finished, $USER" <EMAIL>)
+                                        # Improved build auto-email notification
+
+alias diary="echo 'File attached. This email was sent via a bash alias.' | mail -s \"Your Programmer's Diary\" -a ~/.diary <EMAIL>"
+                                        # Email yourself the diary..
+
+#
+# 04/14/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git blame --reverse <last_good_commit_id>..HEAD -- <file_name>
+                                        # Find a line that was deleted. This
+                                        #  will find the last commit with the
+                                        #  line in it. You must go to the commit
+                                        #  immediately after it to find the
+                                        #  offender.
+
+#
+# 04/14/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git fetch <repo> <refspec> && git cherry-pick --strategy=recursive -X theirs FETCH_HEAD
+                                        # Cherry pick and prefer all the changes
+                                        #  from the remote end when merging.
+
+#
+# 05/06/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+# 1) Incorporate success/failure in the mail subject line
+# 2) Post-build script (only if it exists)
+(START_TIME=$(date +%F__%T | tr '-' '_' | tr ':' '_'); echo "Start time: $START_TIME"; (time make; BUILD_RESULT=$? && test $BUILD_RESULT -eq 0 && SUBJECT_LINE="Build SUCCESSFUL, $USER" && test -x ./post_build_script.sh && ./post_build_script.sh) &> "$START_TIME"; test $BUILD_RESULT -ne 0 && SUBJECT_LINE="Build FAILED, $USER"; echo -e "Started at: \t${START_TIME}\nFinished at: \t$(date +%F__%T)\n$(pwd)/${START_TIME}\n$(tail -n 30 $(pwd)/${START_TIME})" | mail -s "$SUBJECT_LINE" <EMAIL>)
+
+# In case it doesn't work:
+(START_TIME=$(date +%F__%T | tr '-' '_' | tr ':' '_'); echo "Start time: $START_TIME"; (time make || BUILD_RESULT=$? && test $BUILD_RESULT -eq 0 && test -x ./post_build_script.sh && ./post_build_script.sh) &> "$START_TIME"; echo -e "Started at: \t${START_TIME}\nFinished at: \t$(date +%F__%T)\n$(pwd)/${START_TIME}\n$(tail -n 30 $(pwd)/${START_TIME})" | mail -s "Your build has finished, $USER" <EMAIL>)
+
+# Fix for subshell inheritance issue
+(START_TIME=$(date +%F__%T | tr '-' '_' | tr ':' '_'); echo "Start time: $START_TIME"; (time make; BUILD_RESULT=$?; test $BUILD_RESULT -ne 0 && SUBJECT_LINE="Build FAILED, $USER"; test $BUILD_RESULT -eq 0 && SUBJECT_LINE="Build SUCCESSFUL, $USER" && test -x ./post_build_script.sh && ./post_build_script.sh) &> "$START_TIME"; echo -e "Started at: \t${START_TIME}\nFinished at: \t$(date +%F__%T)\n$(pwd)/${START_TIME}\n$(tail -n 30 $(pwd)/${START_TIME})" | mail -s "$SUBJECT_LINE" <EMAIL>
+
+#
+# 05/13/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+printf "%0.s-" {1..80} && echo          # Bash, print 80 hyphens
+
+#
+# 05/27/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-\                                     # Emacs, kill whitespace surrounding pt
+                                        #  lets you kill leading whitespace
+                                        #  when point is on the first char
+set -u                                  # The shell shall write a message to
+                                        #  standard error when it tries to expand
+                                        #  a variable that is not set and
+                                        #  immediately exit. An interactive shell
+                                        #  shall not exit.
+
+#
+# 06/15/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+nl                                      # Bash, prints out file with line numbers
+fold                                    # Bash, wrap contents to N cols
+
+#
+# 06/17/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+md5 (GNU/Linux) / md5sum (Unix)         # Run md5 checksum on a file, used to
+                                        #  verify downloads from internets
+
+#
+# 06/19/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+strings                                 # Finds all the strings in a file
+                                        #  Useful on shared libraries (.so) :)
+type                                    # Handy. Tells you if alias, installed,
+                                        #  etc. $ type type #for more info
+
+#
+# 06/22/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+rev                                     # Bash, reverse a line
+
+#
+# 06/23/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+find . -not -path '*.git*'              # Find all files in git directory
+                                        #  excluding everything under .git
+
+#
+# 06/24/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+pip install data_hacks                  # Awesome CLI visualization from Bit.ly
+                                        #  https://github.com/bitly/data_hacks
+
+#
+# 06/29/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+screen -S build_env -L -d -m ./build_script.sh
+                                        # Run build_script inside GNU screen when
+                                        #  on an ssh connection to keep it up.
+                                        #  Also logs output to a file.
+
+#
+# 06/30/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+notify-send "This is a notif."          # A program to send desktop notifications
+                                        #  in Ubuntu.
+find . -not -path '*/\.*'               # Find all files excluding hidden ones.
+C-x h                                   # Emacs, mark-whole-buffer
+C-M-\                                   # Emacs, indent-region
+
+#
+# 07/01/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+http://cloc.soureforge.net              # SLOC tool that I used for the GUI
+
+#
+# 07/02/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git apply                               # Takes the text patches (generate) and
+                                        #  applies them to the working tree
+git format-patch -1 HEAD --stdout       # Creates a text format of the latest
+                                        #  commit
+git config commit.cleanup whitespace    # Does a lot of whitespace/newline
+                                        #  cleanup for git commit messages
+                                        #  git-commit (1) for more. Add --global.
+git apply --check fix.patch             # Checks if the patch will work cleanly
+git am --signoff < fix.patch            # Same as git-apply but shows who signed
+                                        #  of on the patch
+git config --local -l                   # List git configs for (system, global,
+                                        #  local, file)
+set -b                                  # Async notifications of background jobs
+
+#
+# 07/08/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ctags                                   # Dunno yet
+
+#
+# 07/09/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+dpkg -S pkg-config                      # Show the install location of a package
+                                        #  Useful to determine if a package is
+                                        #  installed
+man --pager='less -p "getopts optstring"' bash
+                                        # Specify options for bash scripts
+
+#
+# 07/15/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+find . -name something -exec emacs -nw {} \;
+                                        # Open the file that's found in an editor
+                                        #  Often it's annoyhing to copy/paste
+                                        #  result in a new command to open.
+-or-
+emacs -nw $(find . -name something )    # Kind of prefer this. Can use alias for
+                                        #  editor. But it doesn't work...
+
+#
+# 07/16/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+type                                    # Windows equivalent of `cat`
+where                                   # Windows equivalent of `which`
+:label                                  # Windows create a label useful for loops
+goto label                              # Windows how to complete a loop
+:: Comment                              # Windows Batch Comment
+
+#
+# 07/17/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+exit                                    # How to quit a GNU screen session
+screen -r <TAB>                         # Tab completes your available GNU screen
+                                        #  sessions
+hosts | tr ' ' '\n'                     # Print an array on separate lines in
+                                        #  bash. References an alias [host].
+'const',
+'help',
+'option_strings',
+'dest',
+'required',
+'nargs',                                # A list of all the names you can use in
+'choices',                              #  Python's argparse in a help message
+'prog',                                 #  string formatter
+'container',
+'type',
+'metavar'
+GIT_TRACE=1 git init                    # Did not pick up the template - did pick
+                                        #  hooks though... Is this a git bug?
+
+#
+# 07/20/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git commit --amend --author="Matthew Kneiser <mattman@umich.edu>"
+                                        # Change the author on the most recent
+                                        #  commit.
+git commit --amend --date="$(date -R)"  # Change the date to NOW on the most
+                                        #  recent commit.
+
+#
+# 07/22/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sudo update-alternatives --config javac # Update javac version
+                                        # From: http://askubuntu.com
+                                        #        /questions
+                                        #        /117189
+                                        #        /apt-get-install-openjdk-7-jdk-doesnt-install-javac-why
+{ set +x; } 2>/dev/null                 # Silently turn off bash tracing
+echo "STDERR" >&2                       # Write to stderr from script
+
+#
+# 07/23/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+$(info text...)                         # GNU Make, print statements
+$(warning text...)
+$(error text...)
+
+#
+# 07/24/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git reset HEAD@{1}                      # Move back one step with Git using
+                                        #  the reflog
+
+#
+# 07/25/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+gcc -E                                  # Spits out compiler output. Feel free
+                                        #  to parse this.
+                                        #  http://stackoverflow.com/a/9896895
+ctags --version                         # Use Exhuberant Ctags not Original
+find . -iname "*.[ch]" -o -iname "*.cc" # Multiple name args to find
+find . -iname "*.[ch]" -o -iname "*.cc" | xargs etags -a
+                                        # Create a TAGS file for a repo
+                                        # Gitignore for TAGS:
+                                        #  https://github.com
+                                        #   /github
+                                        #   /gitignore
+                                        #   /blob
+                                        #   /master
+                                        #   /Global
+                                        #   /Tags.gitignore
+M-.                                     # Ctags
+M-. <tag>                               # Search for a particular tag
+C-u M-.                                 # Find the next definition for the last
+                                        #  tag
+M-*                                     # Pop back to where you previously
+                                        #  invoked "M-."
+
+#
+# 07/27/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git format-patch --to <EMAIL> HEAD~2..HEAD
+                                        # Create emailable patch of the two most
+                                        #  recent commits
+git send-email *.patch                  # Send patches by email
+                                        #  It will prompt you for the TO: field
+tar only *safely* works with relative paths. Full paths can be a security risk.
+
+#
+# 07/29/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git whatchanged --since="1 day ago" -p  # Great diff output for human-readable
+                                        #  time periods.
+/etc/bash_completion.d/                 # Great directory containing default
+                                        #  auto-completion files for programs
+complete -p screen                      # Show the completion function for a
+                                        #  given command (in this case `screen`)
+ps --pid PID &>/dev/null                # Returns 0 if PID exists, 1 otherwise
+git config --list                       # Show all git configs
+echo "${PATH:0:1}"                      # Bash, truncate/extract first character
+                                        #  in string
+complete -r                             # Remove all bash completion functions
+complete -p                             # Print out all bash completion functions
+git log -C                              # Skips renames when gathering log stats
+
+#
+# 08/03/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+cd ./dir; git rev-parse --git-dir       # Running git commands inside a subshell
+                                        #  within a git hook is messy.
+                                        #  They don't inherit a new env
+                                        #  when you cd. Strange! [BUG]
+set -e
+$(some conditionally failing command 2>/dev/null) || :
+                                        # Don't exit script when subshell exits
+                                        #  abnormally while set -e is configured.
+
+#
+# 08/05/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+!                                       # Emacs, in M-% (find-replace) mode, this
+                                        #  replaces all future occurrences
+
+#
+# 08/06/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+echo ${some%.proto}                     # Bash parameter expansion. Gets rid of
+                                        #  the extension ".proto" from the var
+
+#
+# 08/07/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+basename filename.txt .txt              # Trims extension of filename
+
+#
+# 08/11/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sudo update-ca-certificates             # Update your certs
+openssl s_client -showcerts -connect <HOST>:443 | tee logfile
+openssl x509 -inform PEM -in logfile -text -out certdata
+                                        # Get a cert from a host and inspect
+
+#
+# 08/13/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git config --get-regexp "^alias\."      # Print out all git aliases
+
+#
+# 08/13/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+__VA_ARGS__                             # C++ preprocessor macro, allows for a
+                                        #  function to take a variadic number of
+                                        #  args
+va_arg                                  # C++ macro in <stdarg.h>
+"%"PRIdPTR                              # Use in a C++ macro for platform-ind "d"
+                                        #  as in "%d"
+                                        #  $ man inttypes.h #for more info
+
+#
+# 08/18/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+COMPREPLY=( $(compgen ...) )            # Remember the outer parens when calling
+                                        #  compgen to generate COMPREPLY items
+
+#
+# 08/19/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+fromdos -d windows_file                 # Removes the ^M line endings, dos2unix
+                                        #  is aliased to fromdos
+                                        # Parameter expansion:
+                                        #  http://wiki.bash-hackers.org/syntax/pe
+
+#
+# 08/20/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ls -S                                   # Sort by file size
+sed -e 's/ $//'                         # Remove one trailing whitespace
+
+#
+# 08/24/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-a :flow-off                           # Disable flow control for this GNU
+C-a :info                               #  screen window. Confirm with info.
+defflow off                             # Does the same as above in .screenrc
+
+#
+# 08/26/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+screen -D -R 7992.build_env             # Detach the current session from whoever
+                                        #  is logged in or attached. Then attach
+                                        #  to it.
+M-x tags-apropos                        # Emacs, Tags commands...
+M-x list-tags                           #http://www.emacswiki.org/emacs/EmacsTags
+M-, (tags-loop-continue)
+sudo logrotate cron_rotate.conf         # Rotate a log file based on cmds in
+                                        #  that config file.
+                                        # It seems to me that you're supposed to
+                                        #  call this once per day and it will
+                                        #  optionally move the file to a new file
+                                        #  you must create a new file to replace
+                                        #  the original.
+
+#
+# 08/27/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+false                                   # Do nothing, unsuccessfully
+set -o pipefail                         # Return value of a pipeline is the
+                                        #  rightmost non-zero value or 0
+
+#
+# 08/31/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+top -u <USER>                           # Only show processes for one user
+diff -q <(git ls-remote origin -h refs/heads/master | awk '{print $1}') \
+     <(git rev-parse HEAD) &>/dev/null  # Returns 1 if the remote and local repos
+                                        #  are different. 0 otherwise.
+
+#
+# 09/04/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+make -qp 2>/dev/null | \
+     awk -F':' '/^[a-zA-Z0-9][^$#\/\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}' | \
+     sort &> sorted_target_list         # List all targets that a makefile
+                                        #  generates. Originates from Ubuntu's
+                                        #  bash completion for GNU make
+
+#
+# 09/08/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git diff --stat HEAD~19..HEAD | head -n -1 | tr -s ' ' | cut -d' ' -f4 | paste -sd+ - | bc
+                                        # Initial approach to counting modified
+                                        #  lines. Better methods below.
+git log --pretty=%H                     # Print all the sha's from a repo's
+                                        #  history
+git log --pretty=%H | tail -n 2 | head -n 1
+                                        # **Assumes first commit was a dump of
+                                        #   old code**
+                                        # Prints SHA of the second oldest commit
+git diff --stat $(git log --pretty=%H | tail -n 2 | head -n 1)..HEAD | head -n -1 | tr -s ' ' | cut -d' ' -f4 | grep -v [[:alpha:]] | paste -sd+ - | bc
+                                        # Print number of modified lines in
+                                        #  history except for first commit by
+                                        #  adding up all deletions and additions
+git diff --stat $(git log --pretty=%H | tail -n 2 | head -n 1)..HEAD | tail -n 1
+                                        # A more detailed breakdown of previous
+                                        #  exists after the initial git command
+                                        #
+                                        # ::BEST SUMMARY:: looks like this
+                                        #
+                                        #  8 files changed, 1657 insertions(+),
+                                        #  133 deletions(-)
+git diff --stat $(git log --pretty=%H | tail -n 2 | head -n 1)..HEAD -- FILENAME.c
+
+#
+# 09/22/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+jar tvf jarfile.jar                     # List classes in a Java jar file
+
+#
+# 09/25/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+d                                       # Emacs Buffer List Mode, mark for delete
+x                                       # Execute all actions like 'd' above
+
+#
+# 10/01/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+isearch-forward-regexp                  # Emacs, forward search regexp C-M-s
+
+#
+# 10/20/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git archive --remote=git@<HOST>:<ORG>/<REPO>.git \
+    REVISION:path/to/file.c | tar -x > file.c
+                                        # Grab one file from a git repo
+
+#
+# 10/23/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git push origin :branch_name            # Git, delete a remote branch
+
+
+#
+# 10/27/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git show REVISION:path/to/file          # Git, show full file at revision (HEAD)
+
+#
+# 11/03/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git tag -a "v1.00.4" -m "Stable build"  # Create a full git tag
+git describe --tags --abbrev=0          # Show most recent annotated git tag,
+                                        #  exits 1 otherwise
+
+#
+# 11/05/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sdiff                                   # side-by-side merge of file differences
+                                        #  easier alternative to diff
+
+#
+# 11/16/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+(C Course w/Rob Landley)
+lwn.net                                 # Plougher
+git annotate ${VERSION}^1 -- filename   # Git annotate one commit before given
+                                        #  commit
+
+#
+# 11/23/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+mm -B                                   # AOSP Build System, Unconditionally
+                                        #  make all targets. Clean/Re-build
+
+#
+# 12/09/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+head -n -4                              # Print all but the last 4 lines
+tail -n +4                              # Print all but the first 4 lines
+watch -n1 -d prebuilts/misc/linux-x86/ccache/ccache -s
+                                        # Watch CCache being used for the AOSP
+                                        #  build (http://source.android.com
+                                        #  /source/building.html)
+
+#
+# 12/15/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+adb shell wm size                       # Get screen dimensions from cmd line
+adb shell input keyevent 26 & adb shell input swipe 400 1900 500 1000 300
+                                        # Unlock screen from windows cmd line
+                                        #  This was for a 1600x2560 screen
+adb reboot bootloader                   # Force UE into fastboot mode
+Settings->Developer Options->Pointer Location
+                                        # Show user taps/swipes XY coords
+${some_var// /\\ }                      # Bash escape all spaces in var
+${some_var//\//\\}                      # Forward to back slashes
+
+#
+# 12/16/2015
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git log -1 --pretty=%B                  # Print latest git commit message
+
+#
+# 01/04/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+diff -r /some/dir /another/dir          # Compare two directories
+man utimes                              # System call that changes access and
+                                        # modification times of the inode
+
+#
+# 01/11/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+for i in `seq 8`; do name=$(echo "108+$i" | bc); ./compile.sh 2>&1 \
+    | tee "matts_last_hope.$name"; done # Runs the same command a few times and
+                                        #  logs output to a new filename
+sed -i "s/automake .autoconf/& .libtool/" vlc/extras/tools/tools.mak
+                                        # '&' refers to full match in a sed sub
+dpkg -s autotools-dev                   # Find version of -dev (or any) package
+whereis libtool                         # Better version of 'which' for finding!
+adb tcpip 555                           # Use adb over wifi w/o a cord
+adbconnect <IP>:5555
+
+#
+# 01/12/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+date +%Y_%m_%d__%H_%M_%S                # Better date format to use from now on
+rm 2016_01_12__16_01_37.!(1)            # Delete all log files except the one
+                                        #  matched by the pattern
+echo 2016_01_12__16_01_37.!(1) | tr ' ' '\n'
+                                        # Test the pattern match in above
+
+#
+# 01/19/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+xset [-]led named "Scroll Lock"         # Ubuntu, Toggle keyboard Scroll Lock LED
+df -h                                   # Omitting a path shows all partitions
+
+#
+# 01/20/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+echo "spellcheck this" | aspell list    # Spellchecker
+h                                       # Help when in 'less'
+
+#
+# 01/25/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git tag -d <tagname>                    # Delete a tag. Two step process.
+git push origin :refs/tags/<tagname>    #  Should alias these two steps.
+
+#
+# 01/26/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git commit --amend -C HEAD              # Amend most recent commit, keeping the
+                                        #  same commit message
+
+#
+# 01/27/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+gnome-open file.pdf                     # Gnome will invoke default program
+
+#
+# 01/27/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+curl -kL https://duckduckgo.com/?q=[1-3] -o "file_#1.html"
+                                        # Grab multiple files from a website
+tar caf something.tar.gz ./some_dir     # Compress a directory (non-obvious)
+
+
+#
+# 02/03/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git log --pretty=format:%s HEAD~1..HEAD # Get most recent commit message
+git log --pretty=oneline <old_tag>..<new_tag>
+                                        # Get list of sha's and commit msg's
+git whatchanged                         # Don't know what this is yet :)
+
+#
+# 02/11/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+./gradlew assemble |& less              # Redirect stderr and stdout to less
+
+#
+# 02/16/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+for k in `git branch -r | perl -pe 's/^..(.*?)( ->.*)?$/\1/'`; do echo -e `git show --pretty=format:"%Cgreen%ci %Cblue%cr%Creset" $k -- | head -n 1`\\t$k; done | sort -r
+                                        # Show sorted list of branches and last
+                                        #  commits on each one, colored too
+                                        #  src: https://gist.github.com/
+                                        #        jasonrudolph/1810768
+
+#
+# 02/18/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git clone ./android-app app-android     # Clone local repo as a new name
+
+#
+# 02/26/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+keytool -list -v -keystore $keystore -alias $alias -storepass $storepass
+                                        # Inspect keys in a keystore
+jarsigner -verify -verbose -certs myapk.apk
+                                        # Verify that an apk is signed properly
+
+#
+# 03/02/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+curl -C -                               # Curl will automatically continue a
+                                        #  download from where it left off
+wget -k/--convert-links                 # Wget will rewrite links to point to
+                                        #  local files OR remote ones
+wget -p                                 # Wget will retrieve all necessary files
+                                        #  to view offline
+wget --help                             # Much better than 'man wget'
+
+#
+# 03/04/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-<, M->                                # Bash, jump to first/last cmd
+readline customizations                 # In man bash, consider messing with
+
+#
+# 03/07/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+aapt dump badging app-debug.apk         # Inspect Manifest properties of apk
+find $ANDROID_HOME -name aapt           # Location of aapt tool
+
+#
+# 03/08/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+echo ${1%/}                             # Trims one trailing slash from a var
+                                        #  http://www.gnu.org
+                                        #   /software
+                                        #   /bash
+                                        #   /manual
+                                        #   /bashref.html
+                                        #   #Shell-Parameter-Expansion
+
+#
+# 03/09/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git checkout --orphan new_branch_name   # Create a branch with no history
+sudo apt-get install --only-upgrade firefox
+                                        # Only upgrade one package
+
+#
+# 03/14/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git rebase -p --onto SHA^ SHA           # Where SHA is the commit SHA you want
+                                        #  to nuke from history. Removes a commit
+                                        #  from your history.
+                                        # http://sethrobertson.github.io
+                                        #  /GitFixUm
+                                        #  /fixup.html
+pandas                                  # Great!! Python lib for data analysis
+                                        #  handles csv's well
+ipython notebook                        # Web-based python prezzie format
+
+#
+# 03/15/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+caller                                  # A builtin and variable that give you
+$FUNCNAME                               #  access to the Bash call stack
+
+#
+# 03/28/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+                                        ## Emacs
+C-x C-v                                 # Find new file if you opened the wrong
+                                        #  file. It will replace current buffer
+C-x C-x                                 # Swap point and mark. Useful for
+                                        #  expanding a highlighted section
+C-t                                     # Transpose prev two chars
+C-x u/l                                 # Uppercase/lowercase region
+M--                                     # *Negative argument*, usually reverses
+                                        #  command. Can use it to apply
+                                        #  backwards instead of forwards
+M-- M-u                                 # Uppercase previous word
+C-x s                                   # Save all open buffers, remain in yours
+C-x C-q                                 # Toggle read-only mode of a buffer
+C-x {/}                                 # Expand window left/right
+C-x ^                                   # Expand window taller
+[C-u] C-x {/}                           # Expand window in 4 unit intervals
+1/2                                     # In 'buffer-menu', pressing these next
+                                        #  to a buffer name opens that buffer in
+                                        #  that many vertical buffers
+describe-function/key                   # Useful help commands
+sort-lines                              # Sorts the current region
+M-|                                     # 'shell-command-on-region'
+[C-u] M-|                               # Put output of command into cur buffer
+                                        #  If a region is overwritten, it's not
+                                        #  yankable, only undo-able. This is
+                                        #  an undocumented feature of Emacs
+center-region                           # Center region of text, prettify
+kill-rectangle                          # Mark the cursor first, then move it
+yank-rectangle                          #  one space past necessary
+
+                                        ## Non-Emacs
+git rm -r --cached <file>               # Remove file from git history not tree
+C-\                                     # Bash, Send SIGQUIT
+stty -a                                 # Bash, see all keyboard shortcuts for
+                                        #  signals and other cool stuff
+
+#
+# 03/29/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Ctrl+Windows Key+(Left/Right/Up)        # Unity, snap window to left/right/full
+                                        #  screen
+C-o                                     # Emacs, within 'buffer-menu' (C-x C-b)
+                                        #  opens selected buffer in the other
+                                        #  window. Keeps point in 'buffer-menu'
+o                                       # Same as previous but moves point to
+                                        #  the new window.
+q                                       # Exits 'buffer-menu'
+
+#
+# 03/30/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-SPC                                   # Emacs, 'just-one-space', ensures one
+                                        #  space separates two words.
+
+#
+# 04/12/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git diff --stat $(git log --pretty=format:%H --after="Feb 29 2016" --before "Apr 1 2016" | tail -1)^..$(git log --pretty=format:%H--after="Feb 29 2016" --before "Apr 1 2016" | head -1)
+                                        # Get all commit data for March 2016/SLOC
+git log --pretty=format: --name-status | cut -f2- | sort -u
+                                        # List all files that ever existed in a
+                                        #  git repo
+git log master...HEAD                   # Find common ancestor of two branches
+                                        #  this finds the most recent ancestor
+                                        #  between current branch and master
+
+#
+# 04/14/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+${mylist[-1]}                           # Bash, refer to last element in list
+identify myimage.jpeg                   # Print image dimensions and other info
+
+#
+# 04/15/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+man gitrepository-layout
+
+#
+# 04/16/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git apply --exclude=app/src/main/java/something.java --check patch_name
+                                        # Ignore a file in a patch, and check to
+                                        #  see if it cleanly applies
+rev                                     # Bash, reverse a line!!! This is often
+                                        #  useful for cutting the last field, but
+                                        #  remember to reverse again, since the
+                                        #  chars within a string are reversed
+
+#
+# 04/18/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git stash list --date=local             # Show stashes by timestamp
+
+#
+# 04/19/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+cp -nvrp                                # Did this after a longer-than-expected
+                                        #  cp. Verbose, doesn't clobber, etc.
+                                        #  Discovered that a lot of tiny files
+                                        #  were getting copied over.
+
+#
+# 04/26/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+bind -l                                 # List all readline functions
+/usr/bin/etags -R                       # Generate TAGS file
+
+
+#
+# 04/28/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+getent passwd $UID                      # Get your default shell
+
+#
+# 06/10/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+( set -o posix ; set ) | less           # Print out current environment
+
+#
+# 06/17/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+.git/logs                               # This directory contains reflogs. In
+                                        #  order to step back into history via
+                                        #  reflogs, one has to cp the entire repo
+                                        #  not just clone it. Cloning doesn't
+                                        #  copy 'local' refs from .git/logs.
+                                        # http://stackoverflow.com
+                                        #  /questions
+                                        #  /16842529
+                                        #  /is-there-a-way-in-git-to-push-the-
+                                        #   reflog
+http://stackoverflow.com/users/1015820/matt-kneiser?tab=votes
+                                        # A great proxy for dev activity
+
+#
+# 06/27/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+adb shell dumpsys package               # Install/Update times of all apps on
+                                        #  the Android device. Grep is friendly.
+Windows restricts filepaths to 256 chars

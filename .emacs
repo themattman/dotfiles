@@ -1,7 +1,7 @@
 ; Matthew Kneiser's .emacs
 ;
 ; Date Compiled: 11/06/2014
-; Date Modified: 04/15/2016
+; Date Modified: 06/30/2016
 
 ; Reload .emacs file
 ;; (global-set-key "\C-x\C-l" 'load-file "~/.emacs")
@@ -32,8 +32,9 @@
 (global-set-key (kbd "C-x C-b") 'buffer-menu)
 
 ; Sane C bracket style
+; 4 space tabs for all c-modes
 (setq c-default-style "linux"
-      c-basic-offset 2)
+      c-basic-offset 4)
 
 
 ; Do not create tilde backup files
