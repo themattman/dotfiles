@@ -3,7 +3,7 @@
 #
 # Author:       Matt Kneiser
 # Created:      02/06/2014
-# Last updated: 06/30/2016
+# Last updated: 08/10/2016
 
 # Bashrc Guard
 if [ -z "${PS1}" ]; then
@@ -64,9 +64,4 @@ unset IFS
 # export GRADLE_HOME
 # PATH=$PATH:$JAVA_HOME
 
-
-export EDITOR="emacs -nw"
-export GIT_EDITOR="emacs -nw"
-export MAN_PAGER="less -i"
-export USER_EMAIL="" # TODO: Set this
 source ~/.bashrc

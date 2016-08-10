@@ -1,7 +1,9 @@
-; Matthew Kneiser's .emacs
+;;
+; .emacs
 ;
-; Date Compiled: 11/06/2014
-; Date Modified: 06/30/2016
+; Author:       Matt Kneiser
+; Created:      11/06/2014
+; Last updated: 08/10/2016
 
 ; Reload .emacs file
 ;; (global-set-key "\C-x\C-l" 'load-file "~/.emacs")
@@ -42,6 +44,11 @@
 ;(setq make-backup-files nil)
 ; Stop creating those #autosave# files
 (setq auto-save-default nil)
+
+; Don't let echo area grow
+;  This is useful for forcing 'shell-command-on-region' output
+;  to be forced to a new buffer, and not wasted in the echo area
+(setq max-mini-window-height 1)
 
 ; Tags File for current development
 ;(setq tags-file-name "<PATHNAME_TO_TAGS_FILE>")
