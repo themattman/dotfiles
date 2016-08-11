@@ -1,7 +1,7 @@
 ##
 # Programmer's Diary of interesting commands and things learned
 #
-# Author:       Matthew Kneiser <mattknize@gmail.com>
+# Author:       Matthew Kneiser <mattman@umich.edu>
 # Date Created: 11/04/2014
 
 #
@@ -1427,3 +1427,134 @@ Command                                 Comments
 adb shell dumpsys package               # Install/Update times of all apps on
                                         #  the Android device. Grep is friendly.
 Windows restricts filepaths to 256 chars
+
+#
+# 07/06/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git clean -ndX                          # Dry-run of all the files that are
+                                        #  ignored by git.
+git clean -fdX                          # Actually delete ignored files
+git check-ignore -v <FILE>              # Displays which rule applies to file
+
+#
+# 07/07/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+$ git status -s
+MM README.md
+$ git stash save                        # Notice that by default this stashes the
+$ git status -s                         #  staged area as well as unstaged
+----
+$ git status -s
+MM README.md
+$ git stash save --keep-index           # Notice that this stashes only the
+$ git status -s                         #  unstaged area
+M  README.md
+
+#
+# 07/08/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+curl -w 'format'
+curl -w "@<CURL_FORMAT_FILE>"           # Report stats about successful curl
+
+#
+# 07/11/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+paste -sd+ file | bc                    # Bash, sum column of numbers
+M-| 'paste -sd+ - | bc'                 # Emacs, sum column of numbers
+paste <FILE1> <FILE2>                   # Lines up two files separated by tabs
+                                        #  Can also think of it as a join of
+                                        #  two tables w/no merge criteria
+clang-format -style=WebKit -dump-config # See config file of a built-in style
+clang-format -style=file -dump-config   # See .clang-format style config
+clang-format -style=<STYLE> <FILE>      # Format a file with clang-format
+PenaltyBreakBeforeFirstCallParameter    # Clang-format, penalty parameters were
+                                        #  inherited from Latex
+
+#
+# 07/11/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git clang-format                        # Not sure what this does, some sort of
+                                        #  clang-format integration with Git
+"sneakernet"                            # Informal term describing transfer of
+                                        #  info by physically moving removable
+                                        #  media
+git bundle                              # Not entirely sure what this does
+~~strikethrough phrase~~                # Markdown syntax for strikethrough
+
+#
+# 07/19/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Windows-<NUMBER>                        # Unity, opens an application from tray
+Windows (HOLD)                          # Unity, shows keyboard shortcuts
+etags stack                             # Emacs, tool to navigate TAGS history
+
+Figure out what this did:
+git blame --line-porcelain qcril.c | sed -n 's/^author //p' | sort | uniq -c | sort -rn
+
+#
+# 07/20/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git diff --name-only --diff-filter=AMCR # Git-diff, only show files that are
+                                        #  (A)dded, (M)odified, (C)hanged, or
+                                        #  (R)enamed
+
+#
+# 07/21/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git show-ref --tags -d | grep <SHA>     # Shows all tags that point to a commit
+
+#
+# 07/22/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git log --format=fuller                 # See author and committer
+git log --format="%ce" | sort | uniq -c # All email addresses in history
+https://help.github.com/articles/changing-author-info/
+                                        # Change names in repo
+eventvwr.exe                            # Windows, view system log for errors
+
+#
+# 07/25/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-M-s/C-M-r                             # Emacs, regex search forward/back. Once
+                                        #  initiating the search, use normal
+                                        #  shortcuts like (C-s) for next result
+
+#
+# 07/27/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+echo "${@:2}"                           # Print all arguments except first
+                                        #
+alias gre="grep -Iirsn"                 # From builtins(7):
+alias a="alias"                         #  A trailing space in value causes the
+set -x                                  #  next word to be checked for alias
+gre a ...                               #  substitution when the alias is
+grep -Iirsn alias ...                   #  expanded
+
+#
+# 07/31/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+${!arr[@]}                              # Bash, keys of associative array
