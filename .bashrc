@@ -126,7 +126,7 @@ _add_function _optionally_add_completion_function_to_alias
 
 declare -A _custom_user_aliases
 _add_alias() {
-    local _alias _cmd _location
+    local _alias _already_exists _cmd _location
     # TODO: Should hostname be part of .machine aliases?? This would help with the error message below
     # TODO: Check for "$" in aliased cmd, and print the evaluated value as well as variable name
     if [[ $# -lt 2 ]]; then
@@ -139,9 +139,12 @@ _add_alias() {
         echo "$(basename -- ${0}): Error: alias [${_alias}] doesn't have a target. You need something to alias this word to" >&2
         return 1
     fi
-    type -t "${_alias}" >/dev/null 2>&1
+    _already_exists=$(type -t "${_alias}" 2>&1)
     if [[ $? -eq 0 ]]; then
-        echo "$(basename -- ${0}): Error: alias [${_alias}] already exists" >&2
+        if [[ "file" = "${_already_exists}" ]]; then
+            _already_exists=$(type -p "${_alias}" 2>&1)
+        fi
+        echo -e "$(basename -- ${0}): Error: alias [${_alias}] \t already exists as [${_already_exists}]" >&2
         return 1
     fi
     if [[ ${2% *} = "cd" ]]; then
