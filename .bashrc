@@ -79,6 +79,7 @@ _add_function() {
 }
 _add_function _add_function
 
+declare -A _custom_user_auto_alias_completion_functions
 _add_auto_alias_completion_function() {
     local _alias
     for _alias in "${@}"; do
@@ -87,7 +88,6 @@ _add_auto_alias_completion_function() {
 }
 _add_function _add_auto_alias_completion_function
 
-declare -A _custom_user_auto_alias_completion_functions
 _optionally_add_completion_function_to_alias() {
     local _alias _second _third _potential_prog _completion_function
     _alias=$1
@@ -131,6 +131,7 @@ _add_alias() {
     # TODO: Check first arg with "which" unless it is sudo, then check next arg
     # TODO: Check aliased cmd with -z, don't store it if empty (see "afk" on mac)
     # TODO: Check for "$" in aliased cmd, and print the evaluated value as well as variable name
+    # Should hostname be part of .machine aliases?? This would help with the error message below
     if [[ $# -lt 2 ]]; then
         echo "bad alias: $@"
         echo "Usage: ${FUNCNAME[0]} ALIAS COMMAND" >&2 && return 1

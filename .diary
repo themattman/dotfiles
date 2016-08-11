@@ -1558,3 +1558,49 @@ grep -Iirsn alias ...                   #  expanded
 Command                                 Comments
 ---------------------------------------------------------------------------------
 ${!arr[@]}                              # Bash, keys of associative array
+
+#
+# 08/03/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+man interfaces                          # /etc/network/interfaces description
+man run-parts                           # Run all executable scripts in a dir
+
+#
+# 08/05/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-m                                     # Emacs, RET
+C-o                                     # Emacs, open-line, insert newline after
+                                        #  point
+
+#
+# 08/08/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+insmod/rmmod                            # Insert/Remove module to/from kernel
+                                        #
+                                        # First day needing to use Emacs recovery
+                                        #  for a file that was lost. Navigated
+                                        #  backup-directory and found file!
+
+#
+# 08/09/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-1 C-x $                               # Emacs, Code fold entire file
+C-u C-space                             # Emacs, move point back to where it was
+                                        #  before an incremental search
+C-x C-x                                 # Emacs, same as above, but highlights
+                                        #  region
+
+#
+# 08/10/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ediff                                   # Emacs, diff two buffers
