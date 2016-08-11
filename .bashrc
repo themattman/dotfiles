@@ -126,29 +126,35 @@ _add_function _optionally_add_completion_function_to_alias
 
 declare -A _custom_user_aliases
 _add_alias() {
-    local _alias cmd location
+    local _alias _cmd _location
     # TODO: Should hostname be part of .machine aliases?? This would help with the error message below
-    # TODO: Check first arg with "which" unless it is sudo, then check next arg
-    # TODO: Check aliased cmd with -z, don't store it if empty (see "afk" on mac)
     # TODO: Check for "$" in aliased cmd, and print the evaluated value as well as variable name
-    # Should hostname be part of .machine aliases?? This would help with the error message below
     if [[ $# -lt 2 ]]; then
         echo "bad alias: $@"
         echo "Usage: ${FUNCNAME[0]} ALIAS COMMAND" >&2 && return 1
     fi
     _alias="${1}"
-    cmd="${@:2}"
+    _cmd="${@:2}"
+    if [[ -z "${_cmd}" ]]; then
+        echo "$(basename -- ${0}): Error: alias [${_alias}] doesn't have a target. You need something to alias this word to" >&2
+        return 1
+    fi
+    type -t "${_alias}" >/dev/null 2>&1
+    if [[ $? -eq 0 ]]; then
+        echo "$(basename -- ${0}): Error: alias [${_alias}] already exists" >&2
+        return 1
+    fi
     if [[ ${2% *} = "cd" ]]; then
-        location="${2#* }"
-        if [[ ! -d ${location} && ${location:0:1} != "$" ]]; then
-            echo "$(basename ${0}): Error: location [${2#* }] for alias [${1}] is broken and does not exist" >&2
+        _location="${2#* }"
+        if [[ ! -d ${_location} && ${_location:0:1} != "$" ]]; then
+            echo "$(basename -- ${0}): Error: location [${2#* }] for alias [${1}] is broken and does not exist" >&2
             return 1
         fi
-        cmd="echo -e \"alias [\${PURPLE}${1}\${ENDCOLOR}] cd [\${PURPLE}${2#* }\${ENDCOLOR}]\"; ${cmd}"
+        _cmd="echo -e \"alias [\${PURPLE}${1}\${ENDCOLOR}] cd [\${PURPLE}${2#* }\${ENDCOLOR}]\"; ${_cmd}"
     else
-        cmd="echo -e \"alias [\${PURPLE}${1}\${ENDCOLOR}] to [\${PURPLE}${cmd//$/\\$}\${ENDCOLOR}]\"; ${cmd}"
+        _cmd="echo -e \"alias [\${PURPLE}${1}\${ENDCOLOR}] to [\${PURPLE}${_cmd//$/\\$}\${ENDCOLOR}]\"; ${_cmd}"
     fi
-    alias ${_alias}="${cmd}"
+    alias ${_alias}="${_cmd}"
     _custom_user_aliases["${_alias}"]=""
     _optionally_add_completion_function_to_alias $@
 }
@@ -263,7 +269,7 @@ _rename_function() {
         echo "Usage: ${FUNCNAME[0]} ALIAS FUNCTION_NAME" >&2 && return 1
     fi
     if [[ "function" != $(type -t $2) ]]; then
-        echo "$(basename ${0}): Error: ${2} not a valid function" >&2 && return 1
+        echo "$(basename -- ${0}): Error: ${2} not a valid function" >&2 && return 1
     fi
     # TODO: Confirm that this technique works cross-platform...
     source /dev/stdin <<EOF
@@ -887,7 +893,7 @@ longer() {
         file=$2
     fi
     if [[ ! -f $file ]]; then
-        echo "$(basename ${0}): Error: $file is not a regular file" >&2 && return 1
+        echo "$(basename -- ${0}): Error: $file is not a regular file" >&2 && return 1
     fi
     grep -nE ^.{82} $file | cut -f1 -d: | xargs -I{} sh -c "echo -n "{}:" && sed -n {},{}p $file | grep --color=always -E ^.{81}"
 }
@@ -898,7 +904,7 @@ remove_trailing_spaces() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
     elif [[ ! -f $1 ]]; then
-        echo "$(basename ${0}): Error: $1 is not a regular file" >&2 && return 1
+        echo "$(basename -- ${0}): Error: $1 is not a regular file" >&2 && return 1
     fi
     sed -i 's/[ \t]*$//' $1
 }
@@ -936,10 +942,10 @@ hooks() {
             echo $(realpath "${gitdir}/hooks/")
             ls -lh "${gitdir}/hooks/"
         else
-            echo "$(basename ${0}): Error: not inside working tree." >&2 && return 1
+            echo "$(basename -- ${0}): Error: not inside working tree." >&2 && return 1
         fi
     else
-        echo "$(basename ${0}): Error: cannot be in a bare repository." >&2 && return 1
+        echo "$(basename -- ${0}): Error: cannot be in a bare repository." >&2 && return 1
     fi
 }
 _add_function hooks
@@ -954,7 +960,7 @@ fi
 safely_call() {
     local temp_dir="${HOME}/tmp"
     if [[ ! -d $temp_dir ]]; then
-        echo "$(basename ${0}): Error: ${temp_dir} doesn't exist" >&2 && return 1
+        echo "$(basename -- ${0}): Error: ${temp_dir} doesn't exist" >&2 && return 1
     fi
     $1
 }
@@ -1006,7 +1012,7 @@ gpa() {
             { set +x; } 2>/dev/null
         done
     else
-        echo "$(basename ${0}): Error: You need to have the well-known ~/.git-completion file." >&2
+        echo "$(basename -- ${0}): Error: You need to have the well-known ~/.git-completion file." >&2
         echo "It is located at:" >&2
         echo "  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash" >&2 && return 1
     fi
@@ -1020,7 +1026,7 @@ create_shortcut() {
 
     is_alias=$(type -t $1)
     if [[ "${is_alias}" = "alias" ]]; then
-        echo "$(basename ${0}): Error: $1 is already an alias." >&2 && return 1
+        echo "$(basename -- ${0}): Error: $1 is already an alias." >&2 && return 1
     fi
     echo "_add_alias $1 \"cd ${PWD// /\\ }\" #generated by alias 'short'" >> ~/.machine
     source_file ~/.machine
@@ -1033,7 +1039,7 @@ body() {
     if [[ $# -ne 3 ]]; then
         echo "Usage: ${FUNCNAME[0]} START FINISH FILE" >&2 && return 1
     elif [[ $3 != "-" && ! -f $3 ]]; then
-        echo "$(basename ${0}): Error: $3 is not a regular file." >&2 && return 1
+        echo "$(basename -- ${0}): Error: $3 is not a regular file." >&2 && return 1
     fi
     if [[ $3 = "-" ]]; then
         sed -n ${1},${2}p
@@ -1047,7 +1053,7 @@ line() {
     if [[ $# -ne 2 ]]; then
         echo "Usage: ${FUNCNAME[0]} LINE_NUMBER_TO_ECHO FILE" >&2 && return 1
     elif [[ ! -f $2 ]]; then
-        echo "$(basename ${0}): Error: $2 is not a regular file." >&2 && return 1
+        echo "$(basename -- ${0}): Error: $2 is not a regular file." >&2 && return 1
     fi
     sed -n ${1},${1}p ${2}
 }
@@ -1059,7 +1065,7 @@ linux*)
         if [[ $# -ne 1 ]]; then
             echo "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
         elif [[ ! -f $1 ]]; then
-            echo "$(basename ${0}): Error: $1 is not a regular file." >&2 && return 1
+            echo "$(basename -- ${0}): Error: $1 is not a regular file." >&2 && return 1
         fi
         diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}"
     }
@@ -1069,7 +1075,7 @@ linux*)
         if [[ $# -ne 1 ]]; then
             echo "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
         elif [[ ! -f $1 ]]; then
-            echo "$(basename ${0}): Error: $1 is not a regular file." >&2 && return 1
+            echo "$(basename -- ${0}): Error: $1 is not a regular file." >&2 && return 1
         fi
         diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}" | wc -l
     }
@@ -1099,7 +1105,7 @@ _search_file_wrapper() {
     if [[ $1 -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[1]} SEARCH_TERM" >&2 && return 1
     elif [[ ! -f "$3" ]]; then
-        echo "$(basename ${0}): Error: $3 is not a regular file" >&2 && return 1
+        echo "$(basename -- ${0}): Error: $3 is not a regular file" >&2 && return 1
     fi
     search_file "$2" $3
 }
@@ -1119,7 +1125,7 @@ _search_file_occur_wrapper() {
     if [[ $1 -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[1]} SEARCH_TERM" >&2 && return 1
     elif [[ ! -f "$3" ]]; then
-        echo "$(basename ${0}): Error: $3 is not a regular file" >&2 && return 1
+        echo "$(basename -- ${0}): Error: $3 is not a regular file" >&2 && return 1
     fi
     search_file "$2" $3 | wc -l
 }
@@ -1160,12 +1166,12 @@ gcl() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} URL" >&2 && return 1
     fi
-    # echo "\$#: [$#] \$@: [$@] \${!#%.git}: ${!#%.git} basename: $(basename ${!#%.git})"
+    # echo "\$#: [$#] \$@: [$@] \${!#%.git}: ${!#%.git} basename: $(basename -- ${!#%.git})"
     git clone $@
     if [[ $# -gt 1 ]]; then
-        cd $(basename ${!#%.git})
+        cd $(basename -- ${!#%.git})
     else
-        cd $(basename ${1%.git})
+        cd $(basename -- ${1%.git})
     fi
 }
 _add_function gcl
@@ -1176,7 +1182,7 @@ unz() {
         echo "Usage: ${FUNCNAME[0]} URL" >&2 && return 1
     fi
     unzip $1 -d ${1%.zip}
-    cd $(basename ${1%.zip})
+    cd $(basename -- ${1%.zip})
 }
 _add_function unz
 
@@ -1214,13 +1220,13 @@ _add_function wowz
 _git_branch_delete() {
     local _branch="${1}"
     if [[ $# -ne 1 ]]; then
-        echo "$(basename ${0}): Error: only one argument allowed" >&2
+        echo "$(basename -- ${0}): Error: only one argument allowed" >&2
         echo "Usage: ${FUNCNAME[0]} BRANCH" >&2
         return 1
     fi
     git rev-parse --verify --quiet "${_branch}" >/dev/null
     if [[ $? -ne 0 ]]; then
-        echo "$(basename ${0}): Error: branch ${_branch} doesn't exist" >&2
+        echo "$(basename -- ${0}): Error: branch ${_branch} doesn't exist" >&2
         return 1
     fi
     read -p "Are you sure you want to delete branch [${_branch}]? [y/n]: " -n 1 -r
