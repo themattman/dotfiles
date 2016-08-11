@@ -79,6 +79,51 @@ _add_function() {
 }
 _add_function _add_function
 
+_add_auto_alias_completion_function() {
+    local _alias
+    for _alias in "${@}"; do
+        _custom_user_auto_alias_completion_functions["${_alias}"]=""
+    done
+}
+_add_function _add_auto_alias_completion_function
+
+declare -A _custom_user_auto_alias_completion_functions
+_optionally_add_completion_function_to_alias() {
+    local _alias _second _third _potential_prog _completion_function
+    _alias=$1
+    _second="${@:2}"
+    _third="${@:3}"
+    _potential_prog="${_second%% *}"
+    if [[ "sudo" = $_potential_prog ]]; then
+        if [[ $# -ne 3 ]]; then
+            return 1
+        else
+            _potential_prog="${_third%% *}"
+        fi
+    else
+        if [[ $# -ne 2 ]]; then
+            return 1
+        fi
+    fi
+    type -t $_potential_prog >/dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        return 1
+    else
+        complete -p $_potential_prog >/dev/null 2>&1
+        if [[ $? -eq 0 ]]; then
+            # Chop off name of command, so alias can be appended
+            #  to end of completion command
+            _completion_function=$(complete -p $_potential_prog | rev | cut -d' ' -f2- | rev)
+            ${_completion_function} ${_alias}
+            _add_auto_alias_completion_function "${_alias}"
+            # echo "auto-detected completion function for alias: [${_alias}] -> [${_completion_function}]"
+        else
+            return 1
+        fi
+    fi
+}
+_add_function _optionally_add_completion_function_to_alias
+
 declare -A _custom_user_aliases
 _add_alias() {
     local _alias cmd location
@@ -104,11 +149,13 @@ _add_alias() {
     fi
     alias ${_alias}="${cmd}"
     _custom_user_aliases["${_alias}"]=""
+    _optionally_add_completion_function_to_alias $@
 }
 _add_function _add_alias
 
 declare -A _custom_user_completion_functions
 _add_completion_function() {
+    local _completion_func
     for _completion_func in "${@}"; do
         _custom_user_completion_functions["${_completion_func}"]=""
     done
@@ -130,11 +177,12 @@ _add_variable() {
 _add_function _add_variable
 
 _add_alias functions "echo \${!_custom_user_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
+_add_alias auto_added_alias_completion_functions "echo \${!_custom_user_auto_alias_completion_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
 _add_alias aliases "echo \${!_custom_user_aliases[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
 _add_alias completion_functions "echo \${!_custom_user_completion_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
 _add_alias variables "echo \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
-_add_alias _everything "echo \${!_custom_user_functions[@]} \${!_custom_user_aliases[@]} \${!_custom_user_completion_functions[@]} \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
-_add_alias _num_everything "echo \${!_custom_user_functions[@]} \${!_custom_user_aliases[@]} \${!_custom_user_completion_functions[@]} \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' | wc -w"
+_add_alias _everything "echo \${!_custom_user_functions[@]} \${!_custom_user_auto_alias_completion_functions[@]} \${!_custom_user_aliases[@]} \${!_custom_user_completion_functions[@]} \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
+_add_alias _num_everything "echo \${!_custom_user_functions[@]} \${!_custom_user_auto_alias_completion_functions[@]} \${!_custom_user_aliases[@]} \${!_custom_user_completion_functions[@]} \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' | wc -w"
 
 _remove_all_functions() {
     local counter=0
@@ -159,6 +207,19 @@ _remove_all_aliases() {
     echo " done. ($counter aliases unset)"
 }
 _add_function _remove_all_aliases
+
+_remove_all_auto_alias_completion_functions() {
+    local counter _alias
+    counter=0
+    echo -n "unsetting all auto-detected alias completion functions..."
+    for _alias in "${!_custom_user_auto_alias_completion_functions[@]}"; do
+        complete -r $_alias 2>/dev/null
+        counter=$((counter+1))
+    done
+    unset _custom_user_auto_alias_completion_functions
+    echo " done. ($counter auto-detected alias completion functions unset)"
+}
+_add_function _remove_all_auto_alias_completion_functions
 
 _remove_all_completion_functions() {
     local counter=0
@@ -187,6 +248,7 @@ _remove_all_variables() {
 _add_function _remove_all_variables
 
 _clear_environment() {
+    _remove_all_auto_alias_completion_functions
     _remove_all_aliases
     _remove_all_completion_functions
     _remove_all_variables
@@ -397,35 +459,37 @@ _add_alias detach "screen -d -m" # Run a command inside screen
 # Git
 source_file ~/.git-completion no_output # Will have to re-source this file later
 if [[ -f ~/.git-completion ]]; then
-    __git_complete ga _git_add
-    __git_complete gaf _git_add
-    __git_complete gau _git_add
-    __git_complete gb _git_branch
-    __git_complete gc _git_checkout
-    __git_complete gcl _git_clone
-    __git_complete gt _git_stash
-    __git_complete gd _git_diff
-    __git_complete gdbb _git_diff
-    __git_complete gdsb _git_diff
-    __git_complete gdr _git_diff
-    __git_complete gdrs _git_diff
-    __git_complete gds _git_diff
-    __git_complete gdss _git_diff
-    __git_complete gdsss _git_diff
-    __git_complete gl _git_log
-    __git_complete gls _git_log
-    __git_complete gll _git_log
-    __git_complete gg _git_log
-    __git_complete g _git_pull
-    __git_complete gp _git_push
-    __git_complete gpo _git_push
-    __git_complete gr _git_reset
-    __git_complete gsh _git_show
-    __git_complete gshh _git_show
-    __git_complete gshn _git_show
-    __git_complete gshs _git_show
-    __git_complete gshhs _git_show
-    __git_complete gshhn _git_show
+    # TODO: auto-detect git aliases for completions
+    __git_complete ga _git_add && _add_completion_function ga
+    __git_complete gaf _git_add && _add_completion_function gaf
+    __git_complete gau _git_add && _add_completion_function gau
+    __git_complete gb _git_branch && _add_completion_function gb
+    __git_complete gc _git_checkout && _add_completion_function gc
+    __git_complete gcl _git_clone && _add_completion_function gcl
+    __git_complete gt _git_stash && _add_completion_function gt
+    __git_complete gd _git_diff && _add_completion_function gd
+    __git_complete gdbb _git_diff && _add_completion_function gdbb
+    __git_complete gdsb _git_diff && _add_completion_function gdsb
+    __git_complete gdr _git_diff && _add_completion_function gdr
+    __git_complete gdrs _git_diff && _add_completion_function gdrs
+    __git_complete gds _git_diff && _add_completion_function gds
+    __git_complete gdss _git_diff && _add_completion_function gdss
+    __git_complete gdsss _git_diff && _add_completion_function gdsss
+    __git_complete gl _git_log && _add_completion_function gl
+    __git_complete gls _git_log && _add_completion_function gls
+    __git_complete gll _git_log && _add_completion_function gll
+    __git_complete gg _git_log && _add_completion_function gg
+    __git_complete g _git_pull && _add_completion_function g
+    __git_complete gp _git_push && _add_completion_function gp
+    __git_complete gpo _git_push && _add_completion_function gpo
+    __git_complete gr _git_reset && _add_completion_function gr
+    __git_complete gsh _git_show && _add_completion_function gsh
+    __git_complete gshh _git_show && _add_completion_function gshh
+    __git_complete gshn _git_show && _add_completion_function gshn
+    __git_complete gshs _git_show && _add_completion_function gshs
+    __git_complete gshhs _git_show && _add_completion_function gshhs
+    __git_complete gshhn _git_show && _add_completion_function gshhn
+    __git_complete gbd _git_branch && _add_completion_function gbd
 fi
 
 _add_alias branches "for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
@@ -501,10 +565,12 @@ _add_alias findgits "find . -name .git -type d -prune | tee gits.txt" # Once fou
 _add_alias findtags "find . -name .git -type d -prune | xargs -I % sh -c 'echo -en \"%: \"; git --git-dir=% describe --tags --abbrev=0'"
 _add_alias authors "git log --format='%ce' | sort | uniq -c"
 # GREP
-_add_alias gre "grep -Iirsn --color=always"   # case-insensitive
-_add_alias grel "grep -Iirsnl --color=always" # case-insensitive
-_add_alias gree "grep -Irsn --color=always"
-_add_alias greel "grep -Irsnl --color=always"
+_add_alias gre "grep -iInrs --color=always"   # case-insensitive
+_add_alias lgre "grep -iIlnrs --color=always" # case-insensitive
+_add_alias hgre "grep -hiIrs --color=always"  # case-insensitive
+_add_alias gree "grep -Inrs --color=always"
+_add_alias lgree "grep -Ilnrs --color=always"
+_add_alias hgree "grep -hIrs --color=always"
 # HISTORY
 _add_alias h "history"
 _add_alias hist "history | grep -P --color=always \"^.*?]\" | \less -iFRX +G"
@@ -588,33 +654,33 @@ case $OSTYPE in
 linux*)
     # Bash Colors
     # Modifiers
-    PS_PRE="\["  # Needed for prompt string
-    PS_POST="\]" # Needed for prompt string
-    PRE="\e["
-    DELIM=";"
-    POST="m"
-    ENDCOLOR="${PRE}0${POST}"
+    _add_variable PS_PRE "\["  # Needed for prompt string
+    _add_variable PS_POST "\]" # Needed for prompt string
+    _add_variable PRE "\e["
+    _add_variable DELIM ";"
+    _add_variable POST "m"
+    _add_variable ENDCOLOR "${PRE}0${POST}"
 
     # Regular
-    BLACK="${PRE}0${DELIM}30${POST}"
-    BLUE="${PRE}0${DELIM}34${POST}"
-    GREEN="${PRE}0${DELIM}32${POST}"
-    CYAN="${PRE}0${DELIM}36${POST}"
-    RED="${PRE}0${DELIM}31${POST}"
-    PURPLE="${PRE}0${DELIM}35${POST}"
-    BROWN="${PRE}0${DELIM}33${POST}"
-    LIGHTGRAY="${PRE}0${DELIM}37${POST}"
-    DARKGRAY="${PRE}1${DELIM}30${POST}"
-    LIGHTBLUE="${PRE}1${DELIM}34${POST}"
-    LIGHTGREEN="${PRE}1${DELIM}32${POST}"
-    LIGHTCYAN="${PRE}1${DELIM}36${POST}"
-    BOLDRED="${PRE}1${DELIM}31${POST}"
-    LIGHTPURPLE="${PRE}1${DELIM}35${POST}"
-    YELLOW="${PRE}1${DELIM}33${POST}"
-    WHITE="${PRE}1${DELIM}37${POST}"
+    _add_variable BLACK "${PRE}0${DELIM}30${POST}"
+    _add_variable BLUE "${PRE}0${DELIM}34${POST}"
+    _add_variable GREEN "${PRE}0${DELIM}32${POST}"
+    _add_variable CYAN "${PRE}0${DELIM}36${POST}"
+    _add_variable RED "${PRE}0${DELIM}31${POST}"
+    _add_variable PURPLE "${PRE}0${DELIM}35${POST}"
+    _add_variable BROWN "${PRE}0${DELIM}33${POST}"
+    _add_variable LIGHTGRAY "${PRE}0${DELIM}37${POST}"
+    _add_variable DARKGRAY "${PRE}1${DELIM}30${POST}"
+    _add_variable LIGHTBLUE "${PRE}1${DELIM}34${POST}"
+    _add_variable LIGHTGREEN "${PRE}1${DELIM}32${POST}"
+    _add_variable LIGHTCYAN "${PRE}1${DELIM}36${POST}"
+    _add_variable BOLDRED "${PRE}1${DELIM}31${POST}"
+    _add_variable LIGHTPURPLE "${PRE}1${DELIM}35${POST}"
+    _add_variable YELLOW "${PRE}1${DELIM}33${POST}"
+    _add_variable WHITE "${PRE}1${DELIM}37${POST}"
 
     # Prompt String
-    STARTCOLOR="${CYAN}"
+    _add_variable STARTCOLOR "${CYAN}"
     # For colorizing your prompt, please use $PS_PRE and $PS_POST around the
     #  beginning of all color definitions and at the very end of the prompt
     #  string around the final terminating $ENDCOLOR.
@@ -623,10 +689,10 @@ linux*)
     #  for at least 20 commands causes all sorts of issues with getting bash to
     #  write the correct prompt string. Ctrl-l will clear the screen and re-draw
     #  the prompt string correctly in that case.
-    PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
-    PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
-    PS_BRANCHCOLOR="${PS_PRE}${LIGHTCYAN}${PS_POST}"
-    PS_STYCOLOR="${PS_PRE}${LIGHTPURPLE}${PS_POST}"
+    _add_variable PS_STARTCOLOR "${PS_PRE}${STARTCOLOR}${PS_POST}"
+    _add_variable PS_ENDCOLOR "${PS_PRE}${ENDCOLOR}${PS_POST}"
+    _add_variable PS_BRANCHCOLOR "${PS_PRE}${LIGHTCYAN}${PS_POST}"
+    _add_variable PS_STYCOLOR "${PS_PRE}${LIGHTPURPLE}${PS_POST}"
     # _add_variable PS4 "${LIGHTPURPLE}+${ENDCOLOR} " #messes up scripts :/
     if [[ ! -f ~/.git-prompt ]]; then
         if [[ -z $SSH_CONNECTION ]]; then
@@ -657,68 +723,68 @@ linux*)
             fi
         fi
     fi
-    _add_alias ps1 "export PS1='${PS1}'" # Intentionally not escaping $PS1 varname
-    _add_alias ps2 "export PS1='${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
+    _add_alias ps1 "_add_variable PS1 '${PS1}'" # Intentionally not escaping $PS1 varname
+    _add_alias ps2 "_add_variable PS1 '${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
 ;;
 darwin*)
     # Bash Colors
     # Modifiers
-    PS_PRE="\["  # Needed for prompt string
-    PS_POST="\]" # Needed for prompt string
-    PRE="\033["
-    REG="${PRE}0;"
-    BOLD="${PRE}1;"
-    UNDERLINE="${PRE}4;"
-    POST="m"
-    ENDCOLOR="${PRE}0${POST}"
+    _add_variable PS_PRE "\["  # Needed for prompt string
+    _add_variable PS_POST "\]" # Needed for prompt string
+    _add_variable PRE "\033["
+    _add_variable REG "${PRE}0;"
+    _add_variable BOLD "${PRE}1;"
+    _add_variable UNDERLINE "${PRE}4;"
+    _add_variable POST "m"
+    _add_variable ENDCOLOR "${PRE}0${POST}"
 
     # Regular
-    BLACK="${REG}30${POST}"
-    RED="${REG}31${POST}"
-    GREEN="${REG}32${POST}"
-    YELLOW="${REG}33${POST}"
-    BLUE="${REG}34${POST}"
-    PURPLE="${REG}35${POST}"
-    CYAN="${REG}36${POST}"
-    WHITE="${REG}37${POST}"
+    _add_variable BLACK "${REG}30${POST}"
+    _add_variable RED "${REG}31${POST}"
+    _add_variable GREEN "${REG}32${POST}"
+    _add_variable YELLOW "${REG}33${POST}"
+    _add_variable BLUE "${REG}34${POST}"
+    _add_variable PURPLE "${REG}35${POST}"
+    _add_variable CYAN "${REG}36${POST}"
+    _add_variable WHITE "${REG}37${POST}"
 
     # High Intensity
-    HBLACK="${REG}90${POST}"
-    HRED="${REG}91${POST}"
-    HGREEN="${REG}92${POST}"
-    HYELLOW="${REG}93${POST}"
-    HBLUE="${REG}94${POST}"
-    HPURPLE="${REG}95${POST}"
-    HCYAN="${REG}96${POST}"
-    HWHITE="${REG}97${POST}"
+    _add_variable HBLACK "${REG}90${POST}"
+    _add_variable HRED "${REG}91${POST}"
+    _add_variable HGREEN "${REG}92${POST}"
+    _add_variable HYELLOW "${REG}93${POST}"
+    _add_variable HBLUE "${REG}94${POST}"
+    _add_variable HPURPLE "${REG}95${POST}"
+    _add_variable HCYAN "${REG}96${POST}"
+    _add_variable HWHITE "${REG}97${POST}"
 
     # Background
-    BBLACK="${PRE}40${POST}"
-    BRED="${PRE}41${POST}"
-    BGREEN="${PRE}42${POST}"
-    BYELLOW="${PRE}43${POST}"
-    BBLUE="${PRE}44${POST}"
-    BPURPLE="${PRE}45${POST}"
-    BCYAN="${PRE}46${POST}"
-    BWHITE="${PRE}47${POST}"
+    _add_variable BBLACK "${PRE}40${POST}"
+    _add_variable BRED "${PRE}41${POST}"
+    _add_variable BGREEN "${PRE}42${POST}"
+    _add_variable BYELLOW "${PRE}43${POST}"
+    _add_variable BBLUE "${PRE}44${POST}"
+    _add_variable BPURPLE "${PRE}45${POST}"
+    _add_variable BCYAN "${PRE}46${POST}"
+    _add_variable BWHITE "${PRE}47${POST}"
 
     # High Intensity Backgorund
-    HBBLACK="${REG}100${POST}"
-    HBRED="${REG}101${POST}"
-    HBGREEN="${REG}102${POST}"
-    HBYELLOW="${REG}3103${POST}"
-    HBBLUE="${REG}104${POST}"
-    HBPURPLE="${REG}105${POST}"
-    HBCYAN="${REG}106${POST}"
-    HBWHITE="${REG}107${POST}"
+    _add_variable HBBLACK "${REG}100${POST}"
+    _add_variable HBRED "${REG}101${POST}"
+    _add_variable HBGREEN "${REG}102${POST}"
+    _add_variable HBYELLOW "${REG}3103${POST}"
+    _add_variable HBBLUE "${REG}104${POST}"
+    _add_variable HBPURPLE "${REG}105${POST}"
+    _add_variable HBCYAN "${REG}106${POST}"
+    _add_variable HBWHITE "${REG}107${POST}"
 
     # Prompt String
-    STARTCOLOR="${GREEN}"
+    _add_variable STARTCOLOR "${GREEN}"
     # ~~See note above in the `Prompt String' section for Linux~~
-    PS_STARTCOLOR="${PS_PRE}${STARTCOLOR}${PS_POST}"
-    PS_ENDCOLOR="${PS_PRE}${ENDCOLOR}${PS_POST}"
-    PS_BRANCHCOLOR="${PS_PRE}${CYAN}${PS_POST}"
-    PS_STYCOLOR="${PS_PRE}${HPURPLE}${PS_POST}"
+    _add_variable PS_STARTCOLOR "${PS_PRE}${STARTCOLOR}${PS_POST}"
+    _add_variable PS_ENDCOLOR "${PS_PRE}${ENDCOLOR}${PS_POST}"
+    _add_variable PS_BRANCHCOLOR "${PS_PRE}${CYAN}${PS_POST}"
+    _add_variable PS_STYCOLOR "${PS_PRE}${HPURPLE}${PS_POST}"
     if [[ ! -f ~/.git-prompt ]]; then
         if [[ -z $SSH_CONNECTION ]]; then
             if [[ -n "$STY" ]]; then
@@ -748,8 +814,8 @@ darwin*)
             fi
         fi
     fi
-    _add_alias ps1 "export PS1='${PS1}'" # Intentionally not escaping $PS1 varname
-    _add_alias ps2 "export PS1='${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
+    _add_alias ps1 "_add_variable PS1 '${PS1}'" # Intentionally not escaping $PS1 varname
+    _add_alias ps2 "_add_variable PS1 '${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
 ;;
 esac
 if [[ -z $SSH_CONNECTION ]]; then
@@ -955,9 +1021,9 @@ create_shortcut() {
     if [[ "${is_alias}" = "alias" ]]; then
         echo "$(basename ${0}): Error: $1 is already an alias." >&2 && return 1
     fi
-    echo "_add_alias $1=\"cd ${PWD// /\\ }\" #generated by alias 'short'" >> ~/.machine
+    echo "_add_alias $1 \"cd ${PWD// /\\ }\" #generated by alias 'short'" >> ~/.machine
     source_file ~/.machine
-    echo "_add_alias $1=\"cd ${PWD// /\\ }\" #generated by alias 'short'"
+    echo "_add_alias $1 \"cd ${PWD// /\\ }\" #generated by alias 'short'"
 }
 _add_function create_shortcut
 _rename_function short "create_shortcut"
@@ -965,11 +1031,14 @@ _rename_function short "create_shortcut"
 body() {
     if [[ $# -ne 3 ]]; then
         echo "Usage: ${FUNCNAME[0]} START FINISH FILE" >&2 && return 1
-    elif [[ ! -f $3 ]]; then
+    elif [[ $3 != "-" && ! -f $3 ]]; then
         echo "$(basename ${0}): Error: $3 is not a regular file." >&2 && return 1
     fi
-    sed -n ${1},${2}p ${3}
-
+    if [[ $3 = "-" ]]; then
+        sed -n ${1},${2}p
+    else
+        sed -n ${1},${2}p ${3}
+    fi
 }
 _add_function body
 
@@ -1066,7 +1135,7 @@ al() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} ALIAS" >&2 && return 1
     fi
-    is_defined=$(type -t $1)
+    local is_defined=$(type -t $1)
     if [[ -n "${is_defined}" ]]; then
         echo "Yes"
     else
@@ -1140,6 +1209,33 @@ wowz() {
     ls -alh $(which "$1")
 }
 _add_function wowz
+
+_git_branch_delete() {
+    local _branch="${1}"
+    if [[ $# -ne 1 ]]; then
+        echo "$(basename ${0}): Error: only one argument allowed" >&2
+        echo "Usage: ${FUNCNAME[0]} BRANCH" >&2
+        return 1
+    fi
+    git rev-parse --verify --quiet "${_branch}" >/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "$(basename ${0}): Error: branch ${_branch} doesn't exist" >&2
+        return 1
+    fi
+    read -p "Are you sure you want to delete branch [${_branch}]? [y/n]: " -n 1 -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo -en "\nDeleting branch [${_branch}] from local and remote..."
+        set -x
+        git branch -d "${_branch}"
+        git push origin ":${_branch}"
+        { set +x; } 2>/dev/null
+        echo " Done!"
+    else
+        echo -e "\nExiting."
+    fi
+}
+_add_function _git_branch_delete
+_rename_function gbd _git_branch_delete
 
 
 ## 6) Bash Completion
@@ -1255,9 +1351,6 @@ complete -W '$(echo ${ssh_complete})' ssh scp host getip && _add_completion_func
 complete -o default -W '$(compgen -A function | grep -v ^_)' func && _add_completion_function func
 complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completion_function funcu
 complete -f bk && _add_completion_function bk
-complete -W '$(compgen -a)' a && _add_completion_function a
-complete -W "\$(find /usr/share/man/man* -type f | cut -d'/' -f6- | cut -d'.' -f1 | sort | uniq)" man m && _add_completion_function man m
-complete -c which wh && _add_completion_function which wh
 complete -W "\$(complete -p | rev | cut -d' ' -f1 | rev)" comp && _add_completion_function comp
 complete -F _command wow wowz && _add_completion_function wow wowz
 
