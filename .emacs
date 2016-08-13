@@ -5,6 +5,11 @@
 ; Created:      11/06/2014
 ; Last updated: 08/10/2016
 
+
+                                        ; Install guide:
+                                        ; M-x list-packages
+                                        ;
+
 ; Reload .emacs file
 ;; (global-set-key "\C-x\C-l" 'load-file "~/.emacs")
 
@@ -64,24 +69,24 @@
 ; Save its tilde file to
 ;  ~/.tildes/user/mattman/somedir/another/dir/file.txt~
 ;; (setq backup-directory "<PATHNAME_TO_BACKUP_DIR>")
-(if (not (file-exists-p backup-directory))
-    (make-directory backup-directory t))
-(setq backup-directory-alist `(("." . ,backup-directory)))
-(setq make-backup-files t ; backup of a file the first time it is saved
-      backup-by-copying t ; don't clobber symlinks
-      version-control t ; version numbers for backup files
-      delete-old-versions t ; delete excess backup files silently
-      delete-by-moving-to-trash t
-      kept-old-versions 5 ; oldest versions to keep when a new numbered backup is
-                          ;  made (default: 2)
-      kept-new-versions 5 ; newest versions to keep when a new numbered backup is
-                          ;  made (default: 2)
-      auto-save-default t ; auto-save every buffer that visits a file
-      ;auto-save-timeout 20 ; number of seconds idle time before auto-save
-      ;                     ;  (default: 30)
-      auto-save-interval 200 ; number of keystrokes between auto-saves
-                             ;  (default: 300)
-)
+;; (if (not (file-exists-p backup-directory))
+;;     (make-directory backup-directory t))
+;; (setq backup-directory-alist `(("." . ,backup-directory)))
+;; (setq make-backup-files t ; backup of a file the first time it is saved
+;;       backup-by-copying t ; don't clobber symlinks
+;;       version-control t ; version numbers for backup files
+;;       delete-old-versions t ; delete excess backup files silently
+;;       delete-by-moving-to-trash t
+;;       kept-old-versions 5 ; oldest versions to keep when a new numbered backup is
+;;                           ;  made (default: 2)
+;;       kept-new-versions 5 ; newest versions to keep when a new numbered backup is
+;;                           ;  made (default: 2)
+;;       auto-save-default t ; auto-save every buffer that visits a file
+;;       ;auto-save-timeout 20 ; number of seconds idle time before auto-save
+;;       ;                     ;  (default: 30)
+;;       auto-save-interval 200 ; number of keystrokes between auto-saves
+;;                              ;  (default: 300)
+;; )
 
 ; Newline at end of file
 (setq require-final-newline t)
@@ -192,16 +197,32 @@
 (add-to-list 'load-path "~/.emacs.d/themes")
 ;; (add-to-list 'load-path "~/.emacs.d/") ; Not needed in Emacs 24.x
 
-; Package Manager
-(require 'package)
-(add-to-list 'package-archives
-             '("melpa" . "https://melpa.org/packages/"))
-(add-to-list 'package-archives
-             '("melpa-stable" . "https://stable.melpa.org/packages/"))
-(when (< emacs-major-version 24)
-  ;; For important compatibility libraries like cl-lib
-  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
-(package-initialize)
+                                        ; Package Manager
+(when (>= emacs-major-version 24)
+  (require 'package)
+  (add-to-list
+   'package-archives
+   '("melpa" . "https://melpa.org/packages/")
+   t)
+  (add-to-list
+   'package-archives
+   '("melpa-stable" . "https://stable.melpa.org/packages/")
+   t)
+  (add-to-list
+   'package-archives
+   '("gnu" . "http://elpa.gnu.org/packages/")
+   t)
+  (setq package-list
+        '(flycheck auto-complete))
+  (package-initialize)
+
+  ; fetch the list of packages available
+  (unless package-archive-contents
+    (package-refresh-contents))
+  ; install the missing packages
+  (dolist (package package-list)
+    (unless (package-installed-p package)
+      (package-install package))))
 
 ; Auto-Formatting Code
 ;; (require 'clang-format)
@@ -214,7 +235,7 @@
 (ac-config-default)
 
 (setq vc-handled-backends ())
-(setq inhibit-startup-echo-area-message "mkneiser") ; Must hardcode username
+(setq startup-echo-area-message (getenv "USER")) ; TODO getenv $USER
 (setq inhibit-startup-screen t) ; Don't show the welcome screen
 
 ; When opening emacs without a file, suppress the dumb *scratch* message
@@ -236,9 +257,9 @@
 ;(add-hook 'python-mode-hook 'flymake-mode-on)
 ;(require 'flymake)
 
-(add-hook 'after-init-hook #'global-flycheck-mode)
+(add-hook 'after-init-hook 'global-flycheck-mode)
 ;; Customize Flycheck
-(setq-default flycheck-disabled-checkers '(c/c++-gcc))
+;; (setq-default flycheck-disabled-checkers '(c/c++-gcc))
 
 ; Make file executable if shebang exists onSave
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)

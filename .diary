@@ -1604,3 +1604,14 @@ C-x C-x                                 # Emacs, same as above, but highlights
 Command                                 Comments
 ---------------------------------------------------------------------------------
 ediff                                   # Emacs, diff two buffers
+
+#
+# 08/13/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git hash-object                         # Compute object ID or create blob from
+                                        #  a file
+list-packages                           # Emacs, list all packages from sources
+eval contents_of_var="\$${var}"         # Bash, get contents of a variable that
+                                        #  you only have the name of

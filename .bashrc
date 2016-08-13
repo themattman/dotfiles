@@ -24,14 +24,15 @@
 # Table of Contents:
 # 0) Bashrc Guard
 # 1) Internal Functions
-# 2) Polyfills
-# 3) Aliases
-# 4) Prompt String
-# 5) Bash Functions
-# 6) Bash Completion
-# 7) Miscellaneous
-# 8) Machine-Specific
-# 9) Cleanup
+# 2) PATH
+# 3) Polyfills
+# 4) Aliases
+# 5) Prompt String
+# 6) Bash Functions
+# 7) Bash Completion
+# 8) Miscellaneous
+# 9) Machine-Specific
+# 10) Cleanup
 
 
 ## 0) Bashrc Guard
@@ -78,6 +79,23 @@ _add_function() {
     _custom_user_functions["${_func}"]=""
 }
 _add_function _add_function
+
+_add_to_variable_with_path_separator() {
+    local _variable _value
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
+    fi
+    _variable="${1}"
+    _value="${2}"
+    if [[ ! -f ${_value} || ! -d ${_value} ]]; then
+        echo "$(basename ${0}): Error: location ${_value} doesn't exist and won't be appended to ${_variable}" >&2
+        return 1
+    fi
+    eval _contents_of_variable="\$${_variable}"
+    export "${_variable}=${_contents_of_variable}:${_value}"
+    _custom_user_variables["${_variable}"]=""
+}
+_add_function _add_to_variable_with_path_separator
 
 declare -A _custom_user_auto_alias_completion_functions
 _add_auto_alias_completion_function() {
@@ -144,8 +162,8 @@ _add_alias() {
         if [[ "file" = "${_already_exists}" ]]; then
             _already_exists=$(type -p "${_alias}" 2>&1)
         fi
-        echo -e "$(basename -- ${0}): Error: alias [${_alias}] \t already exists as [${_already_exists}]" >&2
-        return 1
+        echo -e "$(basename -- ${0}): Warning: alias [${_alias}] \t already exists as [${_already_exists}]" >&2
+        # return 1
     fi
     if [[ ${2% *} = "cd" ]]; then
         _location="${2#* }"
@@ -181,6 +199,11 @@ _add_variable() {
     fi
     _variable="${1}"
     value="${@:2}"
+    eval _contents_of_variable="\$${_variable}"
+    if [[ -n ${_contents_of_variable} ]]; then
+        echo -e "$(basename -- ${0}): Warning: variable [${_variable}] \t already exists as [${_contents_of_variable}]" >&2
+
+    fi
     export "${_variable}=${value}"
     _custom_user_variables["${_variable}"]=""
 }
@@ -284,8 +307,54 @@ EOF
 }
 _add_function _rename_function
 
+_add_variable DOTFILES_LOCATION ~/dotfiles # TODO
+_add_alias dot "cd ${DOTFILES_LOCATION}"
+dba() {
+    {
+        for _dotfile in $(\ls -a ${DOTFILES_LOCATION} | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
+            echo "+ diff ${_dotfile}"
+            \diff ${DOTFILES_LOCATION}/${_dotfile} ~/${_dotfile} | grep -v "Only in"
+        done
+    } 2>&1 | \less -iFRX
+}
+_add_function dba
 
-## 2) Polyfills
+cpa() {
+    for _dotfile in $(\ls -a ${DOTFILES_LOCATION} | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
+        if [[ -d ${DOTFILES_LOCATION}/${_dotfile} ]]; then
+            \diff -qr ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile} 2>/dev/null 2>&1
+        else
+            \diff -q ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile} 2>/dev/null 2>&1
+        fi
+        if [[ $? -ne 0 ]]; then
+            echo "+ cp -i ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile}"
+            \cp -i ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile}
+        fi
+    done
+}
+_add_function cpa
+
+
+## 2) PATH
+# Android Studio/Intellij Paths
+# _add_variable STUDIO_JDK ../android/jdk1.8.0_65
+# _add_variable ANDROID_SDK .../android/android-sdk-linux
+_add_variable JDK_HOME $STUDIO_JDK
+_add_variable ANDROID_HOME $ANDROID_SDK
+# _add_variable ANDROID_NDK .../android/android-ndk-r10e
+# _add_variable GRADLE_HOME .../android/android-studio/gradle/gradle-2.8/bin
+# _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
+_add_to_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
+# _add_to_variable_with_path_separator PATH  ../android/android-studio/bin
+_add_to_variable_with_path_separator PATH $GRADLE_HOME
+_add_to_variable_with_path_separator PATH $JAVA_HOME
+_add_to_variable_with_path_separator PATH $ANDROID_SDK/platform-tools
+_add_to_variable_with_path_separator PATH $ANDROID_SDK/tools
+_add_to_variable_with_path_separator PATH $ANDROID_SDK/build-tools
+_add_to_variable_with_path_separator PATH $ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin
+
+
+## 3) Polyfills
 # Tree
 if [[ ! -x $(which tree 2>/dev/null) ]]; then
     _add_alias tree "find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'"
@@ -299,13 +368,13 @@ fi
 _add_alias icurl "curl -I"
 
 
-## 3) Aliases
+## 4) Aliases
 #   a) OS-specific
 #   b) Basic bash
 #   c) Short program
 #   d) Common
 
-## 3a) OS-specific aliases
+## 4a) OS-specific aliases
 case $OSTYPE in
 linux*)
     # tree
@@ -368,7 +437,7 @@ darwin*)
 ;;
 esac
 
-## 3b) Basic bash aliases
+## 4b) Basic bash aliases
 DATE_FORMAT="+%Y_%m_%d__%H_%M_%S"
 _add_alias rem "remove_trailing_spaces"
 #_add_alias ! "sudo !!" # This is a terrible alias and breaks a lot of stuff
@@ -441,7 +510,7 @@ darwin*)
 ;;
 esac
 
-## 3c) Short program aliases
+## 4c) Short program aliases
 # CD
 _add_alias .. "cd .."
 # ECHO
@@ -640,9 +709,10 @@ _add_alias gass "./gradlew assemble"
 _add_alias gid "./gradlew installDebug"
 _add_alias gaid "./gradlew assemble installDebug"
 
-## 3d) Common
+## 4d) Common
 _add_alias ed "\$EDITOR ~/.diary" # Programmer's Diary
 _add_alias eb "\$EDITOR ~/.bashrc"
+_add_alias eeb "\$EDITOR ~/.emacs ~/.bashrc"
 _add_alias ebb "\$EDITOR ~/.bash_profile"
 _add_alias em "\$EDITOR ~/.machine"
 _add_alias ee "\$EDITOR ~/.emacs"
@@ -658,7 +728,7 @@ _add_alias una "ps2; _clear_environment; unalias -a; alias sbb=\"source ~/.bash_
 _add_alias pb "una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 
 
-## 4) Prompt String
+## 5) Prompt String
 source_file ~/.git-prompt
 case $OSTYPE in
 linux*)
@@ -836,7 +906,7 @@ if [[ -z $SSH_CONNECTION ]]; then
 fi
 
 
-## 5) Bash Functions
+## 6) Bash Functions
 # Kill Child Processes
 kcp() {
     if [[ $# -ne 1 ]]; then
@@ -1248,7 +1318,7 @@ _add_function _git_branch_delete
 _rename_function gbd _git_branch_delete
 
 
-## 6) Bash Completion
+## 7) Bash Completion
 # Enable bash completion in interactive shells
 # recursively sources everything in /etc/bash_completion.d/
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
@@ -1365,7 +1435,7 @@ complete -W "\$(complete -p | rev | cut -d' ' -f1 | rev)" comp && _add_completio
 complete -F _command wow wowz && _add_completion_function wow wowz
 
 
-## 7) Miscellaneous
+## 8) Miscellaneous
 # Set XTERM window name
 case "$TERM" in
 xterm*|rxvt*)
@@ -1380,7 +1450,7 @@ _add_variable MAN_PAGER "less -i"
 # _add_variable USER_EMAIL "<EMAIL_ADDRESS>" # TODO
 
 
-## 8) Machine-Specific
+## 9) Machine-Specific
 source_file ~/.machine
 sem() { _search_file_wrapper $# "$1" ~/.machine; }
 _add_function sem
@@ -1389,5 +1459,5 @@ seml() { _search_file_occur_wrapper $# "$1" ~/.machine; }
 _add_function seml
 
 
-## 9) Cleanup
+## 10) Cleanup
 unset DATE_FORMAT
