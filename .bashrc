@@ -44,7 +44,7 @@ fi
 
 # Not doing much at the moment (remember, .bashrc should only be sourced
 #  within bash), might want to try something else here
-if [[ ! $SHELL =~ "bash" ]]; then
+if [[ ! $SHELL =~ bash ]]; then
     echo "Not running bash. Exiting. Shell=[${SHELL}]"
     return
 fi
@@ -61,9 +61,9 @@ source_file() {
         #  #Issues_using_talkative_shell_profiles
         if [[ ((-n "${SSH_TTY}") || (-n "${DESKTOP_SESSION}")) && (-z $2) ]]; then
             # echo "TTY - [${SSH_TTY}], DESKTOP - [${DESKTOP_SESSION}]"
-            source $1 && echo ".:Success! Sourced $1:."
+            source "$1" && echo ".:Success! Sourced $1:."
         else
-            source $1
+            source "$1"
         fi
     fi
 }
@@ -72,7 +72,7 @@ declare -A _custom_user_functions
 _add_function() {
     local _func="${1}"
     if [[ $# -ne 1 ]]; then
-        echo "bad function: $@"
+        echo "bad function: $*"
         echo "Usage: ${FUNCNAME[0]} FUNCTION_NAME" >&2 && return 1
     fi
     export -f "${_func}"
@@ -112,7 +112,7 @@ _optionally_add_completion_function_to_alias() {
     _second="${@:2}"
     _third="${@:3}"
     _potential_prog="${_second%% *}"
-    if [[ "sudo" = $_potential_prog ]]; then
+    if [[ "sudo" = "$_potential_prog" ]]; then
         if [[ $# -ne 3 ]]; then
             return 1
         else
@@ -123,16 +123,16 @@ _optionally_add_completion_function_to_alias() {
             return 1
         fi
     fi
-    type -t $_potential_prog >/dev/null 2>&1
+    type -t "${_potential_prog}" >/dev/null 2>&1
     if [[ $? -ne 0 ]]; then
         return 1
     else
-        complete -p $_potential_prog >/dev/null 2>&1
+        complete -p "${_potential_prog}" >/dev/null 2>&1
         if [[ $? -eq 0 ]]; then
             # Chop off name of command, so alias can be appended
             #  to end of completion command
-            _completion_function=$(complete -p $_potential_prog | rev | cut -d' ' -f2- | rev)
-            ${_completion_function} ${_alias}
+            _completion_function=$(complete -p "${_potential_prog}" | rev | cut -d' ' -f2- | rev)
+            ${_completion_function} "${_alias}"
             _add_auto_alias_completion_function "${_alias}"
             # echo "auto-detected completion function for alias: [${_alias}] -> [${_completion_function}]"
         else
@@ -148,7 +148,7 @@ _add_alias() {
     # TODO: Should hostname be part of .machine aliases?? This would help with the error message below
     # TODO: Check for "$" in aliased cmd, and print the evaluated value as well as variable name
     if [[ $# -lt 2 ]]; then
-        echo "bad alias: $@"
+        echo "bad alias: $*"
         echo "Usage: ${FUNCNAME[0]} ALIAS COMMAND" >&2 && return 1
     fi
     _alias="${1}"
@@ -177,7 +177,7 @@ _add_alias() {
     fi
     alias ${_alias}="${_cmd}"
     _custom_user_aliases["${_alias}"]=""
-    _optionally_add_completion_function_to_alias $@
+    _optionally_add_completion_function_to_alias "$@"
 }
 _add_function _add_alias
 
@@ -194,7 +194,7 @@ declare -A _custom_user_variables
 _add_variable() {
     local _variable value
     if [[ $# -lt 2 ]]; then
-        echo "bad variable: $@"
+        echo "bad variable: $*"
         echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
     fi
     _variable="${1}"
@@ -294,7 +294,7 @@ _rename_function() {
     if [[ $# -ne 2 ]]; then
         echo "Usage: ${FUNCNAME[0]} ALIAS FUNCTION_NAME" >&2 && return 1
     fi
-    if [[ "function" != $(type -t $2) ]]; then
+    if [[ "function" != $(type -t "$2") ]]; then
         echo "$(basename -- ${0}): Error: ${2} not a valid function" >&2 && return 1
     fi
     # TODO: Confirm that this technique works cross-platform...
@@ -303,7 +303,7 @@ ${1}() {
     ${2} \${@};
 }
 EOF
-    _add_function $1
+    _add_function "$1"
 }
 _add_function _rename_function
 
@@ -311,24 +311,24 @@ _add_variable DOTFILES_LOCATION ~/dotfiles # TODO
 _add_alias dot "cd ${DOTFILES_LOCATION}"
 dba() {
     {
-        for _dotfile in $(\ls -a ${DOTFILES_LOCATION} | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
+        for _dotfile in $(\ls -a "${DOTFILES_LOCATION}" | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
             echo "+ diff ${_dotfile}"
-            \diff ${DOTFILES_LOCATION}/${_dotfile} ~/${_dotfile} | grep -v "Only in"
+            \diff "${DOTFILES_LOCATION}/${_dotfile}" ~/"${_dotfile}" | grep -v "Only in"
         done
     } 2>&1 | \less -iFRX
 }
 _add_function dba
 
 cpa() {
-    for _dotfile in $(\ls -a ${DOTFILES_LOCATION} | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
-        if [[ -d ${DOTFILES_LOCATION}/${_dotfile} ]]; then
-            \diff -qr ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile} 2>/dev/null 2>&1
+    for _dotfile in $(\ls -a "${DOTFILES_LOCATION}" | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
+        if [[ -d "${DOTFILES_LOCATION}/${_dotfile}" ]]; then
+            \diff -qr ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}" 2>/dev/null 2>&1
         else
-            \diff -q ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile} 2>/dev/null 2>&1
+            \diff -q ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}" 2>/dev/null 2>&1
         fi
         if [[ $? -ne 0 ]]; then
             echo "+ cp -i ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile}"
-            \cp -i ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile}
+            \cp -i ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}"
         fi
     done
 }
@@ -339,19 +339,19 @@ _add_function cpa
 # Android Studio/Intellij Paths
 # _add_variable STUDIO_JDK ../android/jdk1.8.0_65
 # _add_variable ANDROID_SDK .../android/android-sdk-linux
-_add_variable JDK_HOME $STUDIO_JDK
-_add_variable ANDROID_HOME $ANDROID_SDK
+_add_variable JDK_HOME "$STUDIO_JDK"
+_add_variable ANDROID_HOME "$ANDROID_SDK"
 # _add_variable ANDROID_NDK .../android/android-ndk-r10e
 # _add_variable GRADLE_HOME .../android/android-studio/gradle/gradle-2.8/bin
 # _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
 _add_to_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
 # _add_to_variable_with_path_separator PATH  ../android/android-studio/bin
-_add_to_variable_with_path_separator PATH $GRADLE_HOME
-_add_to_variable_with_path_separator PATH $JAVA_HOME
-_add_to_variable_with_path_separator PATH $ANDROID_SDK/platform-tools
-_add_to_variable_with_path_separator PATH $ANDROID_SDK/tools
-_add_to_variable_with_path_separator PATH $ANDROID_SDK/build-tools
-_add_to_variable_with_path_separator PATH $ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin
+_add_to_variable_with_path_separator PATH "$GRADLE_HOME"
+_add_to_variable_with_path_separator PATH "$JAVA_HOME"
+_add_to_variable_with_path_separator PATH "$ANDROID_SDK/platform-tools"
+_add_to_variable_with_path_separator PATH "$ANDROID_SDK/tools"
+_add_to_variable_with_path_separator PATH "$ANDROID_SDK/build-tools"
+_add_to_variable_with_path_separator PATH "$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin"
 
 
 ## 3) Polyfills
@@ -947,7 +947,8 @@ mkd() { mkdir -p "${@}" && cd "${@: -1}"; }
 _add_function mkd
 
 mkdd() {
-    local dir=$(date $DATE_FORMAT);
+    local dir
+    dir=$(date $DATE_FORMAT);
     mkdir -p "${dir}" && cd "${dir}";
 }
 _add_function mkdd
@@ -968,7 +969,7 @@ longer() {
     if [[ ! -f $file ]]; then
         echo "$(basename -- ${0}): Error: $file is not a regular file" >&2 && return 1
     fi
-    grep -nE ^.{82} $file | cut -f1 -d: | xargs -I{} sh -c "echo -n "{}:" && sed -n {},{}p $file | grep --color=always -E ^.{81}"
+    grep -nE "^.{$((line_length + 2))}" "$file" | cut -f1 -d: | xargs -I{} sh -c "echo -n "{}:" && sed -n {},{}p $file | grep --color=always -E ^.{$((line_length + 1))}"
 }
 _add_function longer
 
@@ -979,7 +980,7 @@ remove_trailing_spaces() {
     elif [[ ! -f $1 ]]; then
         echo "$(basename -- ${0}): Error: $1 is not a regular file" >&2 && return 1
     fi
-    sed -i 's/[ \t]*$//' $1
+    sed -i 's/[ \t]*$//' "$1"
 }
 _add_function remove_trailing_spaces
 
@@ -1002,7 +1003,7 @@ cd() {
     else
         # Condense dotted paths to dots
         local e="s:\.\.\.:../..:g";
-        builtin cd "${@:1:$n-1}" $(sed -e$e -e$e -e$e <<< "${!n}");
+        builtin cd "${@:1:$n-1}" "$(sed -e$e -e$e -e$e <<< "${!n}")";
     fi
 }
 _add_function cd
@@ -1011,8 +1012,9 @@ _add_function cd
 hooks() {
     if [[ $(git rev-parse --is-bare-repository) == "false" ]]; then
         if [[ $(git rev-parse --is-inside-work-tree) == "true" ]]; then
-            local gitdir=$(git rev-parse --git-dir)
-            echo $(realpath "${gitdir}/hooks/")
+            local gitdir
+            gitdir=$(git rev-parse --git-dir)
+            realpath "${gitdir}/hooks/"
             ls -lh "${gitdir}/hooks/"
         else
             echo "$(basename -- ${0}): Error: not inside working tree." >&2 && return 1
@@ -1040,12 +1042,13 @@ safely_call() {
 _add_function safely_call
 
 create_temp_py_file() {
-    local temp_dir="${HOME}/tmp"
-    local tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.py)" || return 1;
+    local temp_dir tmpfile
+    temp_dir="${HOME}/tmp"
+    tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.py)" || return 1;
     # These sed's are designed to be cross-platform
-    sed -e "s/# Created:/# Created: $(date)/" ${temp_dir}/template.py \
-        | sed -e "s/# Author:/# Author:  $(echo $USER)/" > ${tmpfile}
-    ${EDITOR} ${tmpfile}
+    sed -e "s/# Created:/# Created: $(date)/" "${temp_dir}/template.py" \
+        | sed -e "s/# Author:/# Author:  $USER/" > "${tmpfile}"
+    ${EDITOR} "${tmpfile}"
 }
 _add_function create_temp_py_file
 
@@ -1061,7 +1064,7 @@ remove_all_empty_temp_files() {
         if [[ $_file != "${temp_dir}/template.py" ]]; then
             if [[ ( -z $(\diff "${temp_dir}/template.py" "${_file}") ) || ( ! -s "${_file}" ) ]]; then
                 echo -n "removing ${_file}..."
-                rm -rf ${_file}
+                rm -rf "${_file}"
                 echo -e "\tDone."
             fi
         fi
@@ -1078,7 +1081,8 @@ _add_alias temp "\${EDITOR} \${HOME}/tmp/template.py"
 # Git Push to all remotes
 gpa() {
     if [[ "function" = $(type -t __git_remotes) ]]; then
-        local current_branch=$(git rev-parse --abbrev-ref HEAD)
+        local current_branch
+        current_branch=$(git rev-parse --abbrev-ref HEAD)
         for _ith_remote in $(__git_remotes); do
             set -x
             git push "${_ith_remote}" "${current_branch}"
@@ -1097,7 +1101,7 @@ create_shortcut() {
         echo "Usage: ${FUNCNAME[0]} NEW_ALIAS" >&2 && return 1
     fi
 
-    is_alias=$(type -t $1)
+    is_alias=$(type -t "$1")
     if [[ "${is_alias}" = "alias" ]]; then
         echo "$(basename -- ${0}): Error: $1 is already an alias." >&2 && return 1
     fi
@@ -1115,9 +1119,9 @@ body() {
         echo "$(basename -- ${0}): Error: $3 is not a regular file." >&2 && return 1
     fi
     if [[ $3 = "-" ]]; then
-        sed -n ${1},${2}p
+        sed -n "${1},${2}p"
     else
-        sed -n ${1},${2}p ${3}
+        sed -n "${1},${2}p" "${3}"
     fi
 }
 _add_function body
@@ -1128,7 +1132,7 @@ line() {
     elif [[ ! -f $2 ]]; then
         echo "$(basename -- ${0}): Error: $2 is not a regular file." >&2 && return 1
     fi
-    sed -n ${1},${1}p ${2}
+    sed -n "${1},${1}p" "${2}"
 }
 _add_function line
 
@@ -1160,14 +1164,15 @@ linux*)
         fi
         echo "There are [$(numtabs ${1})] tabs in [${1}]"
         echo "Tabs -> 4 spaces in [${1}]..."
-        local tmpfilename="${1}.expanded4.$(date $DATE_FORMAT)"
+        local tmpfilename
+        tmpfilename="${1}.expanded4.$(date $DATE_FORMAT)"
         tab "${1}" > "${tmpfilename}"
         \mv -i "${tmpfilename}" "${1}"
     }
     _add_function untabify
 esac
 
-search_file() { \grep --color=always -in "$1" $2; }
+search_file() { \grep --color=always -in "$1" "$2"; }
 _add_function search_file
 
 # 1: Number of args to calling script
@@ -1180,7 +1185,7 @@ _search_file_wrapper() {
     elif [[ ! -f "$3" ]]; then
         echo "$(basename -- ${0}): Error: $3 is not a regular file" >&2 && return 1
     fi
-    search_file "$2" $3
+    search_file "$2" "$3"
 }
 _add_function _search_file_wrapper
 
@@ -1200,7 +1205,7 @@ _search_file_occur_wrapper() {
     elif [[ ! -f "$3" ]]; then
         echo "$(basename -- ${0}): Error: $3 is not a regular file" >&2 && return 1
     fi
-    search_file "$2" $3 | wc -l
+    search_file "$2" "$3" | wc -l
 }
 _add_function _search_file_occur_wrapper
 
@@ -1215,7 +1220,8 @@ al() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} ALIAS" >&2 && return 1
     fi
-    local is_defined=$(type -t $1)
+    local is_defined
+    is_defined="$(type -t $1)"
     if [[ -n "${is_defined}" ]]; then
         echo "Yes"
     else
@@ -1226,10 +1232,10 @@ _add_function al
 
 # Generate a TAGS file for emacs
 gentags() {
-    if [[ 'c' = $1 ]]; then
-        \time -v find . -iname "*.[ch]" -o -iname "*.cc" 2>/dev/null | xargs etags -a 2>/dev/null &
+    if [[ 'c' = "$1" ]]; then
+        command time -v find . -iname "*.[ch]" -o -iname "*.cc" 2>/dev/null | xargs etags -a 2>/dev/null &
     else
-        \time -v find . -iname "*.[ch]" -o -iname "*.cc" -o -iname "*.[ch]pp" 2>/dev/null | xargs etags -a 2>/dev/null &
+        command time -v find . -iname "*.[ch]" -o -iname "*.cc" -o -iname "*.[ch]pp" 2>/dev/null | xargs etags -a 2>/dev/null &
     fi
 }
 _add_function gentags
@@ -1240,11 +1246,11 @@ gcl() {
         echo "Usage: ${FUNCNAME[0]} URL" >&2 && return 1
     fi
     # echo "\$#: [$#] \$@: [$@] \${!#%.git}: ${!#%.git} basename: $(basename -- ${!#%.git})"
-    git clone $@
+    git clone "$@"
     if [[ $# -gt 1 ]]; then
-        cd $(basename -- ${!#%.git})
+        cd "$(basename -- ${!#%.git})"
     else
-        cd $(basename -- ${1%.git})
+        cd "$(basename -- ${1%.git})"
     fi
 }
 _add_function gcl
@@ -1254,8 +1260,8 @@ unz() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} URL" >&2 && return 1
     fi
-    unzip $1 -d ${1%.zip}
-    cd $(basename -- ${1%.zip})
+    unzip "$1" -d "${1%.zip}"
+    cd "$(basename -- ${1%.zip})"
 }
 _add_function unz
 
@@ -1264,13 +1270,13 @@ bk() {
         echo "Usage: ${FUNCNAME[0]} PATH" >&2 && return 1
     fi
     set -x
-    cp -ipr ${1%/} ${1%/}.bk
+    cp -ipr "${1%/}" "${1%/}.bk"
     { set +x; } 2>/dev/null
 }
 _add_function bk
 
 rtrav() {
-    test -e $2/$1 && echo $2 || { test $2 != / && rtrav $1 `dirname $2`;};
+    test -e "${2}"/"${1}" && echo "$2" || { test "$2" != / && rtrav "$1" "$(dirname $2)";};
 }
 _add_function rtrav
 
@@ -1278,7 +1284,7 @@ wow() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} COMMAND" >&2 && return 1
     fi
-    \ls  $(which "$1")
+    \ls  "$(which "$1")"
 }
 _add_function wow
 
@@ -1286,7 +1292,7 @@ wowz() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} COMMAND" >&2 && return 1
     fi
-    ls -alh $(which "$1")
+    ls -alh "$(which "$1")"
 }
 _add_function wowz
 
@@ -1336,7 +1342,8 @@ fi
 _complete_most_recently_modified_file() {
     # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
     if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
-        local latest_filename=$(find "${2}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
+        local latest_filename
+        latest_filename=$(find "${2}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
         if [[ -n "${latest_filename}" ]]; then
             if [[ "${2}" == */ ]]; then
                 COMPREPLY="${2}${latest_filename}"
@@ -1354,7 +1361,8 @@ complete -o default -F _complete_most_recently_modified_file tl l les dx unz \
 
 # Add bash auto-completion to `screen -r` alias
 _complete_scr() {
-    local does_screen_exist=$(type -t _screen_sessions)
+    local does_screen_exist
+    does_screen_exist=$(type -t _screen_sessions)
     local cur=$2 # Needed by _screen_sessions
     if [[ "function" = "${does_screen_exist}" ]]; then
         _screen_sessions "Detached"
@@ -1365,7 +1373,8 @@ complete -F _complete_scr scr && _add_completion_function scr
 
 # Add bash auto-completion to `screen -D -R` alias
 _complete_scd() {
-    local does_screen_exist=$(type -t _screen_sessions)
+    local does_screen_exist
+    does_screen_exist=$(type -t _screen_sessions)
     local cur=$2 # Needed by _screen_sessions
     if [[ "function" = "${does_screen_exist}" ]]; then
         _screen_sessions "Attached"
@@ -1375,7 +1384,7 @@ _add_function _complete_scd
 complete -F _complete_scd scd && _add_completion_function scd
 
 _apt_get_install() {
-    local cur prev special i;
+    local cur prev;
     COMPREPLY=();
     _get_comp_words_by_ref cur prev;
     if [[ ${#COMP_WORDS[@]} -gt 2 ]]; then
@@ -1399,7 +1408,7 @@ _add_function _apt_get_install
 complete -F _apt_get_install agi acs && _add_completion_function agi acs
 
 _mail_addresses() {
-    local cur prev special i;
+    local cur prev;
     COMPREPLY=();
     _get_comp_words_by_ref cur prev;
     if [[ -z $USER_EMAIL ]]; then

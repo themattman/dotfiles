@@ -1615,3 +1615,13 @@ git hash-object                         # Compute object ID or create blob from
 list-packages                           # Emacs, list all packages from sources
 eval contents_of_var="\$${var}"         # Bash, get contents of a variable that
                                         #  you only have the name of
+
+#
+# 08/23/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-c ! l                                 # Emacs flycheck, list all errors
+https://github.com/koalaman/shellcheck/wiki/SC<ERROR_ID>
+                                        # Flycheck error description
+S                                       # Emacs flycheck, Sort on active column
