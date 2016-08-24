@@ -61,7 +61,7 @@ source_file() {
         #  #Issues_using_talkative_shell_profiles
         if [[ ((-n "${SSH_TTY}") || (-n "${DESKTOP_SESSION}")) && (-z $2) ]]; then
             # echo "TTY - [${SSH_TTY}], DESKTOP - [${DESKTOP_SESSION}]"
-            source $1 && echo ".:Success! Sourced $1 configs:."
+            source $1 && echo ".:Success! Sourced $1:."
         else
             source $1
         fi
@@ -1321,9 +1321,7 @@ _rename_function gbd _git_branch_delete
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
 # recursively sources everything in /etc/bash_completion.d/
-if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
-   . /etc/bash_completion
-fi
+source_file /etc/bash_completion
 source_file ~/.git-completion # This needs to be re-sourced after
                               #  the previous line. TODO: Consider moving above line
 # SSH auto-completion based on entries in known_hosts.
