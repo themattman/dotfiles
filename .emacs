@@ -47,7 +47,7 @@
 
 ; Do not create tilde backup files
 ;  (Don't make annoying ~ files)
-;(setq make-backup-files nil)
+(setq make-backup-files nil)
 ; Stop creating those #autosave# files
 (setq auto-save-default nil)
 
@@ -215,7 +215,7 @@
    '("gnu" . "http://elpa.gnu.org/packages/")
    t)
   (setq-default package-list
-        '(flycheck auto-complete))
+        '(flycheck flycheck-pyflakes auto-complete))
   (package-initialize)
 
   ; fetch the list of packages available
@@ -258,6 +258,7 @@
 ; https://raw.githubusercontent.com/illusori/emacs-flymake/master/flymake.el
 ;(add-hook 'python-mode-hook 'flymake-mode-on)
 ;(require 'flymake)
+(add-hook 'python-mode-hook 'flycheck-mode)
 
 (add-hook 'after-init-hook 'global-flycheck-mode)
 ;; Customize Flycheck
