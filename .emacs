@@ -1,9 +1,9 @@
-;;
-; .emacs
-;
+;;;; .emacs ---- Personal Configurations
+;;; Commentary:
 ; Author:       Matt Kneiser
 ; Created:      11/06/2014
 ; Last updated: 08/10/2016
+;;; Code:
 
 
                                         ; Install guide:
@@ -40,8 +40,9 @@
 
 ; Sane C bracket style
 ; 4 space tabs for all c-modes
-(setq c-default-style "linux"
-      c-basic-offset 4)
+(setq-default c-default-style "linux"
+              c-basic-offset 4)
+
 
 
 ; Do not create tilde backup files
@@ -128,16 +129,16 @@
 
 ; Better Scrolling
 ; http://stackoverflow.com/questions/3631220/fix-to-get-smooth-scrolling-in-emacs
-(setq redisplay-dont-pause t
-  scroll-margin 1
-  scroll-step 1
-  scroll-conservatively 10000
-  scroll-preserve-screen-position 1)
+;; (setq redisplay-dont-pause t
+;;   scroll-margin 1
+;;   scroll-step 1
+;;   scroll-conservatively 10000
+;;   scroll-preserve-screen-position 1)
 
-; On startup, open multiple files vertically instead of horizontally
 ;  http://stackoverflow.com/questions/6697514/when-opening-2-files-in-emacs-how-c
 ;  an-i-have-them-appear-side-by-side
 (defun 2-windows-vertical-to-horizontal ()
+  "On startup, open multiple files vertically instead of horizontally."
   (let ((buffers (mapcar 'window-buffer (window-list))))
     (when (= 2 (length buffers))
       (delete-other-windows)
@@ -151,20 +152,20 @@
 
 ; Take care of trailing whitespace
 (setq-default show-trailing-whitespace t)
-(setq whitespace-style '(trailing tabs newline tab-mark newline-mark))
+(setq-default whitespace-style '(trailing tabs newline tab-mark newline-mark))
 ;(add-hook 'before-save-hook 'delete-trailing-whitespace)
 ; http://stackoverflow.com/questions/6344474/how-can-i-make-emacs-highlight-lines
 ; -that-go-over-80-chars
 ; free of trailing whitespace and to use 80-column width, standard indentation
-(setq whitespace-line-column 80)
-(setq whitespace-style '(trailing
-             lines
-             space-before-tab
-             indentation
-             space-after-tab))
+(setq-default whitespace-line-column 80)
+(setq-default whitespace-style '(trailing
+                                 lines
+                                 space-before-tab
+                                 indentation
+                                 space-after-tab))
 
-; Copy everything in current buffer w/C-c C-a
 (defun copy-all ()
+  "Copy everything in current buffer."
   (interactive)
   (clipboard-kill-ring-save (point-min) (point-max))
   (message "Copied to clipboard."))
@@ -189,6 +190,7 @@
 (global-set-key (kbd "C-c C-l") 'align-regexp)
 
 (defun go-to-column ()
+  "Go to column."
   (interactive)
   (move-to-column 81))
 (global-set-key (kbd "M-g M-c") 'go-to-column)
@@ -212,7 +214,7 @@
    'package-archives
    '("gnu" . "http://elpa.gnu.org/packages/")
    t)
-  (setq package-list
+  (setq-default package-list
         '(flycheck auto-complete))
   (package-initialize)
 
@@ -235,7 +237,7 @@
 (ac-config-default)
 
 (setq vc-handled-backends ())
-(setq startup-echo-area-message (getenv "USER")) ; TODO getenv $USER
+(setq-default startup-echo-area-message (getenv "USER")) ; TODO getenv $USER
 (setq inhibit-startup-screen t) ; Don't show the welcome screen
 
 ; When opening emacs without a file, suppress the dumb *scratch* message
@@ -318,3 +320,5 @@
 ; Show whitespace as a dot
 ; DO NOT TRY THIS AT HOME
 ;(standard-display-ascii ?\s " ")
+
+;;; .emacs ends here
