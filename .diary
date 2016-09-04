@@ -1625,3 +1625,13 @@ C-c ! l                                 # Emacs flycheck, list all errors
 https://github.com/koalaman/shellcheck/wiki/SC<ERROR_ID>
                                         # Flycheck error description
 S                                       # Emacs flycheck, Sort on active column
+
+TODO: inquire status of set -x??? Can there be an alias s="set --" do the opposite of what's there? set -x or set +x??
+
+#
+# 08/29/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+flake8                                  # linters
+checkdoc

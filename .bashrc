@@ -87,7 +87,7 @@ _add_to_variable_with_path_separator() {
     fi
     _variable="${1}"
     _value="${2}"
-    if [[ ! -f ${_value} || ! -d ${_value} ]]; then
+    if [[ ! -d ${_value} ]]; then
         echo "$(basename ${0}): Error: location ${_value} doesn't exist and won't be appended to ${_variable}" >&2
         return 1
     fi
