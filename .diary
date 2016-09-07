@@ -1635,3 +1635,23 @@ Command                                 Comments
 ---------------------------------------------------------------------------------
 flake8                                  # linters
 checkdoc
+
+#
+# 09/04/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+1. finish path_var debugging. check against what it looks like at work, push to github
+  _add_to_variable, except PATH, don't add that to _custom_vars
+2. repo tool fake manifest, check if repo/hooks dir gets copied to all .git/hooks
+3. "stock_hooks" is accepted term, overwrite framework with this. s/root hooks/stock hooks/g
+4. update.sh - difference between gitdir and workingtree, set at beginning, and make assumptions from there, never cross assumptions (i.e. add .git to workingtree to obtain gitdir)
+git_dir_to_use is a terrible name
+
+git update -p [PROJECT]
+^ in a .repo git-repo modifies BOTH local and global config. Install_templates is likely to blame... Look closer. There be dragons.
+
+call a different function for every command in update.sh. Create more, smaller functions. There shouldn't be one line of logic by default,
+and then just a few functions that are non-default if opts are specified
+
+alias that shows all function names in a bash script I wrote - regex that looks for "FUNCTION_NAME () {" but only prints FUNCTION_NAME

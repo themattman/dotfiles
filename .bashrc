@@ -92,8 +92,12 @@ _add_to_variable_with_path_separator() {
         return 1
     fi
     eval _contents_of_variable="\$${_variable}"
-    export "${_variable}=${_contents_of_variable}:${_value}"
-    _custom_user_variables["${_variable}"]=""
+    if [[ -z "${_contents_of_variable}" ]]; then
+        export "${_variable}=${_value}"
+        _custom_user_path_variables["${_variable}"]="${_value}"
+    else
+        export "${_variable}=${_contents_of_variable}:${_value}"
+    fi
 }
 _add_function _add_to_variable_with_path_separator
 
@@ -280,11 +284,29 @@ _remove_all_variables() {
 }
 _add_function _remove_all_variables
 
+_remove_path() {
+    local counter=0
+    echo "unsetting all custom user paths..."
+    echo "reg = ${_custom_user_path_variables}"
+    echo "! = ${!_custom_user_path_variables}"
+    for _var in "${!_custom_user_path_variables}"; do
+        echo "---"
+        echo "${_var} = ${_custom_user_path_variables[${_var}]}"
+        echo "+++"
+        "${_var}"="${_custom_user_path_variables[${_var}]}"
+        unset "${_var}"
+        counter=$((counter+1))
+    done
+    unset _custom_user_path_variables
+    echo " done. ($counter variables unset)"
+}
+
 _clear_environment() {
     _remove_all_auto_alias_completion_functions
     _remove_all_aliases
     _remove_all_completion_functions
     _remove_all_variables
+    _remove_path
     _remove_all_functions
 }
 _add_function _clear_environment
@@ -336,22 +358,24 @@ _add_function cpa
 
 
 ## 2) PATH
+_add_to_variable_with_path_separator PATH "/usr/local/bin"
+_add_to_variable_with_path_separator PATH "/usr/bin"
 # Android Studio/Intellij Paths
 # _add_variable STUDIO_JDK ../android/jdk1.8.0_65
 # _add_variable ANDROID_SDK .../android/android-sdk-linux
-_add_variable JDK_HOME "$STUDIO_JDK"
-_add_variable ANDROID_HOME "$ANDROID_SDK"
+# _add_variable JDK_HOME "$STUDIO_JDK"
+# _add_variable ANDROID_HOME "$ANDROID_SDK"
 # _add_variable ANDROID_NDK .../android/android-ndk-r10e
 # _add_variable GRADLE_HOME .../android/android-studio/gradle/gradle-2.8/bin
 # _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
-_add_to_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
+# _add_to_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
 # _add_to_variable_with_path_separator PATH  ../android/android-studio/bin
-_add_to_variable_with_path_separator PATH "$GRADLE_HOME"
-_add_to_variable_with_path_separator PATH "$JAVA_HOME"
-_add_to_variable_with_path_separator PATH "$ANDROID_SDK/platform-tools"
-_add_to_variable_with_path_separator PATH "$ANDROID_SDK/tools"
-_add_to_variable_with_path_separator PATH "$ANDROID_SDK/build-tools"
-_add_to_variable_with_path_separator PATH "$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin"
+# _add_to_variable_with_path_separator PATH "$GRADLE_HOME"
+# _add_to_variable_with_path_separator PATH "$JAVA_HOME"
+# _add_to_variable_with_path_separator PATH "$ANDROID_SDK/platform-tools"
+# _add_to_variable_with_path_separator PATH "$ANDROID_SDK/tools"
+# _add_to_variable_with_path_separator PATH "$ANDROID_SDK/build-tools"
+# _add_to_variable_with_path_separator PATH "$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin"
 
 
 ## 3) Polyfills
