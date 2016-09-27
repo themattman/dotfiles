@@ -337,7 +337,6 @@ EOF
 _add_function _rename_function
 
 _add_variable DOTFILES_LOCATION ~/dotfiles # TODO
-_add_alias dot "cd ${DOTFILES_LOCATION}"
 dba() {
     {
         for _dotfile in $(\ls -a "${DOTFILES_LOCATION}" | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
@@ -548,6 +547,7 @@ esac
 ## 4c) Short program aliases
 # CD
 _add_alias .. "cd .."
+_add_alias dot "cd ${DOTFILES_LOCATION}"
 # ECHO
 _add_alias ec "echo"
 _add_alias ep "echo \$PATH"
