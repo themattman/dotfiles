@@ -90,7 +90,7 @@ _add_auto_alias_completion_function() {
 _add_function _add_auto_alias_completion_function
 
 _optionally_add_completion_function_to_alias() {
-    local _alias _second _third _potential_prog _completion_function
+    local _alias _second _third _potential_prog _prog_type _completion_function
     _alias=$1
     _second="${@:2}"
     _third="${@:3}"
@@ -106,12 +106,16 @@ _optionally_add_completion_function_to_alias() {
             return 1
         fi
     fi
-    type -t "${_potential_prog}" >/dev/null 2>&1
+    _prog_type=$(type -t "${_potential_prog}") # >/dev/null 2>&1)
     if [[ $? -ne 0 ]]; then
+        # Not a program, thus no completion spec
+        return 1
+    elif [[ "${_prog_type}" = "alias" ]]; then
+        # Recursive aliases
         return 1
     else
         complete -p "${_potential_prog}" >/dev/null 2>&1
-        if [[ $? -eq 0 ]]; then
+        if [[ $? -eq 0 && "${_potential_prog}" != "git" ]]; then
             # Chop off name of command, so alias can be appended
             #  to end of completion command
             _completion_function=$(complete -p "${_potential_prog}" | rev | cut -d' ' -f2- | rev)
@@ -292,18 +296,16 @@ _add_function _remove_all_variables
 _remove_path() {
     local _counter=0
     echo "unsetting all custom user paths..."
-    echo "reg = ${_custom_user_path_variables}"
-    echo "! = ${!_custom_user_path_variables}"
     for _var in "${!_custom_user_path_variables}"; do
-        echo "---"
-        echo "${_var} = ${_custom_user_path_variables[${_var}]}"
-        echo "+++"
-        "${_var}"="${_custom_user_path_variables[${_var}]}"
-        unset "${_var}"
+        echo "var: [${_var}] = [${_custom_user_path_variables[${_var}]}]"
+        # eval "${_var}"="${_custom_user_path_variables[${_var}]}"
+        if [[ -z ${_var+x} ]]; then
+            eval unset "${_var}"
+        fi
         _counter=$((_counter+1))
     done
     unset _custom_user_path_variables
-    echo " done. (${_counter} variables unset)"
+    echo " done. (${_counter} paths unset)"
 }
 
 _clear_environment() {
@@ -383,6 +385,8 @@ _add_to_variable_with_path_separator PATH "/usr/bin"
 # _add_to_variable_with_path_separator PATH "$ANDROID_SDK/tools"
 # _add_to_variable_with_path_separator PATH "$ANDROID_SDK/build-tools"
 # _add_to_variable_with_path_separator PATH "$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin"
+
+source_file /etc/bash_completion
 
 
 ## 3) Polyfills
@@ -1358,7 +1362,6 @@ _rename_function gbd _git_branch_delete
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
 # recursively sources everything in /etc/bash_completion.d/
-source_file /etc/bash_completion
 source_file ~/.git-completion # This needs to be re-sourced after
                               #  the previous line. TODO: Consider moving above line
 # SSH auto-completion based on entries in known_hosts.
