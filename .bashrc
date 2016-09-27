@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  08/10/2016
+# Last updated:  09/26/2016
 # Configuration: MACHINE_NAME # TODO a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -80,27 +80,6 @@ _add_function() {
 }
 _add_function _add_function
 
-_add_to_variable_with_path_separator() {
-    local _variable _value
-    if [[ $# -ne 2 ]]; then
-        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
-    fi
-    _variable="${1}"
-    _value="${2}"
-    if [[ ! -d ${_value} ]]; then
-        echo "$(basename ${0}): Error: location ${_value} doesn't exist and won't be appended to ${_variable}" >&2
-        return 1
-    fi
-    eval _contents_of_variable="\$${_variable}"
-    if [[ -z "${_contents_of_variable}" ]]; then
-        export "${_variable}=${_value}"
-        _custom_user_path_variables["${_variable}"]="${_value}"
-    else
-        export "${_variable}=${_contents_of_variable}:${_value}"
-    fi
-}
-_add_function _add_to_variable_with_path_separator
-
 declare -A _custom_user_auto_alias_completion_functions
 _add_auto_alias_completion_function() {
     local _alias
@@ -148,7 +127,7 @@ _add_function _optionally_add_completion_function_to_alias
 
 declare -A _custom_user_aliases
 _add_alias() {
-    local _alias _already_exists _cmd _location
+    local _alias _already_exists _cmd _location _add_comp_func
     # TODO: Should hostname be part of .machine aliases?? This would help with the error message below
     # TODO: Check for "$" in aliased cmd, and print the evaluated value as well as variable name
     if [[ $# -lt 2 ]]; then
@@ -166,8 +145,8 @@ _add_alias() {
         if [[ "file" = "${_already_exists}" ]]; then
             _already_exists=$(type -p "${_alias}" 2>&1)
         fi
+        _add_comp_func="bad"
         echo -e "$(basename -- ${0}): Warning: alias [${_alias}] \t already exists as [${_already_exists}]" >&2
-        # return 1
     fi
     if [[ ${2% *} = "cd" ]]; then
         _location="${2#* }"
@@ -181,7 +160,9 @@ _add_alias() {
     fi
     alias ${_alias}="${_cmd}"
     _custom_user_aliases["${_alias}"]=""
-    _optionally_add_completion_function_to_alias "$@"
+    if [[ -z ${_add_comp_func+x} ]]; then
+        _optionally_add_completion_function_to_alias "$@"
+    fi
 }
 _add_function _add_alias
 
@@ -196,22 +177,46 @@ _add_function _add_completion_function
 
 declare -A _custom_user_variables
 _add_variable() {
-    local _variable value
+    local _variable _value
     if [[ $# -lt 2 ]]; then
         echo "bad variable: $*"
         echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
     fi
     _variable="${1}"
-    value="${@:2}"
+    _value="${@:2}"
     eval _contents_of_variable="\$${_variable}"
     if [[ -n ${_contents_of_variable} ]]; then
         echo -e "$(basename -- ${0}): Warning: variable [${_variable}] \t already exists as [${_contents_of_variable}]" >&2
 
     fi
-    export "${_variable}=${value}"
+    export "${_variable}=${_value}"
     _custom_user_variables["${_variable}"]=""
 }
 _add_function _add_variable
+
+_add_to_variable_with_path_separator() {
+    local _variable _value _contents_of_variable
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
+    fi
+    _variable="${1}"
+    _value="${2}"
+    if [[ ! -d ${_value} ]]; then
+        echo "$(basename ${0}): Error: location ${_value} doesn't exist and won't be appended to ${_variable}" >&2
+        return 1
+    fi
+    eval _contents_of_variable="\$${_variable}"
+    if [[ -z "${_contents_of_variable+x}" ]]; then
+        export "${_variable}=${_value}"
+        if [[ -z ${_custom_user_path_variables+x} ]]; then
+            declare -A _custom_user_path_variables
+        fi
+        _custom_user_path_variables["${_variable}"]="${_value}"
+    else
+        export "${_variable}=${_contents_of_variable}:${_value}"
+    fi
+}
+_add_function _add_to_variable_with_path_separator
 
 _add_alias functions "echo \${!_custom_user_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
 _add_alias auto_added_alias_completion_functions "echo \${!_custom_user_auto_alias_completion_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
@@ -222,70 +227,70 @@ _add_alias _everything "echo \${!_custom_user_functions[@]} \${!_custom_user_aut
 _add_alias _num_everything "echo \${!_custom_user_functions[@]} \${!_custom_user_auto_alias_completion_functions[@]} \${!_custom_user_aliases[@]} \${!_custom_user_completion_functions[@]} \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' | wc -w"
 
 _remove_all_functions() {
-    local counter=0
+    local _counter=0
     echo -n "unsetting all custom user functions..."
     for _func in "${!_custom_user_functions[@]}"; do
         unset $_func &> /dev/null || unset -f $_func
-        counter=$((counter+1))
+        _counter=$((_counter+1))
     done
     unset _custom_user_functions
-    echo " done. ($counter functions unset)"
+    echo " done. (${_counter} functions unset)"
 }
 _add_function _remove_all_functions
 
 _remove_all_aliases() {
-    local counter=0
+    local _counter=0
     echo -n "unsetting all custom user aliases..."
     for _alias in "${!_custom_user_aliases[@]}"; do
         unalias "${_alias}"
-        counter=$((counter+1))
+        _counter=$((_counter+1))
     done
     unset _custom_user_aliases
-    echo " done. ($counter aliases unset)"
+    echo " done. (${_counter} aliases unset)"
 }
 _add_function _remove_all_aliases
 
 _remove_all_auto_alias_completion_functions() {
-    local counter _alias
-    counter=0
+    local _counter _alias
+    _counter=0
     echo -n "unsetting all auto-detected alias completion functions..."
     for _alias in "${!_custom_user_auto_alias_completion_functions[@]}"; do
         complete -r $_alias 2>/dev/null
-        counter=$((counter+1))
+        _counter=$((_counter+1))
     done
     unset _custom_user_auto_alias_completion_functions
-    echo " done. ($counter auto-detected alias completion functions unset)"
+    echo " done. (${_counter} auto-detected alias completion functions unset)"
 }
 _add_function _remove_all_auto_alias_completion_functions
 
 _remove_all_completion_functions() {
-    local counter=0
+    local _counter=0
     echo -n "unsetting all custom user completion functions..."
     for _completion_func in "${!_custom_user_completion_functions[@]}"; do
         complete -r $_completion_func 2>/dev/null
-        counter=$((counter+1))
+        _counter=$((_counter+1))
     done
     unset _custom_user_completion_functions
-    echo " done. ($counter completion functions unset)"
+    echo " done. (${_counter} completion functions unset)"
 }
 _add_function _remove_all_completion_functions
 
 _remove_all_variables() {
-    local counter=0
+    local _counter=0
     echo -n "unsetting all custom user variables..."
     for _variable in "${!_custom_user_variables[@]}"; do
         if [[ "PS1" != $_variable ]]; then
             unset $_variable
-            counter=$((counter+1))
+            _counter=$((_counter+1))
         fi
     done
     unset _custom_user_variables
-    echo " done. ($counter variables unset)"
+    echo " done. (${_counter} variables unset)"
 }
 _add_function _remove_all_variables
 
 _remove_path() {
-    local counter=0
+    local _counter=0
     echo "unsetting all custom user paths..."
     echo "reg = ${_custom_user_path_variables}"
     echo "! = ${!_custom_user_path_variables}"
@@ -295,10 +300,10 @@ _remove_path() {
         echo "+++"
         "${_var}"="${_custom_user_path_variables[${_var}]}"
         unset "${_var}"
-        counter=$((counter+1))
+        _counter=$((_counter+1))
     done
     unset _custom_user_path_variables
-    echo " done. ($counter variables unset)"
+    echo " done. (${_counter} variables unset)"
 }
 
 _clear_environment() {
@@ -358,8 +363,10 @@ _add_function cpa
 
 
 ## 2) PATH
+# Basic PATHs
 _add_to_variable_with_path_separator PATH "/usr/local/bin"
 _add_to_variable_with_path_separator PATH "/usr/bin"
+
 # Android Studio/Intellij Paths
 # _add_variable STUDIO_JDK ../android/jdk1.8.0_65
 # _add_variable ANDROID_SDK .../android/android-sdk-linux
