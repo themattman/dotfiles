@@ -1500,7 +1500,7 @@ Windows-<NUMBER>                        # Unity, opens an application from tray
 Windows (HOLD)                          # Unity, shows keyboard shortcuts
 etags stack                             # Emacs, tool to navigate TAGS history
 
-Figure out what this did:
+TODO: Figure out what this did:
 git blame --line-porcelain qcril.c | sed -n 's/^author //p' | sort | uniq -c | sort -rn
 
 #
@@ -1606,6 +1606,20 @@ Command                                 Comments
 ediff                                   # Emacs, diff two buffers
 
 #
+# 08/11/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+EXPECT_EQ() << "Custom fail message";   # Google Test, custom failure message
+ASSERT_STREQ()                          # Google Test, compare C strings
+CHAR_BIT                                # CPP, number of bits in a byte on your
+                                        #  platform as defined by stdint.h
+git unpack-object -t <.git/objects/.../FILE>
+                                        # Git, type of object
+man gitcore-tutorial                    # Git, great docs on internals
+fail2ban                                # Protect your mail server
+
+#
 # 08/13/2016
 #
 Command                                 Comments
@@ -1617,16 +1631,57 @@ eval contents_of_var="\$${var}"         # Bash, get contents of a variable that
                                         #  you only have the name of
 
 #
+# 08/16/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+linum-mode                              # Emacs, show line numbers in margin
+C-i                                     # Emacs, indent-for-tab
+
+#
+# 08/19/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+replace-regexp m_\([0-9]\) -> h_\1      # Emacs, replace m_4 -> h_4
+                                        #  Basically, \1 backrefers to a match
+                                        #  group.
+                                        # According to https://www.gnu.org
+                                        #               /software
+                                        #               /emacs
+                                        #               /tour
+\&                                      # Emacs, the original found text
+\1, \2, \3, etc.                        # Emacs, the 1/2/3rd parenthesized
+                                        #  subgroup in search/replace
+\#                                      # Emacs, number of replacements so far
+\?                                      # Emacs, string given by user on match
+\,(lisp-expression)                     # Emacs, result of evaluating expression
+C-s M-n                                 # Emacs, next item in search history
+C-s M-p                                 # Emacs, prev item in search history
+
+#
 # 08/23/2016
 #
 Command                                 Comments
 ---------------------------------------------------------------------------------
+locate                                  # Still figuring this command out
+strings /usr/lib/libstdc++.so.6 | grep GLIBC
+                                        # Find versions of GLIBC that libstdc++
+                                        #  is compiled against
+man ld.so                               # Found from "strace git push origin"
 C-c ! l                                 # Emacs flycheck, list all errors
 https://github.com/koalaman/shellcheck/wiki/SC<ERROR_ID>
                                         # Flycheck error description
 S                                       # Emacs flycheck, Sort on active column
 
 TODO: inquire status of set -x??? Can there be an alias s="set --" do the opposite of what's there? set -x or set +x??
+
+#
+# 08/25/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+headed vs. headless                     # Terminology, with/without display/gfx
 
 #
 # 08/29/2016
@@ -1637,21 +1692,189 @@ flake8                                  # linters
 checkdoc
 
 #
-# 09/04/2016
+# 08/30/2016
 #
 Command                                 Comments
 ---------------------------------------------------------------------------------
-1. finish path_var debugging. check against what it looks like at work, push to github
-  _add_to_variable, except PATH, don't add that to _custom_vars
-2. repo tool fake manifest, check if repo/hooks dir gets copied to all .git/hooks
-3. "stock_hooks" is accepted term, overwrite framework with this. s/root hooks/stock hooks/g
-4. update.sh - difference between gitdir and workingtree, set at beginning, and make assumptions from there, never cross assumptions (i.e. add .git to workingtree to obtain gitdir)
-git_dir_to_use is a terrible name
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON <DIR>
+                                        # CMake, create compile_commands.json
+clang-tidy -p . <FILE_TO_COMPILE>
 
-git update -p [PROJECT]
-^ in a .repo git-repo modifies BOTH local and global config. Install_templates is likely to blame... Look closer. There be dragons.
+#
+# 09/07/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+echo 1 | od -to2 | head -n1 | cut -d' ' -f2 | cut -c6
+                                        # Ubuntu, endianness check.
+                                        #  1 = little endian
+                                        #  0 = big endian
+readelf                                 # Display contents about ELF exe's
+objdump -af                             # View object information about a static
+                                        #  lib
+nm -g <LIB>.so                          # Print symbols (like functions) of a .so
+readelf -Ws <LIB>.so                    # Print symbols (like functions) of a .so
+/sbin/ldconfig -p | grep <LIB>          # Check what libraries linker knows to use
 
-call a different function for every command in update.sh. Create more, smaller functions. There shouldn't be one line of logic by default,
-and then just a few functions that are non-default if opts are specified
+#
+# 09/09/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+man -K [--regex] "<SEARCH_TERM>"        # Search all man pages for a term
 
-alias that shows all function names in a bash script I wrote - regex that looks for "FUNCTION_NAME () {" but only prints FUNCTION_NAME
+#
+# 09/13/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-.                                     # Bash, grab last argument to prev cmd
+emacs !$                                # Bash, same as above, bash expands !$
+!!:p
+!$:p                                    # Bash, print the evaluation of variable
+rm -I/-i                                # Investigate which one can help avoid
+                                        #  mistakes TODO
+magic-space                             # Bash, history expansion, TODO
+C-p/C-n                                 # Bash, history back/forth
+.inputrc                                # Best place to put readline bindings
+                                        #  so they're read by more than just
+                                        #  bash, including python, mysql, etc
+                                        #  TODO
+
+#
+# 09/21/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+lsmod                                   # View modules loaded by kernel
+                                        #  used when debugging USB camera on 410c
+ls /dev/video*                          # View all the video devices
+dmesg | grep -i video
+
+#
+# 09/30/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+nmcli                                   # Network manager on Linux, use it to
+                                        #  query or operate on wifi/wired
+                                        #  connections
+
+#
+# 10/05/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ctrlaltdel
+
+#
+# 10/06/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+find . -name "*.cpp" -print -or -name "*.h" -print | xargs etags --append
+nanosleep
+
+#
+# 10/10/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Ctrl+-                                  # Microsoft Excel, delete hilighted cell
+
+#
+# 10/20/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+head -c 10 file.binary                  # Print first few bytes of file, useful
+                                        #  for binary files when no line breaks
+                                        #  expected
+
+#
+# 10/24/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+lspci                                   # Show all PCI devices
+modinfo                                 # Show more info about a kernel driver
+
+#
+# 11/01/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git fetch --tags
+/etc/rc.local                           # Startup script on Debian/Ubuntu
+
+#
+# 11/04/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+nl -s prefix file.txt | cut -c7-        # Adds "prefix" to every line of file
+sort --version-sort -f                  # Sorts numbers when they're not
+                                        #  preceeded by a 0, i.e. zero-filled
+#
+# 11/08/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+convert source.jpg -colorspace Gray dest.jpg
+                                        # Convert color jpeg into grayscale
+awk -F ':' '$4 >= 1 && $4 <= 10{print $1}'
+
+#
+# 11/14/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+setserial -g /dev/ttyS[0123]            # List all serial ports and their info
+
+#
+# 11/16/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+dpkg -l                                 # List all packages installed on machine
+
+
+#
+# 12/16/2016
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+find . -type f | awk -F. '!a[$NF]++{print $NF}'
+                                        # Print all file extensions in a
+                                        #  directory
+sudo dpkg -L python-opencv              # Location of package files
+
+#
+# 01/12/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+rsync -avz my_dir user@host:/my_dir     # Pickup where scp left off, make sure
+                                        #  to specify my_dir explicitly on the
+                                        #  remote
+package-activated-list                  # Emacs, variable that contains all
+                                        #  installed packages
+grep -oE "[^e]{1}alloc_buf\([^,]*," .   # Using more complex grep syntax
+
+#
+# 01/26/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Ctrl-Alt-Pause/Break                    # Windows, toggle full-screen for rdp
+g                                       # Emacs dired, update the list
+M-p,M-n                                 # Emacs isearch, prev/next search terms
+j,k,l                                   # Youtube, back 10s, pause, fwd 10s
+
+#
+# 01/27/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+rename                                  # Rename many files in bash
+${@:1:-1}                               # Bash, everything except last item

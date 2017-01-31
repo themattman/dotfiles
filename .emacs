@@ -5,301 +5,380 @@
 ; Last updated: 08/10/2016
 ;;; Code:
 
+;;
+;;
+;;
+;; Packages Installed
+;;
+;;
+;;
+;; auto-complete
+;; dash
+;; epl
+;; flycheck
+;; let-alist
+;; mo-git-blame
+;; pkg-info
+;; popup
+;; seq
 
-                                        ; Install guide:
-                                        ; M-x list-packages
-                                        ;
+;;
+;;
+;;
+;; Packages
+;;
+;;
+;;
+;; (require 'auto-complete-config)
+;; (require 'auto-complete-etags)
+;; (require 'bind-key)
+;; (require 'clang-format)
+;; (require 'flymake)
+;; (require 'py-autopep8)
+;; (require 'python-pep8)
+;; (require 'sublime-text-2)
+; Package Manager
+(when (>= emacs-major-version 24)
+  (require 'package)
+  (add-to-list
+   'package-archives
+   '("melpa" . "https://melpa.org/packages/") t)
+  (add-to-list
+   'package-archives
+   '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+  (add-to-list
+   'package-archives
+   '("gnu" . "http://elpa.gnu.org/packages/") t)
+  (setq package-list)
+        ;; '(flycheck auto-complete))
+  (package-initialize)
+  (unless package-archive-contents      ; fetch the list of packages available
+    (package-refresh-contents))
+  (dolist (package package-list)        ; install the missing packages
+    (unless (package-installed-p package)
+      (package-install package))))
+;; (when (< emacs-major-version 24)
+(require 'package) ; "~/.emacs.d/package.el")
+(add-to-list 'package-archives
+             '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives
+             '("melpa-stable" . "https://stable.melpa.org/packages/"))
+;; For important compatibility libraries like cl-lib
+(add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/"))
+(package-initialize)
+;; (add-to-list 'load-path "~/.emacs.d/mo-git-blame.el")
+;; (autoload 'mo-git-blame-file "mo-git-blame" nil t)
+;; (autoload 'mo-git-blame-current "mo-git-blame" nil t)
 
-; Reload .emacs file
-;; (global-set-key "\C-x\C-l" 'load-file "~/.emacs")
 
-; Use spaces not tabs
-(setq-default indent-tabs-mode nil)
-(setq-default tab-width 4)
-(setq tab-width 4)
-;; (custom-set-variables
-;;   ;; custom-set-variables was added by Custom.
-;;   ;; If you edit it by hand, you could mess it up, so be careful.
-;;   ;; Your init file should contain only one such instance.
-;;   ;; If there is more than one, they won't work right.
-;;  '(tab-stop-list (quote (4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120))))
-;(setq indent-line-function 'insert-tab)
+;;
+;;
+;;
+;; Functions
+;;
+;;
+;;
+(defun navigate-backwards ()
+  (interactive)
+  (other-window -1))
+(defun reload-init-file ()
+  (interactive)
+  (load-file "~/.emacs"))
+(defun copy-all ()
+  (interactive)
+  (clipboard-kill-ring-save (point-min) (point-max))
+  (message "Copied to clipboard."))
+;  http://stackoverflow.com/questions/6697514/when-opening-2-files-in-emacs-how-c
+;  an-i-have-them-appear-side-by-side
+(defun 2-windows-vertical-to-horizontal ()
+  (let ((buffers (mapcar 'window-buffer (window-list))))
+    (when (= 2 (length buffers))
+      (delete-other-windows)
+      (set-window-buffer (split-window-horizontally) (cadr buffers)))))
+(defun go-to-column ()
+  (interactive)
+  (move-to-column 81))
+(defun next-line-and-recenter () (interactive) (next-line) (recenter))
+(defun previous-line-and-recenter () (interactive) (previous-line) (recenter))
+(defun gcm-scroll-down ()
+  (interactive)
+  (scroll-up 1))
+(defun gcm-scroll-up ()
+  (interactive)
+  (scroll-down 1))
+(defun find-file-upwards (file-to-find)
+    "Recursively searches each parent directory starting from the default-directory.
+looking for a file with name file-to-find.  Returns the path to it
+or nil if not found."
+    (cl-labels
+        ((find-file-r (path)
+                      (let* ((parent (file-name-directory path))
+                             (possible-file (concat parent file-to-find)))
+                        (cond
+                         ((file-exists-p possible-file) possible-file) ; Found
+                         ;; The parent of ~ is nil and the parent of / is itself.
+                         ;; Thus the terminating condition for not finding the file
+                         ;; accounts for both.
+                         ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
+                         (t (find-file-r (directory-file-name parent))))))) ; Continue
+      (find-file-r default-directory)))
 
-; Show column numbers
-(setq column-number-mode t)
 
-; Static cursor that doesn't blink (Doesn't work?)
-(blink-cursor-mode 0)
-
-; Enable Upper/Lower case region commands
-(put 'upcase-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
-
-; Buffer-Menu shouldn't open in another window
-(global-set-key (kbd "C-x C-b") 'buffer-menu)
-
-; Sane C bracket style
-; 4 space tabs for all c-modes
-(setq-default c-default-style "linux"
-              c-basic-offset 4)
-
-
-
-; Do not create tilde backup files
-;  (Don't make annoying ~ files)
-(setq make-backup-files nil)
-; Stop creating those #autosave# files
-(setq auto-save-default nil)
-
-; Don't let echo area grow
-;  This is useful for forcing 'shell-command-on-region' output
-;  to be forced to a new buffer, and not wasted in the echo area
-(setq max-mini-window-height 1)
-
-; Tags File for current development
-;(setq tags-file-name "<PATHNAME_TO_TAGS_FILE>")
-
-; Consider putting all these tilde files into a dir under home
-;  that has a structure that mirrors the fs. If a tilde file
-;  needs to get saved, save it (as its full path) to something
-;  under home.
-;
-; Example:
-; When saving
-;   /user/mattman/somedir/another/dir/file.txt
-; Save its tilde file to
-;  ~/.tildes/user/mattman/somedir/another/dir/file.txt~
-;; (setq backup-directory "<PATHNAME_TO_BACKUP_DIR>")
-;; (if (not (file-exists-p backup-directory))
-;;     (make-directory backup-directory t))
-;; (setq backup-directory-alist `(("." . ,backup-directory)))
-;; (setq make-backup-files t ; backup of a file the first time it is saved
-;;       backup-by-copying t ; don't clobber symlinks
-;;       version-control t ; version numbers for backup files
-;;       delete-old-versions t ; delete excess backup files silently
-;;       delete-by-moving-to-trash t
-;;       kept-old-versions 5 ; oldest versions to keep when a new numbered backup is
-;;                           ;  made (default: 2)
-;;       kept-new-versions 5 ; newest versions to keep when a new numbered backup is
-;;                           ;  made (default: 2)
-;;       auto-save-default t ; auto-save every buffer that visits a file
-;;       ;auto-save-timeout 20 ; number of seconds idle time before auto-save
-;;       ;                     ;  (default: 30)
-;;       auto-save-interval 200 ; number of keystrokes between auto-saves
-;;                              ;  (default: 300)
-;; )
-
-; Newline at end of file
-(setq require-final-newline t)
-
-; Show the function you are in
-(which-function-mode 1)
-
-; yes/no -> y/n
-(fset 'yes-or-no-p 'y-or-n-p)
-
-; Navigate Buffers Backwards
-(global-set-key "\C-xp" (lambda ()
-                          (interactive)
-                          (other-window -1)))
-
+;;
+;;
+;;
+;; Keybindings
+;;
+;;
+;;
+(global-set-key (kbd "C-c g c") 'mo-git-blame-current); Git-Blame
+(global-set-key (kbd "C-c g f") 'mo-git-blame-file)   ; Git-Blame
+(global-set-key (kbd "C-c C-l") 'reload-init-file)    ; Reload .emacs file
+(global-set-key (kbd "C-x C-b") 'buffer-menu)         ; Buffer-Menu shouldn't open
+(global-set-key (kbd "C-c C-c") 'fundamental-mode)    ;  in another window
+(global-set-key (kbd "C-j"    ) 'scroll-down-command)
+(global-set-key (kbd "C-x p"  ) 'navigate-backwards)  ; Navigate Buffers Backwards
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;The following section is from:;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;https://sites.google.com/site/steveyegge2/effective-emacs;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Easier killing
-(global-set-key "\C-w" 'backward-kill-word) ;Added Bonus: Matches shell behavior
-(global-set-key "\C-x\C-k" 'kill-region)
-(global-set-key "\C-c\C-k" 'kill-region)
-
+(global-set-key (kbd "C-w"    ) 'backward-kill-word)  ; Added Bonus: Matches
+                                                      ; shell behavior
+(global-set-key (kbd "C-x C-k") 'kill-region)
+(global-set-key (kbd "C-c C-k") 'kill-region)
 ; Bind Alternate M-x's
-(global-set-key "\C-x\C-m" 'execute-extended-command)
-(global-set-key "\C-c\C-m" 'execute-extended-command)
+(global-set-key (kbd "C-x C-m") 'execute-extended-command)
+(global-set-key (kbd "C-c C-m") 'execute-extended-command)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;End Section;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+(global-set-key (kbd "C-c C-a") 'copy-all)          ; Copy everything in buffer
+(global-set-key (kbd "C-c C-r") 'revert-buffer)     ; Revert Buffer
+(global-set-key (kbd "C-c C-s") 'shell-script-mode) ; Shell-script-mode
+;; (global-set-key (kbd "C-m"    ) 'scroll-up-command)
+;; (global-set-key (kbd "C-n"    ) 'next-line-and-recenter)
+;; (global-set-key (kbd "C-P"    ) 'previous-line-and-recenter)
+;; (global-set-key (kbd "C-c C-m") 'makefile-mode)     ; Makefile-mode (remap this)
+;; (global-set-key (kbd "C-c C-l") 'align-regexp)      ; Line up all the = signs
+                                        ;  http://stackoverflow.com
+                                        ;   /questions
+                                        ;   /915985
+                                        ;   /in-emacs-how-to-line-up-equals-signs
+                                        ;  -in-a-series-of-initialization-statements
+(global-set-key (kbd "M-g M-c") 'go-to-column)
+;; (global-set-key [(control h)] 'delete-backward-char)
+;; (global-set-key (kbd "C-h"    ) 'delete-backward-char)
+;; (global-set-key (kbd "C-c C-l") 'clang-format-region) ; Auto-Formatting Code
 ; Proper Undo
 ;  since OSX doesn't default to the same shortcut as Ubuntu
 ;  C-_ is always undo, but it requires the user to press <shift>
-;(global-set-key "\C-\/" 'undo);Doesn't work.
+;; (global-set-key (kbd "C-/"    ) 'undo)              ; Doesn't work
 ; This is an X11 issue on OSX:
 ;  http://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control
 ;  -slash-to-the-terminal#comment27461_24282
+; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
 
-; Better Scrolling
-; http://stackoverflow.com/questions/3631220/fix-to-get-smooth-scrolling-in-emacs
-;; (setq redisplay-dont-pause t
-;;   scroll-margin 1
-;;   scroll-step 1
-;;   scroll-conservatively 10000
-;;   scroll-preserve-screen-position 1)
 
-;  http://stackoverflow.com/questions/6697514/when-opening-2-files-in-emacs-how-c
-;  an-i-have-them-appear-side-by-side
-(defun 2-windows-vertical-to-horizontal ()
-  "On startup, open multiple files vertically instead of horizontally."
-  (let ((buffers (mapcar 'window-buffer (window-list))))
-    (when (= 2 (length buffers))
-      (delete-other-windows)
-      (set-window-buffer (split-window-horizontally) (cadr buffers)))))
+;;
+;;
+;;
+;; Variables
+;;
+;;
+;;
+;; Tags File for RF SW development
+;(setq tags-file-name "TAGS")
+;; Tabs
+(setq-default indent-tabs-mode nil)     ; Use spaces not tabs
+(setq-default tab-width 4)
+(setq tab-width 4)
+;; Startup
+(setq inhibit-startup-echo-area-message (lambda () (user-login-name)))
+                                        ; Print "Welcome, USERNAME!" in the echo
+                                        ;  area on startup
+(setq initial-scratch-message nil)      ; When opening emacs without a file,
+                                        ;  suppress the dumb *scratch* message
+                                        ;  in the buffer
+;; Code
+(setq c-default-style                   ; Sane C bracket style
+      "linux"                           ;  4 space tabs for all c-modes
+      c-basic-offset 4)
+(setq auto-save-default nil)            ; Stop creating those #autosave# files
+;(setq make-backup-files nil)           ; Do not create tilde backup files
+(setq max-mini-window-height 1)         ; Don't let echo area grow
+                                        ;  This is useful for forcing
+                                        ;  'shell-command-on-region' output to
+                                        ;  be forced to a new buffer, and not
+                                        ;  wasted in the echo area
+;; Consider putting all these tilde files into a dir under home
+;;  that has a structure that mirrors the fs. If a tilde file
+;;  needs to get saved, save it (as its full path) to something
+;;  under home.
+;;
+;; Example:
+;; When saving
+;;   /user/mattman/somedir/another/dir/file.txt
+;; Save its tilde file to
+;;  ~/.tildes/user/mattman/somedir/another/dir/file.txt~
+(setq backup-directory "~/.tildes")
+(if (not (file-exists-p backup-directory))
+    (make-directory backup-directory t))
+(setq backup-directory-alist `(("." . ,backup-directory)))
+(setq make-backup-files t               ; backup of a file the first time it is saved
+      backup-by-copying t               ; don't clobber symlinks
+      version-control t                 ; version numbers for backup files
+      delete-old-versions t             ; delete excess backup files silently
+      delete-by-moving-to-trash t
+      kept-old-versions 5               ; oldest versions to keep when a new
+                                        ;  numbered backup is made (default: 2)
+      kept-new-versions 5               ; newest versions to keep when a new
+                                        ;  numbered backup is made (default: 2)
+      auto-save-default t               ; auto-save every buffer that visits a file
+      ;; auto-save-timeout 20              ; number of seconds idle time before auto-save
+      ;;                                   ; (default: 30)
+      auto-save-interval 200            ; number of keystrokes between auto-saves
+                                        ;  (default: 300)
+)
+(setq Buffer-menu-name-width 40)        ; Width of buffer name in *buffer-list*
+
+;;
+;;
+;;
+;; Hooks
+;;
+;;
+;;
+(add-hook 'after-init-hook #'global-flycheck-mode)
+(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
+;; (add-hook 'before-save-hook 'delete-trailing-whitespace)
+;; (add-hook 'before-save-hook 'py-autopep8-before-save)
+;; (add-hook 'before-save-hook 'py-autopep8-before-save)
 (add-hook 'emacs-startup-hook '2-windows-vertical-to-horizontal)
+(add-hook 'emacs-startup-hook (lambda () (message "Welcome, %s!" (user-login-name))))
+;; (add-hook 'prog-mode-hook 'column-enforce-mode)
+;; (add-hook 'python-mode-hook 'flymake-mode-on)
 
+
+;;
+;;
+;;
+;; Appearance
+;;
+;;
+;;
+(setq column-number-mode t)             ; Show column numbers
+(blink-cursor-mode 0)                   ; Static cursor that doesn't blink
+(tool-bar-mode -1)                      ; Disable toolbar
+(setq require-final-newline t)          ; Newline at end of file
+(which-function-mode 1)                 ; Show the function you are in
+(fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
+(setq redisplay-dont-pause t            ; Better Scrolling
+      scroll-margin 1                   ;  http://stackoverflow.com
+      scroll-step 1                     ;   /questions
+      scroll-conservatively 10000       ;   /3631220
+      scroll-preserve-screen-position 1);   /fix-to-get-smooth-scrolling-in-emacs
+(setq vc-handled-backends ())
+(setq inhibit-startup-screen t)         ; Don't show the welcome screen
+
+
+;;
+;;
+;;
+;; Behavior
+;;
+;;
+;;
+;; Java Mode file types
+(setq auto-mode-alist (cons '("\\.aidl$" . java-mode) auto-mode-alist))
+(setq auto-mode-alist (cons '("\\.proto$" . java-mode) auto-mode-alist))
+;; JavaScript major mode for .json files
+(setq auto-mode-alist (cons '("\\.json$" . js-mode) auto-mode-alist))
+;; Linters
+;; https://raw.githubusercontent.com/illusori/emacs-flymake/master/flymake.el
+;; Customize Flycheck
+(defvar flycheck-clang-include-path)
+;; (add-to-list 'flycheck-clang-include-path "../include")
+;; (setq-default flycheck-disabled-checkers '(c/c++-gcc))
+;; O'Reilly Emacs Book
+;; Don't let directory get changed from underneath you
+(setq-default shell-cd-regexp nil)
+(setq-default shell-pushd-regexp nil)
+(setq-default shell-popd-regexp nil)
+(put 'upcase-region 'disabled nil)      ; Enable Uppercase region commands
+(put 'downcase-region 'disabled nil)    ; Enable Lowercase region commands
 ; For setting the mark in older versions of emacs
 ; Let's you do:
 ;     Ctrl-<space> + Ctrl-n + Esc-;
 (transient-mark-mode 1)
-
-; Take care of trailing whitespace
 (setq-default show-trailing-whitespace t)
-(setq-default whitespace-style '(trailing tabs newline tab-mark newline-mark))
-;(add-hook 'before-save-hook 'delete-trailing-whitespace)
 ; http://stackoverflow.com/questions/6344474/how-can-i-make-emacs-highlight-lines
 ; -that-go-over-80-chars
 ; free of trailing whitespace and to use 80-column width, standard indentation
-(setq-default whitespace-line-column 80)
-(setq-default whitespace-style '(trailing
-                                 lines
-                                 space-before-tab
-                                 indentation
-                                 space-after-tab))
-
-(defun copy-all ()
-  "Copy everything in current buffer."
-  (interactive)
-  (clipboard-kill-ring-save (point-min) (point-max))
-  (message "Copied to clipboard."))
-(global-set-key (kbd "C-c C-a") 'copy-all)
-
-; Revert Buffer
-(global-set-key (kbd "C-c C-r") 'revert-buffer)
-
-; Shell-script-mode
-(global-set-key (kbd "C-c C-s") 'shell-script-mode)
-
-; Makefile-mode (remap this)
-;(global-set-key (kbd "C-c C-m") 'makefile-mode)
-
-; Mark whole bugger
-;(global-set-key (kbd "C-c C-") 'mark-whole-buffer) also (M-|)
-; shell-command-on-region
-
-; Line up all the = signs
-;  http://stackoverflow.com/questions/915985/in-emacs-how-to-line-up-equals-signs
-;  -in-a-series-of-initialization-statements
-(global-set-key (kbd "C-c C-l") 'align-regexp)
-
-(defun go-to-column ()
-  "Go to column."
-  (interactive)
-  (move-to-column 81))
-(global-set-key (kbd "M-g M-c") 'go-to-column)
+(setq whitespace-line-column 80)
 
 ; Load Emacs Libraries
 (add-to-list 'load-path "~/.emacs.d/themes")
+(add-to-list 'load-path "~/.emacs.d/elpa")
 ;; (add-to-list 'load-path "~/.emacs.d/") ; Not needed in Emacs 24.x
 
-                                        ; Package Manager
-(when (>= emacs-major-version 24)
-  (require 'package)
-  (add-to-list
-   'package-archives
-   '("melpa" . "https://melpa.org/packages/")
-   t)
-  (add-to-list
-   'package-archives
-   '("melpa-stable" . "https://stable.melpa.org/packages/")
-   t)
-  (add-to-list
-   'package-archives
-   '("gnu" . "http://elpa.gnu.org/packages/")
-   t)
-  (setq-default package-list
-        '(flycheck flycheck-pyflakes auto-complete))
-  (package-initialize)
-
-  ; fetch the list of packages available
-  (unless package-archive-contents
-    (package-refresh-contents))
-  ; install the missing packages
-  (dolist (package package-list)
-    (unless (package-installed-p package)
-      (package-install package))))
-
-; Auto-Formatting Code
-;; (require 'clang-format)
-;; (global-set-key (kbd "C-c C-l") 'clang-format-region)
-
-; Autocomplete
-;; (require 'auto-complete-config)
+;;
+;;
+;;
+;; Package Customizations
+;;
+;;
+;;
+;; Bind-key
+;; (bind-key* "C-i" 'some-function)
+;; Autocomplete
+(ac-config-default)
 ;; (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
 ; there used to be an extra slash between .d//ac-dict
-(ac-config-default)
+(setq whitespace-style '(trailing
+                         lines
+                         space-before-tab
+                         indentation
+                         space-after-tab))
+;; (setq whitespace-style '(trailing tabs newline tab-mark newline-mark))
 
-(setq vc-handled-backends ())
-(setq-default startup-echo-area-message (getenv "USER")) ; TODO getenv $USER
-(setq inhibit-startup-screen t) ; Don't show the welcome screen
 
-; When opening emacs without a file, suppress the dumb *scratch* message
-;  in the buffer
-(setq initial-scratch-message nil)
+;;
+;;
+;;
+;; Shortcuts to Remember
+;;
+;;
+;;
+;; C-x +: balance-windows
+;; M-t: transpose word (remap this)
+;; C-t: transpose letter
+;; fill-paragraph (wrap to 80 chars, map this!)
+;; C-x C-o: delete-blank-lines
+;; M-z: zap-to-char (remap this)
+;; M-^: delete-indentation (remap this)
+;; normal-mode (gets you out of the wrong mode)
+;; describe-variable
+;; buffer-menu / buffer-menu-other-window
+;; C-x k: kill-buffer
+;; M-|: shell-command-on-region
+;; C-x C-p: mark-page
 
-; Java Mode file types
-(setq auto-mode-alist (cons '("\\.aidl$" . java-mode) auto-mode-alist))
-(setq auto-mode-alist (cons '("\\.proto$" . java-mode) auto-mode-alist))
-
-; JavaScript major mode for .json diles
-(setq auto-mode-alist (cons '("\\.json$" . js-mode) auto-mode-alist))
-
-; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
-(global-set-key [(control h)] 'delete-backward-char)
-
-; Linters
-; https://raw.githubusercontent.com/illusori/emacs-flymake/master/flymake.el
-;(add-hook 'python-mode-hook 'flymake-mode-on)
-;(require 'flymake)
-(add-hook 'python-mode-hook 'flycheck-mode)
-
-(add-hook 'after-init-hook 'global-flycheck-mode)
-;; Customize Flycheck
-;; (setq-default flycheck-disabled-checkers '(c/c++-gcc))
-
-; Make file executable if shebang exists onSave
-(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
-
-;; O'Reilly Emacs Book
-; Don't let directory get changed from underneath you
-(setq-default shell-cd-regexp nil)
-(setq-default shell-pushd-regexp nil)
-(setq-default shell-popd-regexp nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;Shortcuts to Remember;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; C-x +: balance-windows
-; M-t: transpose word (remap this)
-; C-t: transpose letter
-; fill-paragraph (wrap to 80 chars, map this!)
-; C-x C-o: delete-blank-lines
-; M-z: zap-to-char (remap this)
-; M-^: delete-indentation (remap this)
-; normal-mode (gets you out of the wrong mode)
-; describe-variable
-; buffer-menu / buffer-menu-other-window
-; C-x k: kill-buffer
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;Junkyard;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
+;;
+;;
+;; Junkyard
+;;
+;;
+;;
+;; https://en.wikipedia.org/wiki/Common_Lisp#Comparison_with_other_Lisps
+;;
 ; 80 Char whitespace minor mode
 ;(load "column-enforce-mode")
-;(add-hook 'prog-mode-hook 'column-enforce-mode)
 ;(global-column-enforce-mode t)
 
 ; Sublime-text color theme, likely doesn't work
 ;(setq color-theme-is-global t)
-;(require 'sublime-text-2)
 ; (sublime-text-2)
 
 ; Python syntax highlighting
@@ -308,12 +387,7 @@
 
 ; Python Linter (autopep8)
 ;(add-to-list 'load-path "~/.emacs.d/py-autopep8.el")
-;(require 'py-autopep8)
-;(add-hook 'before-save-hook 'py-autopep8-before-save)
-
 ;(add-to-list 'load-path "~/.emacs.d/python-autopep8.el")
-;(require 'python-pep8)
-;(add-hook 'before-save-hook 'py-autopep8-before-save)
 
 ; Run emacs in server mode, so that we can connect from commandline
 ;(server-start) ;Didn't initally work for me. Will figure out later.
@@ -322,4 +396,69 @@
 ; DO NOT TRY THIS AT HOME
 ;(standard-display-ascii ?\s " ")
 
-;;; .emacs ends here
+; TAGS find
+;; ; Recursively find TAGS file
+;; (defun find-file-upwards (file-to-find)
+;;     "Recursively searches each parent directory starting from the default-directory.
+;; looking for a file with name file-to-find.  Returns the path to it
+;; or nil if not found."
+;;     (defun find-file-r (path)
+;;       (let* ((parent (file-name-directory path))
+;;              (possible-file (concat parent file-to-find)))
+;;         (cond
+;;          ((file-exists-p possible-file) possible-file) ; Found
+;;          ;; The parent of ~ is nil and the parent of / is itself.
+;;          ;; Thus the terminating condition for not finding the file
+;;          ;; accounts for both.
+;;          ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
+;;          (t (find-file-r (directory-file-name parent)))))) ; Continue
+;;     (find-file-r default-directory))
+;; ;; (let ((my-tags-file (find-file-upwards "TAGS")))
+;; ;;   (when my-tags-file
+;; ;;     (message "Loading tags file: %s" my-tags-file)
+;; ;;         (visit-tags-table my-tags-file)))
+;; (add-hook 'emacs-startup-hook
+;;           (let (my-tags-file (find-file-upwards "TAGS"))
+;;             (message "Loading tags file: %s" my-tags-file))
+;;           ;; (if (boundp 'my-tags-file)
+;;           ;;     (message "Loading tags file: %s" my-tags-file)
+;;           ;;                             ; (visit-tags-table my-tags-file))
+;;           ;;   (message "Could not find a TAGS file.")
+;;           ;;   ))
+;;           )
+;; mkneiser's last attempt:::::::
+;; (add-hook 'emacs-startup-hook
+;;           ;; (lambda () (message default-directory))
+;;           (let (my-file (find-file-upwards "TAGS"))
+;;             (message my-file))
+;; )
+;; (message "%s" default-directory))
+;; (let ((my-tags-file (find-file-upwards "TAGS")))
+;;   (when my-tags-file
+;;     (message "Loading tags file: %s" my-tags-file)
+;;     (visit-tags-table my-tags-file))))
+
+;;; Etags Table:
+;;;  https://www.emacswiki.org/emacs/EtagsTable
+;;; Find tags
+;;; https://www.emacswiki.org/emacs/EmacsTags
+;; (defun find-file-upwards (file-to-find)
+;;     "Recursively searches each parent directory starting from the default-directory.
+;; looking for a file with name file-to-find.  Returns the path to it
+;; or nil if not found."
+;;     (labels
+;;      ((find-file-r (path)
+;;                    (let* ((parent (file-name-directory path))
+;;                           (possible-file (concat parent file-to-find)))
+;;                      (cond
+;;                       ((file-exists-p possible-file) possible-file) ; Found
+;;                       ;; The parent of ~ is nil and the parent of / is itself.
+;;                       ;; Thus the terminating condition for not finding the file
+;;                       ;; accounts for both.
+;;                       ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
+;;                       (t (find-file-r (directory-file-name parent))))))) ; Continue
+;;      (find-file-r default-directory)))
+;; (let ((my-tags-file (find-file-upwards "TAGS")))
+;;   (when my-tags-file
+;;     (message "Loading tags file: %s" my-tags-file)
+;;         (visit-tags-table my-tags-file)))

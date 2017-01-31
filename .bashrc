@@ -198,6 +198,7 @@ _add_variable() {
 }
 _add_function _add_variable
 
+declare -A _custom_user_path_variables
 _add_to_variable_with_path_separator() {
     local _variable _value _contents_of_variable
     if [[ $# -ne 2 ]]; then
@@ -210,12 +211,14 @@ _add_to_variable_with_path_separator() {
         return 1
     fi
     eval _contents_of_variable="\$${_variable}"
-    if [[ -z "${_contents_of_variable+x}" ]]; then
-        export "${_variable}=${_value}"
-        if [[ -z ${_custom_user_path_variables+x} ]]; then
-            declare -A _custom_user_path_variables
+    if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
+        # Variable isn't tracked yet in custom env
+        _custom_user_path_variables["${_variable}"]="${_contents_of_variable}"
+        if [[ -z "${_contents_of_variable+x}" ]]; then
+            export "${_variable}=${_value}"
+        else
+            export "${_variable}=${_contents_of_variable}:${_value}"
         fi
-        _custom_user_path_variables["${_variable}"]="${_value}"
     else
         export "${_variable}=${_contents_of_variable}:${_value}"
     fi
@@ -295,12 +298,13 @@ _add_function _remove_all_variables
 
 _remove_path() {
     local _counter=0
-    echo "unsetting all custom user paths..."
-    for _var in "${!_custom_user_path_variables}"; do
-        echo "var: [${_var}] = [${_custom_user_path_variables[${_var}]}]"
-        # eval "${_var}"="${_custom_user_path_variables[${_var}]}"
-        if [[ -z ${_var+x} ]]; then
-            eval unset "${_var}"
+    echo -n "unsetting all custom user paths..."
+    for _var in "${!_custom_user_path_variables[@]}"; do
+        # echo "var: [${_var}] = "
+        if [[ -n ${_var+x} ]]; then
+            # echo "  [${_custom_user_path_variables[${_var}]}]"
+            # Reset to original value
+            export ${_var}="${_custom_user_path_variables[${_var}]}"
         fi
         _counter=$((_counter+1))
     done
@@ -367,6 +371,7 @@ _add_function cpa
 # Basic PATHs
 _add_to_variable_with_path_separator PATH "/usr/local/bin"
 _add_to_variable_with_path_separator PATH "/usr/bin"
+_add_to_variable_with_path_separator PATH "/bin"
 
 # Android Studio/Intellij Paths
 # _add_variable STUDIO_JDK ../android/jdk1.8.0_65
@@ -681,9 +686,11 @@ _add_alias authors "git log --format='%ce' | sort | uniq -c"
 # GREP
 _add_alias gre "grep -iInrs --color=always"   # case-insensitive
 _add_alias lgre "grep -iIlnrs --color=always" # case-insensitive
+_add_alias grel "grep -iIlnrs --color=always" # case-insensitive
 _add_alias hgre "grep -hiIrs --color=always"  # case-insensitive
 _add_alias gree "grep -Inrs --color=always"
 _add_alias lgree "grep -Ilnrs --color=always"
+_add_alias greel "grep -Ilnrs --color=always"
 _add_alias hgree "grep -hIrs --color=always"
 # HISTORY
 _add_alias h "history"
@@ -700,7 +707,7 @@ _add_alias r "fc -s"
 # Networking
 _add_alias getip "nslookup"
 # LESS
-_add_alias less "\less -iFXR" # I typically don't like aliasing program names
+# _add_alias less "\less -iFXR" # I typically don't like aliasing program names
 _add_alias les "\less -iFXR +G" # +G goes to end of file
 # Node.js
 _add_alias n "node"
@@ -745,7 +752,9 @@ _add_alias gid "./gradlew installDebug"
 _add_alias gaid "./gradlew assemble installDebug"
 
 ## 4d) Common
-_add_alias ed "\$EDITOR ~/.diary" # Programmer's Diary
+_add_alias en "\$EDITOR ~/.nomad"
+_add_alias ed "\$EDITOR +\$((\$(wc -l ~/.diary | cut -d' ' -f1)+1)) ~/.diary" # Programmer's Diary
+_add_alias td "tail ~/.diary"
 _add_alias eb "\$EDITOR ~/.bashrc"
 _add_alias eeb "\$EDITOR ~/.emacs ~/.bashrc"
 _add_alias ebb "\$EDITOR ~/.bash_profile"
@@ -757,8 +766,9 @@ _add_alias vb "vim ~/.bashrc"
 _add_alias sb "ps2; _clear_environment; source ~/.bashrc"
 # This command should wipe out the previous environment and start over
 _add_alias sbb "ps2; _clear_environment; source ~/.bash_profile"
-# Clear all aliases, useful when they get in the way
-_add_alias una "ps2; _clear_environment; unalias -a; alias sbb=\"source ~/.bash_profile\""
+# Clear all custom aliases, useful when they get in the way
+_add_alias una "ps2; _clear_environment; alias sbb=\"source ~/.bash_profile\""
+_add_alias unaa "unalias -a"
 # Prepare Build Environment
 _add_alias pb "una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 
@@ -804,6 +814,7 @@ linux*)
     #  for at least 20 commands causes all sorts of issues with getting bash to
     #  write the correct prompt string. Ctrl-l will clear the screen and re-draw
     #  the prompt string correctly in that case.
+    # This is explained in bash(1) under PROMPTING
     _add_variable PS_STARTCOLOR "${PS_PRE}${STARTCOLOR}${PS_POST}"
     _add_variable PS_ENDCOLOR "${PS_PRE}${ENDCOLOR}${PS_POST}"
     _add_variable PS_BRANCHCOLOR "${PS_PRE}${LIGHTCYAN}${PS_POST}"
@@ -1207,27 +1218,43 @@ linux*)
     _add_function untabify
 esac
 
-search_file() { \grep --color=always -in "$1" "$2"; }
+search_file() {
+    echo -en "searching for [${LIGHTCYAN}${2}${ENDCOLOR}]"
+    if [[ $# -gt 3 ]]; then
+        _search_term="($2"
+        for i in ${@:3:$(($#-3))}; do
+            echo -en " and [${LIGHTCYAN}${i}${ENDCOLOR}]"
+            _search_term="${_search_term}|${i}"
+        done
+        _search_term="${_search_term})"
+    else
+        _search_term=$2
+    fi
+    echo -e " in [${LIGHTCYAN}${@: -1}${ENDCOLOR}]" >&2
+    \grep --color=always -inE "${_search_term}" "${@: -1}";
+}
 _add_function search_file
 
 # 1: Number of args to calling script
 # 2: First arg to calling script (search term)
 # 3: File to search
 _search_file_wrapper() {
-    echo -e "searching for [${LIGHTCYAN}${2}${ENDCOLOR}] in [${LIGHTCYAN}${3}${ENDCOLOR}]" >&2
-    if [[ $1 -ne 1 ]]; then
+    if [[ $1 -lt 1 ]]; then
         echo "Usage: ${FUNCNAME[1]} SEARCH_TERM" >&2 && return 1
-    elif [[ ! -f "$3" ]]; then
-        echo "$(basename -- ${0}): Error: $3 is not a regular file" >&2 && return 1
+    elif [[ ! -f "${@: -1}" ]]; then
+        echo "$(basename -- ${0}): Error: ${@: -1} is not a regular file" >&2 && return 1
     fi
-    search_file "$2" "$3"
+    search_file "${@}"
 }
 _add_function _search_file_wrapper
 
-se() { _search_file_wrapper $# "$1" ~/.bashrc; }
+se() { _search_file_wrapper $# "${@}" ~/.bashrc; }
 _add_function se
 
-seb() { _search_file_wrapper $# "$1" ~/.emacs; }
+sd() { _search_file_wrapper $# "${@}" ~/.diary; }
+_add_function se
+
+seb() { _search_file_wrapper $# "${@}" ~/.emacs; }
 _add_function seb
 
 # 1: Number of args to calling script
@@ -1245,6 +1272,9 @@ _search_file_occur_wrapper() {
 _add_function _search_file_occur_wrapper
 
 sel() { _search_file_occur_wrapper $# "$1" ~/.bashrc; }
+_add_function sel
+
+sdl() { _search_file_occur_wrapper $# "$1" ~/.diary; }
 _add_function sel
 
 sebl() { _search_file_occur_wrapper $# "$1" ~/.emacs; }
@@ -1493,7 +1523,7 @@ _add_variable MAN_PAGER "less -i"
 
 ## 9) Machine-Specific
 source_file ~/.machine
-sem() { _search_file_wrapper $# "$1" ~/.machine; }
+sem() { _search_file_wrapper $# "${@}" ~/.machine; }
 _add_function sem
 
 seml() { _search_file_occur_wrapper $# "$1" ~/.machine; }
