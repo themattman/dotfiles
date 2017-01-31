@@ -13,3 +13,8 @@ Add aliases and functions customized for each machine's environment. For me, thi
 https://github.com/bamos/dotfiles
 
 http://dotfiles.github.io/
+
+
+## In Action
+
+![img](https://raw.githubusercontent.com/themattman/dotfiles/master/how_to_use.gif)
