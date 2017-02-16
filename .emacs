@@ -3,6 +3,7 @@
 ; Author:       Matt Kneiser
 ; Created:      11/06/2014
 ; Last updated: 02/15/2017
+; Emacs version: 25.1.1
 ;;; Code:
 
 ;;
