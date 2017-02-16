@@ -2,7 +2,7 @@
 ;;; Commentary:
 ; Author:       Matt Kneiser
 ; Created:      11/06/2014
-; Last updated: 08/10/2016
+; Last updated: 02/15/2017
 ;;; Code:
 
 ;;
@@ -81,6 +81,9 @@
 (defun navigate-backwards ()
   (interactive)
   (other-window -1))
+(defun open-emacs-file ()
+  (interactive)
+  (find-file "~/.emacs"))
 (defun reload-init-file ()
   (interactive)
   (load-file "~/.emacs"))
@@ -107,7 +110,7 @@
   (interactive)
   (scroll-down 1))
 (defun find-file-upwards (file-to-find)
-    "Recursively searches each parent directory starting from the default-directory.
+    "Recursively searches each parent directory starting from the current directory.
 looking for a file with name file-to-find.  Returns the path to it
 or nil if not found."
     (cl-labels
@@ -121,7 +124,29 @@ or nil if not found."
                          ;; accounts for both.
                          ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
                          (t (find-file-r (directory-file-name parent))))))) ; Continue
-      (find-file-r default-directory)))
+      (find-file-r buffer-file-name)))
+(defun find-tags-file ()
+  (interactive)
+  (find-file-upwards "TAGS"))
+(defun cmd-regen-tags (tags-file)
+  (interactive)
+  (let ((tags-dir (file-name-directory tags-file)))
+    (when tags-dir
+      (message "Backing up old tags file: %s as %s" tags-file (format-time-string "%Y-%m-%d__%H-%M-%S"))
+      (shell-command (concat "mv " tags-file " " tags-file "." (format-time-string "%Y-%m-%d__%H-%M-%S")))
+      (message "Regenerating tags file: %s" tags-file)
+      (shell-command (concat "find " tags-dir " -name '*.[ch]' -o -name '*.cpp' -o -name '*.cc' | xargs etags -a -o " tags-file  " 2>/dev/null")))))
+(defun regenerate-tags-file ()
+  (interactive)
+  (let ((my-tags-file (find-tags-file)))
+    (when my-tags-file
+      (cmd-regen-tags my-tags-file)
+      (message "Loading tags file: %s" (find-tags-file))
+      (visit-tags-table (find-tags-file))
+      (message "New tags file loaded successfully!")
+      )
+    (unless my-tags-file
+    (message "No TAGS file found."))))
 
 
 ;;
@@ -131,6 +156,9 @@ or nil if not found."
 ;;
 ;;
 ;;
+(global-set-key (kbd "C-c C-j") 'regenerate-tags-file)
+(global-set-key (kbd "C-c e"  ) 'open-emacs-file)
+(global-set-key (kbd "C-c C-e") 'open-emacs-file)
 (global-set-key (kbd "C-c g c") 'mo-git-blame-current); Git-Blame
 (global-set-key (kbd "C-c g f") 'mo-git-blame-file)   ; Git-Blame
 (global-set-key (kbd "C-c C-l") 'reload-init-file)    ; Reload .emacs file
@@ -187,8 +215,18 @@ or nil if not found."
 ;;
 ;;
 ;;
-;; Tags File for RF SW development
-;(setq tags-file-name "TAGS")
+;; TAGS file
+;; (setq tags-file-name "path/to/TAGS")
+(setq tags-revert-without-query t)      ; Auto-update TAGS file if it changed on
+                                        ; disk
+; TODO see if bash pipe works with commands in emacs
+;(defvar tags-regen-cmd "etags -R 2>/dev/null")
+;; (defvar my-cmd "find . -maxdepth 1 | xargs -I{} echo 'hi' {}")
+;; (defun call-my-cmd()
+;;   (interactive)
+;;   (shell-command my-cmd)
+;;   )
+;; (global-set-key (kbd "C-x C-j") 'call-my-cmd)
 ;; Tabs
 (setq-default indent-tabs-mode nil)     ; Use spaces not tabs
 (setq-default tab-width 4)
@@ -396,69 +434,12 @@ or nil if not found."
 ; DO NOT TRY THIS AT HOME
 ;(standard-display-ascii ?\s " ")
 
-; TAGS find
-;; ; Recursively find TAGS file
-;; (defun find-file-upwards (file-to-find)
-;;     "Recursively searches each parent directory starting from the default-directory.
-;; looking for a file with name file-to-find.  Returns the path to it
-;; or nil if not found."
-;;     (defun find-file-r (path)
-;;       (let* ((parent (file-name-directory path))
-;;              (possible-file (concat parent file-to-find)))
-;;         (cond
-;;          ((file-exists-p possible-file) possible-file) ; Found
-;;          ;; The parent of ~ is nil and the parent of / is itself.
-;;          ;; Thus the terminating condition for not finding the file
-;;          ;; accounts for both.
-;;          ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
-;;          (t (find-file-r (directory-file-name parent)))))) ; Continue
-;;     (find-file-r default-directory))
-;; ;; (let ((my-tags-file (find-file-upwards "TAGS")))
-;; ;;   (when my-tags-file
-;; ;;     (message "Loading tags file: %s" my-tags-file)
-;; ;;         (visit-tags-table my-tags-file)))
-;; (add-hook 'emacs-startup-hook
-;;           (let (my-tags-file (find-file-upwards "TAGS"))
-;;             (message "Loading tags file: %s" my-tags-file))
-;;           ;; (if (boundp 'my-tags-file)
-;;           ;;     (message "Loading tags file: %s" my-tags-file)
-;;           ;;                             ; (visit-tags-table my-tags-file))
-;;           ;;   (message "Could not find a TAGS file.")
-;;           ;;   ))
-;;           )
-;; mkneiser's last attempt:::::::
-;; (add-hook 'emacs-startup-hook
-;;           ;; (lambda () (message default-directory))
-;;           (let (my-file (find-file-upwards "TAGS"))
-;;             (message my-file))
-;; )
-;; (message "%s" default-directory))
-;; (let ((my-tags-file (find-file-upwards "TAGS")))
-;;   (when my-tags-file
-;;     (message "Loading tags file: %s" my-tags-file)
-;;     (visit-tags-table my-tags-file))))
-
-;;; Etags Table:
-;;;  https://www.emacswiki.org/emacs/EtagsTable
-;;; Find tags
-;;; https://www.emacswiki.org/emacs/EmacsTags
-;; (defun find-file-upwards (file-to-find)
-;;     "Recursively searches each parent directory starting from the default-directory.
-;; looking for a file with name file-to-find.  Returns the path to it
-;; or nil if not found."
-;;     (labels
-;;      ((find-file-r (path)
-;;                    (let* ((parent (file-name-directory path))
-;;                           (possible-file (concat parent file-to-find)))
-;;                      (cond
-;;                       ((file-exists-p possible-file) possible-file) ; Found
-;;                       ;; The parent of ~ is nil and the parent of / is itself.
-;;                       ;; Thus the terminating condition for not finding the file
-;;                       ;; accounts for both.
-;;                       ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
-;;                       (t (find-file-r (directory-file-name parent))))))) ; Continue
-;;      (find-file-r default-directory)))
-;; (let ((my-tags-file (find-file-upwards "TAGS")))
-;;   (when my-tags-file
-;;     (message "Loading tags file: %s" my-tags-file)
-;;         (visit-tags-table my-tags-file)))
+;; LATER
+;; https://stackoverflow.com/questions/3669511/the-function-to-show-current-files-full-path-in-mini-buffer
+;; (defun show-file-name ()
+;;   "Show the full path file name in the minibuffer."
+;;   (interactive)
+;;   (message (buffer-file-name))
+;;   (kill-new (file-truename buffer-file-name))
+;;   )
+;; (global-set-key "\C-cz" 'show-file-name)

@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  09/26/2016
+# Last updated:  02/15/2017
 # Configuration: MACHINE_NAME # TODO a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -389,6 +389,17 @@ _add_to_variable_with_path_separator PATH "/bin"
 # _add_to_variable_with_path_separator PATH "$ANDROID_SDK/tools"
 # _add_to_variable_with_path_separator PATH "$ANDROID_SDK/build-tools"
 # _add_to_variable_with_path_separator PATH "$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin"
+
+# local binaries
+# _add_to_variable_with_path_separator PATH $HOME/bin #begin
+# _add_to_variable_with_path_separator PATH /usr/bin
+# _add_to_variable_with_path_separator PATH /bin
+
+# Make sure IFS is set correctly
+unset IFS
+
+# Make backspace work
+stty erase ^H
 
 source_file /etc/bash_completion
 
@@ -1388,6 +1399,17 @@ _git_branch_delete() {
 _add_function _git_branch_delete
 _rename_function gbd _git_branch_delete
 
+num_files() {
+    for i in ./*; do
+        if [[ -d $i ]]; then
+            echo -en "$i: \t"
+            find $i -type f | wc -l;
+        fi
+    done
+}
+_add_function num_files
+_rename_function nf num_files
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -1532,3 +1554,7 @@ _add_function seml
 
 ## 10) Cleanup
 unset DATE_FORMAT
+
+
+## 11) Improvements
+# isdos() checks output of fromdos, and outputs yes or no

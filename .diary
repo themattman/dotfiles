@@ -1,7 +1,7 @@
 ##
 # Programmer's Diary of interesting commands and things learned
 #
-# Author:       Matthew Kneiser <mattman@umich.edu>
+# Author:       Matt Kneiser <mattknize@gmail.com>
 # Date Created: 11/04/2014
 
 #
@@ -1878,3 +1878,19 @@ Command                                 Comments
 ---------------------------------------------------------------------------------
 rename                                  # Rename many files in bash
 ${@:1:-1}                               # Bash, everything except last item
+
+
+#
+# 02/03/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sed 's/\"/\\\"/g' | sed "s/'/\\\'/g" | xargs
+                                        # Escape ' and " in filenames
+
+#
+# 02/10/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sudo iotop -a -u USER                   # Show accumulated IO ops for a user
