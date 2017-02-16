@@ -49,8 +49,8 @@
   (add-to-list
    'package-archives
    '("gnu" . "http://elpa.gnu.org/packages/") t)
-  (setq package-list)
-        ;; '(flycheck auto-complete))
+  (setq package-list
+        '(flycheck auto-complete mo-git-blame))
   (package-initialize)
   (unless package-archive-contents      ; fetch the list of packages available
     (package-refresh-contents))
@@ -307,7 +307,7 @@ or nil if not found."
 ;;
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
-(tool-bar-mode -1)                      ; Disable toolbar
+;; (tool-bar-mode -1)                      ; Disable toolbar
 (setq require-final-newline t)          ; Newline at end of file
 (which-function-mode 1)                 ; Show the function you are in
 (fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
@@ -443,3 +443,15 @@ or nil if not found."
 ;;   (kill-new (file-truename buffer-file-name))
 ;;   )
 ;; (global-set-key "\C-cz" 'show-file-name)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages (quote (mo-git-blame auto-complete flycheck))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

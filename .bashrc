@@ -399,7 +399,7 @@ _add_to_variable_with_path_separator PATH "/bin"
 unset IFS
 
 # Make backspace work
-stty erase ^H
+#stty erase ^H
 
 source_file /etc/bash_completion
 
