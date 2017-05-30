@@ -399,7 +399,7 @@ _add_to_variable_with_path_separator PATH "/bin"
 unset IFS
 
 # Make backspace work
-stty erase ^H
+#stty erase ^H
 
 source_file /etc/bash_completion
 
@@ -408,6 +408,7 @@ source_file /etc/bash_completion
 # Tree
 if [[ ! -x $(which tree 2>/dev/null) ]]; then
     _add_alias tree "find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'"
+    # TODO exclude .git tree
 fi
 # Readlink replacement (for non-Ubuntu)
 _add_alias realpath "python -c 'import os, sys; print os.path.realpath(sys.argv[1])'"
@@ -702,6 +703,7 @@ _add_alias toplevel "dirname \$(git rev-parse --git-dir)"
 _add_alias findgits "find . -name .git -type d -prune | tee gits.txt" # Once found, don't continue to descend under git dir
 _add_alias findtags "find . -name .git -type d -prune | xargs -I % sh -c 'echo -en \"%: \"; git --git-dir=% describe --tags --abbrev=0'"
 _add_alias authors "git log --format='%ce' | sort | uniq -c"
+_add_alias commits "git rev-list --all --count"
 # GREP
 _add_alias gre "grep -iInrs --color=always"   # case-insensitive
 _add_alias lgre "grep -iIlnrs --color=always" # case-insensitive
@@ -772,7 +774,7 @@ _add_alias gaid "./gradlew assemble installDebug"
 
 ## 4d) Common
 _add_alias en "\$EDITOR ~/.nomad"
-_add_alias ed "\$EDITOR +\$((\$(wc -l ~/.diary | cut -d' ' -f1)+1)) ~/.diary" # Programmer's Diary
+_add_alias ed "\$EDITOR +\$((\$(wc -l ~/.diary | awk '{print \$1}')+1)) ~/.diary" # Programmer's Diary
 _add_alias td "tail ~/.diary"
 _add_alias eb "\$EDITOR ~/.bashrc"
 _add_alias eeb "\$EDITOR ~/.emacs ~/.bashrc"

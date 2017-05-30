@@ -1,7 +1,7 @@
 ##
 # Programmer's Diary of interesting commands and things learned
 #
-# Author:       Matt Kneiser <mattknize@gmail.com>
+# Author:       Matthew Kneiser
 # Date Created: 11/04/2014
 
 #
@@ -1894,3 +1894,135 @@ sed 's/\"/\\\"/g' | sed "s/'/\\\'/g" | xargs
 Command                                 Comments
 ---------------------------------------------------------------------------------
 sudo iotop -a -u USER                   # Show accumulated IO ops for a user
+
+#
+# 02/17/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+grep -B 1 "(" source.h | grep -A 1 '\-\-' | grep -v '\-\-'
+                                        # Print only Nth line before/after match
+sed 's/^ *//'                           # Remove all leading whitespace
+
+#
+# 02/28/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+TRIM                                    # Excel, removes leading/trailing space
+
+#
+# 03/07/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+awk 'NR % 4 == 1'                       # Print nth line
+declare -c var_name                     # Undocumented, capitalizes variable
+
+#
+# 03/08/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+grep -m 1 "<html>"                      # Grep, stop after first match
+
+#
+# 03/22/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+echo "${var[@]/%/_append}"              # Append something to every string in arr
+echo "${var[@]/#/prepend_}"             # Prepend somethin to every string in arr
+https://web.archive.org/web/20101114051536/
+    http://codesnippets.joyent.com/posts/show/1826
+comm                                    # Compare two sorted files, haven't used
+
+#
+# 03/24/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+wget --spider http://...                # Get filesize before downloading
+
+#
+# 04/05/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+clang-tidy -dump-config -checks=*       # Dump all current configs, helps build
+                                        #  a .clang-tidy file
+clang-tidy -fix -checks=readability-identifier-naming src/main/main.cpp
+                                        # Run a check and force fixes to be made
+M-% " " C-q C-j                         # Emacs, find-replace space with newline
+
+#
+# 04/07/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sudo lshw -class disk                   # List all hard drives on linux system
+https://github.com/mbrubeck/android-completion.git # Add "sdk avd" to android
+
+#
+# 05/02/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sed -n '/my_pattern/ ='                 # Print line of every line that matches
+                                        # TODO: Git merge stuff...
+git checkout --theirs -- file           # During merge, choose "their" version
+                                        #  this is flipped during rebase, so
+                                        #  that ours is the mainline and theirs
+                                        #  is the feature branch
+git merge -s recursive -Xtheirs feature # Fast-forward all files until a conflict
+                                        #  then, merge chunks in files. When two
+                                        #  chunks conflict, prefer theirs
+Ctrl-Alt-End                            # Windows, remote desktop, bring up the
+                                        #  Ctrl-Alt-Del menu options
+
+#
+# 05/04/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+aaaaa^..HEAD                            # Git, inclusive range of commits
+
+#
+# 05/12/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+"Bash lets you glue best-of-breed tools together, as long as they all talk on
+stdin / stdout / files. The tools themselves can be written in the best language
+for their task."                        # https://news.ycombinator.com
+                                        #  /item?id=14321213
+nm -g mylib.lib                         # Prints out all external references
+nm -aC mylib.lib                        # Prints out unmangled CPP names from
+                                        #  a library
+
+#
+# 05/17/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+nm -aCS --size-sort foobar.lib | cut -d' ' -f3 | sort | uniq -c | grep -v "\.o"
+                                        # Get all the different types of symbols
+                                        #  in lib
+nm -CgS --size-sort foobar.lib > lib_external
+cut -d' ' -f4 lib_external | sed '/^\s*$/d' | grep -v "\.o" | \
+    sort | uniq -c | sort
+                                        # Get all external symbol names
+sort -nk 2 mylist.csv                   # Sort based on second field
+size -t foobar.lib                      # Shows size of different sections
+                                        #  (data/text, etc.)
+find . -type f -name '*.lib' | xargs -I{} \
+     sh -c "echo -n '{} ' && size -t {} 2>/dev/null | tail -n 1"
+                                        # Find sizes of all code sections of all
+                                        #  libs in current dirs
+
+#
+# 05/18/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+inotifywait -mr . --format "%e | %w"    # Print out all files touched in a dir
