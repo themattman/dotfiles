@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  02/15/2017
+# Last updated:  05/29/2017
 # Configuration: MACHINE_NAME # TODO a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -17,7 +17,7 @@
 #     * 4.x
 #   * Platforms:
 #     * Mac OS X 10.11
-#     * Ubuntu 12.04
+#     * Ubuntu 12.04/14.04
 # * TODOs exist for areas of code smell or customizable fields
 #
 #
@@ -399,7 +399,7 @@ _add_to_variable_with_path_separator PATH "/bin"
 unset IFS
 
 # Make backspace work
-#stty erase ^H
+stty erase ^H
 
 source_file /etc/bash_completion
 
@@ -426,7 +426,7 @@ _add_alias icurl "curl -I"
 
 ## 4a) OS-specific aliases
 case $OSTYPE in
-linux*)
+linux*|msys*)
     # tree
     if [[ $(type -P tree) ]]; then
         _add_alias ll "tree --dirsfirst -aLpughDFiC 1"
@@ -489,6 +489,12 @@ esac
 
 ## 4b) Basic bash aliases
 DATE_FORMAT="+%Y_%m_%d__%H_%M_%S"
+# TODO: finish this generalization of error messages
+if [[ -x $(which basename 2>/dev/null) ]]; then
+    ERROR_PREFIX="\$(basename -- \${0})"
+else
+    ERROR_PREFIX=""
+fi
 _add_alias rem "remove_trailing_spaces"
 #_add_alias ! "sudo !!" # This is a terrible alias and breaks a lot of stuff
 _add_alias c "cd \${OLDPWD}" # Use Ctrl-L instead of aliasing this to clear
@@ -620,6 +626,7 @@ if [[ -f ~/.git-completion ]]; then
     __git_complete gshhs _git_show && _add_completion_function gshhs
     __git_complete gshhn _git_show && _add_completion_function gshhn
     __git_complete gbd _git_branch && _add_completion_function gbd
+    __git_complete gmm _git_merge && _add_completion_function gmm
 fi
 
 _add_alias branches "for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
@@ -641,6 +648,7 @@ _add_alias gmn "git commit --no-verify -m"
 _add_alias gmna "git commit --no-verify --amend"
 _add_alias gmam "git commit --amend -C HEAD"
 _add_alias gmamn "git commit --amend -C HEAD --no-verify"
+_add_alias gmm "git merge --no-ff"
 _add_alias gt "git stash"
 _add_alias gtc "git stash clear"
 _add_alias gtd "git stash drop"
@@ -770,11 +778,13 @@ _add_alias eb "\$EDITOR ~/.bashrc"
 _add_alias eeb "\$EDITOR ~/.emacs ~/.bashrc"
 _add_alias ebb "\$EDITOR ~/.bash_profile"
 _add_alias em "\$EDITOR ~/.machine"
+_add_alias tm "tail ~/.machine"
 _add_alias ee "\$EDITOR ~/.emacs"
 _add_alias eg "\$EDITOR ~/.gitconfig"
 _add_alias es "\$EDITOR ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
 _add_alias sb "ps2; _clear_environment; source ~/.bashrc"
+_add_alias exts "find . -type f | awk -F. '!a[\$NF]++{print \$NF}'"
 # This command should wipe out the previous environment and start over
 _add_alias sbb "ps2; _clear_environment; source ~/.bash_profile"
 # Clear all custom aliases, useful when they get in the way
@@ -787,7 +797,7 @@ _add_alias pb "una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 ## 5) Prompt String
 source_file ~/.git-prompt
 case $OSTYPE in
-linux*)
+linux*|msys*)
     # Bash Colors
     # Modifiers
     _add_variable PS_PRE "\["  # Needed for prompt string
@@ -993,6 +1003,28 @@ genpasswd() {
 _add_function genpasswd
 _rename_function gen "genpasswd"
 
+gen_num() {
+    if [[ $# -gt 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} [LENGTH]" >&2 && return 1
+    fi
+    local l=$1
+    [ "$l" == "" ] && l=16
+    LC_CTYPE=C tr -dc 0-9 < /dev/urandom | head -c ${l} | xargs
+    # LC_TYPE=C is necessary for Mac OSX.
+}
+_add_function gen_num
+
+gen_hex() {
+    if [[ $# -gt 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} [LENGTH]" >&2 && return 1
+    fi
+    local l=$1
+    [ "$l" == "" ] && l=16
+    LC_CTYPE=C tr -dc a-f0-9 < /dev/urandom | head -c ${l} | xargs
+    # LC_TYPE=C is necessary for Mac OSX.
+}
+_add_function gen_hex
+
 # Better `mkdir`
 # Input: list of directories, separated by a space
 # Usage: $ mkd dir_to_create0 dir_to_create1 dir_to_create_and_cd_into
@@ -1086,44 +1118,71 @@ if [[ -n "${HOOK_SRC}" ]]; then
     _add_alias hook "cp -rp \${HOOK_SRC}/hooks \$(findgit)/hooks"
 fi
 
-# Rapid Python Prototyping
-# Usage: $ tmp    # creates temp python file
-#        $ rmp    # removes it
 safely_call() {
     local temp_dir="${HOME}/tmp"
     if [[ ! -d $temp_dir ]]; then
-        echo "$(basename -- ${0}): Error: ${temp_dir} doesn't exist" >&2 && return 1
+        echo "$(basename -- ${0}): Error: ${temp_dir} doesn't exist" >&2
+        return 1
     fi
-    $1
+    $@
 }
 _add_function safely_call
 
-create_temp_py_file() {
-    local temp_dir tmpfile
+create_temp_src_file() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} [py|sh] $# $@" >&2 && return 1
+    fi
+    local ext temp_dir tmpfile
+    if [[ ${1} = "py" ]]; then
+        ext="py"
+    else
+        ext="sh"
+    fi
     temp_dir="${HOME}/tmp"
-    tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.py)" || return 1;
+    tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.${ext})" || return 1;
     # These sed's are designed to be cross-platform
-    sed -e "s/# Created:/# Created: $(date)/" "${temp_dir}/template.py" \
-        | sed -e "s/# Author:/# Author:  $USER/" > "${tmpfile}"
+    sed -e "s/^# Created:$/& $(date)\n\# Dir:     ${PWD//\//\\/}/" "${temp_dir}/template.${ext}" \
+        | sed -e "s/^# Author:$/&  $USER/" > "${tmpfile}"
     ${EDITOR} "${tmpfile}"
 }
-_add_function create_temp_py_file
+_add_function create_temp_src_file
 
+# Rapid Code Prototyping
+# TODO: IMPLEMENT BASH AND PYTHON
+# Usage: $ tmp [py|sh] # creates temp source file in language given
+#        $ rmp [py|sh] # removes all temp source files for language
 tmp() {
-    safely_call create_temp_py_file
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} FUNCTION [sh|py]" >&2
+        return 1
+    fi
+    if [[ (${1} != "py") && (${1} != "sh") ]]; then
+        echo "Usage: ${FUNCNAME[0]} FUNCTION [sh|py]" >&2
+        return 1
+    fi
+    safely_call create_temp_src_file "${1}"
 }
 _add_function tmp
 
+# TODO: add -n for dry-run, which means full arg parsing
 remove_all_empty_temp_files() {
-    local temp_dir="${HOME}/tmp"
+    local ext temp_dir="${HOME}/tmp"
+    if [[ ${1} = "py" ]]; then
+        ext="py"
+    else
+        ext="sh"
+    fi
     for _file in $(\ls "${temp_dir}"); do
         _file="${temp_dir}/${_file}"
-        if [[ $_file != "${temp_dir}/template.py" ]]; then
-            if [[ ( -z $(\diff "${temp_dir}/template.py" "${_file}") ) || ( ! -s "${_file}" ) ]]; then
-                echo -n "removing ${_file}..."
-                rm -rf "${_file}"
-                echo -e "\tDone."
-            fi
+        if [[ ! $_file =~ "${temp_dir}/template." ]]; then
+            echo "$_file"
+            # if [[ ( -z $(\diff "${temp_dir}/template.${ext}" "${_file}") ) || ( ! -s "${_file}" ) ]]; then
+            #     echo -n "removing ${_file}..."
+            #     rm "${_file}"
+            #     echo -e "\tDone."
+            # fi
+        else
+            echo "NAH -- $_file"
         fi
     done
 }
@@ -1133,7 +1192,8 @@ rmp() {
     safely_call remove_all_empty_temp_files
 }
 _add_function rmp
-_add_alias temp "\${EDITOR} \${HOME}/tmp/template.py"
+_add_alias temp_py "\${EDITOR} \${HOME}/tmp/template.py"
+_add_alias temp_sh "\${EDITOR} \${HOME}/tmp/template.sh"
 
 # Git Push to all remotes
 gpa() {
@@ -1194,7 +1254,7 @@ line() {
 _add_function line
 
 case $OSTYPE in
-linux*)
+linux*|msys*)
     tabs() {
         if [[ $# -ne 1 ]]; then
             echo "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
@@ -1352,6 +1412,9 @@ bk() {
 _add_function bk
 
 rtrav() {
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: ${FUNCNAME[0]} NAME PATH" >&2 && return 1
+    fi
     test -e "${2}"/"${1}" && echo "$2" || { test "$2" != / && rtrav "$1" "$(dirname $2)";};
 }
 _add_function rtrav
@@ -1410,6 +1473,42 @@ num_files() {
 _add_function num_files
 _rename_function nf num_files
 
+# Run args as a command in all dirs in cur dir
+all() {
+    long_opts="exclude:","help"
+    if ! getopts=$(getopt -o e:h -l $long_opts -- "$@"); then
+        echo "Error parsing arguments!"
+        usage
+    fi
+    eval set -- "$getopts"
+    while true; do
+        case "$1" in
+            -e|--exclude) exclude=$2 ; shift;;
+            -h|--help) echo "Help"; return;;
+            --) shift ; break ;;
+            *) echo "Error processing args -- unrecognized option $1" >&2
+               usage;;
+        esac
+        shift
+    done
+    echo "e: ${exclude}"
+    for i in ./*; do
+        if [[ "${i}" != "./${exclude}" ]]; then
+            echo -e "${BROWN}[[${i}: ${@}]]${ENDCOLOR}"
+            cd "${i}"
+            set -x
+            eval "${@}"
+            { set +x; } &> /dev/null
+            cd -
+        fi
+    done
+}
+_add_function all
+
+vers() {
+    "${@}" --version
+}
+_add_function vers
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -1429,7 +1528,7 @@ _complete_most_recently_modified_file() {
     # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
     if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
         local latest_filename
-        latest_filename=$(find "${2}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
+        latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
         if [[ -n "${latest_filename}" ]]; then
             if [[ "${2}" == */ ]]; then
                 COMPREPLY="${2}${latest_filename}"
