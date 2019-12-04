@@ -2026,3 +2026,24 @@ find . -type f -name '*.lib' | xargs -I{} \
 Command                                 Comments
 ---------------------------------------------------------------------------------
 inotifywait -mr . --format "%e | %w"    # Print out all files touched in a dir
+
+#
+# 12/01/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+rm -P					                # secure delete, 3x overwrite did this
+                                        #  to SD card before disposal
+sudo apt-get
+sudo apt-get -s autoremove              # apt-get dry run
+sudo apt-get autoremove                 # apt-get, useful to run after upgrade
+sudo apt-get --with-new-pkgs upgrade    # apt-get, installs new pkgs instead
+                                        # of leaving them behind
+sudo apt-get install --only-upgrade bash# apt-get, upgrade only one pkg
+/var/log/apt/history.log                # apt-get, log of all pkg operations
+WebDAV                                  # "Web Distributed Authoring and
+                                        #  Versioning" is an HTTP extension that
+                                        #  makes it easy to create, read, and
+                                        #  edit files on Web servers
+                                        # https://doc.owncloud.com/server
+                                        #  /user_manual/files/access_webdav.html

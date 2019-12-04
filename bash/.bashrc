@@ -182,8 +182,11 @@ _add_function _add_completion_function
 declare -A _custom_user_variables
 _add_variable() {
     local _variable _value
-    if [[ $# -lt 2 ]]; then
-        echo "bad variable: $*"
+    if [[ $# -eq 1 ]]; then
+        echo "${FUNCNAME[0]} Error: value parameter empty [$*]"
+        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
+    elif [[ $# -lt 1 ]]; then
+        echo "${FUNCNAME[0]} Error: variable parameter empty [$*]"
         echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
     fi
     _variable="${1}"
@@ -439,7 +442,7 @@ linux*|msys*)
     _add_alias sl "ls -Slh"
     _add_alias lsl "ls -F --color -lh"
     _add_alias lh "ls -F --color -alh"
-    _add_alias l "ls -F --color -lh"
+    _add_alias l "ls -F --color -alh"
     _add_alias als "ls -F --color -alth"
     _add_alias asl "ls -F --color -alth"
     _add_alias las "ls -F --color -alth"
@@ -455,6 +458,7 @@ linux*|msys*)
     # Ubuntu Package Management
     _add_alias acs "sudo apt-cache search"
     _add_alias agi "sudo apt-get install"
+    _add_alias agu "sudo apt-get install --only-upgrade"
 
     _add_alias wa "watch -n 1"
 
@@ -1131,21 +1135,17 @@ safely_call() {
 _add_function safely_call
 
 create_temp_src_file() {
-    if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} [py|sh] $# $@" >&2 && return 1
-    fi
     local ext temp_dir tmpfile
-    if [[ ${1} = "py" ]]; then
-        ext="py"
-    else
-        ext="sh"
-    fi
+    ext=$1
     temp_dir="${HOME}/tmp"
+    if [[ ! -f ${temp_dir}/template.${ext} ]]; then
+        echo "Error: template doesn't exist for ${ext}" >& 2 && return 1
+    fi
     tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.${ext})" || return 1;
     # These sed's are designed to be cross-platform
     sed -e "s/^# Created:$/& $(date)\n\# Dir:     ${PWD//\//\\/}/" "${temp_dir}/template.${ext}" \
         | sed -e "s/^# Author:$/&  $USER/" > "${tmpfile}"
-    ${EDITOR} "${tmpfile}"
+    ${EDITOR} +$(($(wc -l "${temp_dir}/template.${ext}" | awk '{print $1}')+2)) "${tmpfile}"
 }
 _add_function create_temp_src_file
 
@@ -1155,47 +1155,49 @@ _add_function create_temp_src_file
 #        $ rmp [py|sh] # removes all temp source files for language
 tmp() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} FUNCTION [sh|py]" >&2
-        return 1
-    fi
-    if [[ (${1} != "py") && (${1} != "sh") ]]; then
-        echo "Usage: ${FUNCNAME[0]} FUNCTION [sh|py]" >&2
+        echo "Usage: ${FUNCNAME[0]} SCRIPT_TEMPLATE_EXTENSION" >&2
         return 1
     fi
     safely_call create_temp_src_file "${1}"
 }
 _add_function tmp
 
-# TODO: add -n for dry-run, which means full arg parsing
 remove_all_empty_temp_files() {
-    local ext temp_dir="${HOME}/tmp"
-    if [[ ${1} = "py" ]]; then
-        ext="py"
-    else
-        ext="sh"
+    local ext temp_dir dry_run
+    ext=$1
+    dry_run=$2
+    temp_dir="${HOME}/tmp"
+    if [[ ! -f ${HOME}/tmp/template.${ext} ]]; then
+        echo "Error: template doesn't exist for ${ext}" >& 2 && return 1
     fi
-    for _file in $(\ls "${temp_dir}"); do
-        _file="${temp_dir}/${_file}"
-        if [[ ! $_file =~ "${temp_dir}/template." ]]; then
-            echo "$_file"
-            # if [[ ( -z $(\diff "${temp_dir}/template.${ext}" "${_file}") ) || ( ! -s "${_file}" ) ]]; then
-            #     echo -n "removing ${_file}..."
-            #     rm "${_file}"
-            #     echo -e "\tDone."
-            # fi
+    for _file in $(\find "${temp_dir}" -name "*${ext}" -not -name "template*"); do
+        if [[ ( "x$(\diff "${temp_dir}/template.${ext}" "${_file}")" = "x" ) ||
+                  ( ! -s "${_file}" ) ]]; then
+            if [[ ("x$dry_run" = "x") ]]; then
+                set -x
+                rm $_file
+                { set +x; } &>/dev/null
+            else
+                echo "rm $_file"
+            fi
         else
-            echo "NAH -- $_file"
+            echo "$_file is unique"
         fi
     done
 }
 _add_function remove_all_empty_temp_files
 
 rmp() {
-    safely_call remove_all_empty_temp_files
+    local dry_run arg
+    if [[ $1 = "-n" ]]; then
+        dry_run="n"
+        arg=$2
+    else
+        arg=$1
+    fi
+    safely_call remove_all_empty_temp_files "${arg}" "${dry_run}"
 }
 _add_function rmp
-_add_alias temp_py "\${EDITOR} \${HOME}/tmp/template.py"
-_add_alias temp_sh "\${EDITOR} \${HOME}/tmp/template.sh"
 
 # Git Push to all remotes
 gpa() {
@@ -1592,7 +1594,27 @@ _apt_get_install() {
     fi
 }
 _add_function _apt_get_install
-complete -F _apt_get_install agi acs && _add_completion_function agi acs
+complete -F _apt_get_install agi acs agu && _add_completion_function agi acs agu
+
+# _agi() {
+#     local pkgs=($@)
+#     if [[ ! -f ${_PKG_LOG} ]]; then
+# 	echo "${FUNCNAME[0]} Warning: file [${_PKG_LOG}] doesn't exist"
+# 	: "${_PKG_LOG}"
+#     fi
+#     for pkg in "${pkgs[@]}"; do
+# 	echo -n "=>Installing [${pkg}] @ [$(date $DATE_FORMAT)]... " |& tee -a ${_PKG_LOG}
+# 	output=$(echo "pretending to install")
+# 	#output=$(sudo apt-get install $pkg)
+# 	ret=$?
+# 	if [[ $ret -eq 0 ]]; then
+# 	    echo "[SUCCESS]" |& tee -a ${_PKG_LOG}
+# 	else
+# 	    echo "[FAIL(${ret})]" |& tee -a ${_PKG_LOG}
+# 	fi
+# 	echo "OUTPUT:[${output}]" |& tee -a ${_PKG_LOG}
+#     done
+# }
 
 _mail_addresses() {
     local cur prev;
@@ -1642,6 +1664,7 @@ _add_variable EDITOR "emacs -nw"
 _add_variable GIT_EDITOR "emacs -nw"
 _add_variable MAN_PAGER "less -i"
 # _add_variable USER_EMAIL "<EMAIL_ADDRESS>" # TODO
+# _add_variable _PKG_LOG "~/pkg.test.${USER}"
 
 
 ## 9) Machine-Specific

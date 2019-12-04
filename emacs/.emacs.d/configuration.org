@@ -1,43 +1,73 @@
-;;;; .emacs ---- Personal Configurations
-;;; Commentary:
-; Author:       Matt Kneiser
-; Created:      11/06/2014
-; Last updated: 02/15/2017
-; Emacs version: 25.1.1
-;;; Code:
+#+TITLE:         Emacs Configuration
+#+AUTHOR:        Matt Kneiser
+#+CREATED:       11/06/2014
+#+MIGRATED:      08/27/2019
+#+LAST UPDATED:  08/27/2019
+#+EMACS VERSION: 26.2
 
-;;
-;;
-;;
-;; Packages Installed
-;;
-;;
-;;
-;; auto-complete
-;; dash
-;; epl
-;; flycheck
-;; let-alist
-;; mo-git-blame
-;; pkg-info
-;; popup
-;; seq
 
-;;
-;;
-;;
-;; Packages
-;;
-;;
-;;
-;; (require 'auto-complete-config)
-;; (require 'auto-complete-etags)
-;; (require 'bind-key)
-;; (require 'clang-format)
-;; (require 'flymake)
-;; (require 'py-autopep8)
-;; (require 'python-pep8)
-;; (require 'sublime-text-2)
+* Packages
+** Packages Installed
+*** existing
+**** auto-complete
+**** dash
+**** epl
+**** flycheck
+**** let-alist
+**** mo-git-blame
+**** pkg-info
+**** popup
+**** seq
+*** new
+**** htmlize
+***** [[https://github.com/hniksic/emacs-htmlize][link]]
+**** sensible-defaults
+***** [[https://github.com/JesseHerrick/sensible-defaults.el][link]]
+**** moody
+***** [[https://github.com/tarsius/moody][link]]
+** use-package
+*** Init / Config
+#+BEGIN_SRC emacs-lisp
+  (require 'use-package-ensure)
+  (setq use-package-always-ensure t)
+#+END_SRC
+
+Always compile packages, and use the newest version available.
+
+#+BEGIN_SRC emacs-lisp
+  (use-package auto-compile
+    :config (auto-compile-on-load-mode))
+
+  (setq load-prefer-newer t)
+#+END_SRC
+
+*** Packages
+#+BEGIN_SRC emacs-lisp
+  (use-package htmlize)
+  (use-package flyspell)
+  (use-package engine-mode)
+  (use-package magit)
+  (use-package yasnippet)
+  (use-package yaml-mode)
+  (use-package markdown-mode)
+  (use-package web-mode)
+  (use-package multi-term)
+  (use-package org-pomodoro)
+;;  (use-package ivy-mode)
+  (use-package helpful)
+  (use-package expand-region) ;; C-= jumps to beginning of word at point
+  (use-package hi-lock)       ;; word highlighting
+  (use-package symbol-overlay)
+  ;;(use-package alert)
+;; https://github.com/BobVul/GrowlToToast
+  ;; (use-package )
+#+END_SRC
+*** Consider
+**** [[https://github.com/m2ym/thingopt-el/blob/master/thingopt.el][thingopt - better thingatpt (expand-region)]]
+**** [[https://github.com/jpkotta/thingopt-el][modified thingopt]] some kind of isearch support ([[https://stackoverflow.com/a/11059262/1015820][stackoverflow]])
+**** [[http://chopmo.dk/2016/10/27/emacs-highlighting-current-word.html][emacs - hightlighting the current word]]
+** Package Manager
+#+BEGIN_SRC emacs-lisp
 ; Package Manager
 (when (>= emacs-major-version 24)
   (require 'package)
@@ -51,7 +81,7 @@
    'package-archives
    '("gnu" . "http://elpa.gnu.org/packages/") t)
   (setq package-list
-        '(flycheck auto-complete mo-git-blame))
+        '(flycheck auto-complete mo-git-blame bookmark))
   (package-initialize)
   (unless package-archive-contents      ; fetch the list of packages available
     (package-refresh-contents))
@@ -70,24 +100,54 @@
 ;; (add-to-list 'load-path "~/.emacs.d/mo-git-blame.el")
 ;; (autoload 'mo-git-blame-file "mo-git-blame" nil t)
 ;; (autoload 'mo-git-blame-current "mo-git-blame" nil t)
+#+END_SRC
 
-
-;;
-;;
-;;
-;; Functions
-;;
-;;
-;;
+* Functions
+#+BEGIN_SRC emacs-lisp
+(defun jpt-toggle-mark-word-at-point ()
+  (interactive)
+  (if hi-lock-interactive-patterns
+      (unhighlight-regexp (car (car hi-lock-interactive-patterns)))
+    (highlight-symbol-at-point)))
+(defun generate-scratch-buffer ()
+  "Create and switch to a temporary scratch buffer with a random
+     name."
+  (interactive)
+  (switch-to-buffer (make-temp-name "scratch-")))
+(defun hrs/kill-current-buffer ()
+  "Kill the current buffer without prompting."
+  (interactive)
+  (kill-buffer (current-buffer)))
+(defun insert-newline-before-line ()
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    ; I've changed the order of (yank) and (indent-according-to-mode)
+    ; in order to handle the case when yanked line comes with its own indent
+    ; could be as well changed to simple (newline) it's metter of taste
+    ; and of usage
+    (newline)))
+(defun insert-timestamp ()
+  (interactive)
+  (insert (format-time-string "%m/%d/%Y")))
 (defun navigate-backwards ()
   (interactive)
   (other-window -1))
 (defun open-emacs-file ()
   (interactive)
-  (find-file "~/.emacs"))
+  (find-file "~/.emacs.d/configuration.org"))
+(defun open-diary-file ()
+  (interactive)
+  (find-file "~/.diary")
+  (goto-char (point-max)))
+(defun show-file-name ()
+  "Show the full path file name in the minibuffer."
+  (interactive)
+  (message (buffer-file-name))
+  (kill-new (file-truename buffer-file-name)))
 (defun reload-init-file ()
   (interactive)
-  (load-file "~/.emacs"))
+  (load-file "~/.emacs.d/init.el"))
 (defun copy-all ()
   (interactive)
   (clipboard-kill-ring-save (point-min) (point-max))
@@ -148,74 +208,119 @@ or nil if not found."
       )
     (unless my-tags-file
     (message "No TAGS file found."))))
+(defun my-delete-word (arg)
+  "Delete characters forward until encountering the end of a word.
+With argument, do this that many times.
+This command does not push text to `kill-ring'."
+  (interactive "p")
+  (delete-region
+   (point)
+   (progn
+     (forward-word arg)
+     (point))))
 
+(defun my-backward-delete-word (arg)
+  "Delete characters backward until encountering the beginning of a word.
+With argument, do this that many times.
+This command does not push text to `kill-ring'."
+  (interactive "p")
+  (my-delete-word (- arg)))
 
-;;
-;;
-;;
-;; Keybindings
-;;
-;;
-;;
-(global-set-key (kbd "C-c C-j") 'regenerate-tags-file)
-(global-set-key (kbd "C-c e"  ) 'open-emacs-file)
-(global-set-key (kbd "C-c C-e") 'open-emacs-file)
-(global-set-key (kbd "C-c g c") 'mo-git-blame-current); Git-Blame
-(global-set-key (kbd "C-c g f") 'mo-git-blame-file)   ; Git-Blame
-(global-set-key (kbd "C-c C-l") 'reload-init-file)    ; Reload .emacs file
-(global-set-key (kbd "C-x C-b") 'buffer-menu)         ; Buffer-Menu shouldn't open
-(global-set-key (kbd "C-c C-c") 'fundamental-mode)    ;  in another window
-(global-set-key (kbd "C-j"    ) 'scroll-down-command)
-(global-set-key (kbd "C-x p"  ) 'navigate-backwards)  ; Navigate Buffers Backwards
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;The following section is from:;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;https://sites.google.com/site/steveyegge2/effective-emacs;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Easier killing
-(global-set-key (kbd "C-w"    ) 'backward-kill-word)  ; Added Bonus: Matches
-                                                      ; shell behavior
-(global-set-key (kbd "C-x C-k") 'kill-region)
-(global-set-key (kbd "C-c C-k") 'kill-region)
-; Bind Alternate M-x's
-(global-set-key (kbd "C-x C-m") 'execute-extended-command)
-(global-set-key (kbd "C-c C-m") 'execute-extended-command)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;End Section;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(global-set-key (kbd "C-c C-a") 'copy-all)          ; Copy everything in buffer
-(global-set-key (kbd "C-c C-r") 'revert-buffer)     ; Revert Buffer
-(global-set-key (kbd "C-c C-s") 'shell-script-mode) ; Shell-script-mode
-;; (global-set-key (kbd "C-m"    ) 'scroll-up-command)
-;; (global-set-key (kbd "C-n"    ) 'next-line-and-recenter)
-;; (global-set-key (kbd "C-P"    ) 'previous-line-and-recenter)
-;; (global-set-key (kbd "C-c C-m") 'makefile-mode)     ; Makefile-mode (remap this)
-;; (global-set-key (kbd "C-c C-l") 'align-regexp)      ; Line up all the = signs
-                                        ;  http://stackoverflow.com
-                                        ;   /questions
-                                        ;   /915985
-                                        ;   /in-emacs-how-to-line-up-equals-signs
-                                        ;  -in-a-series-of-initialization-statements
-(global-set-key (kbd "M-g M-c") 'go-to-column)
-;; (global-set-key [(control h)] 'delete-backward-char)
-;; (global-set-key (kbd "C-h"    ) 'delete-backward-char)
-;; (global-set-key (kbd "C-c C-l") 'clang-format-region) ; Auto-Formatting Code
-; Proper Undo
-;  since OSX doesn't default to the same shortcut as Ubuntu
-;  C-_ is always undo, but it requires the user to press <shift>
-;; (global-set-key (kbd "C-/"    ) 'undo)              ; Doesn't work
-; This is an X11 issue on OSX:
-;  http://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control
-;  -slash-to-the-terminal#comment27461_24282
-; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
+(defun my-delete-line ()
+  "Delete text from current position to end of line char.
+This command does not push text to `kill-ring'."
+  (interactive)
+  (delete-region
+   (point)
+   (progn (end-of-line 1) (point)))
+  (delete-char 1))
 
+(defun my-delete-line-backward ()
+  "Delete text between the beginning of the line to the cursor position.
+This command does not push text to `kill-ring'."
+  (interactive)
+  (let (p1 p2)
+    (setq p1 (point))
+    (beginning-of-line 1)
+    (setq p2 (point))
+    (delete-region p1 p2)))
+#+END_SRC
 
-;;
-;;
-;;
-;; Variables
-;;
-;;
-;;
+* Keybindings
+#+BEGIN_SRC emacs-lisp
+  ;; <return> vs. <kp-enter> (keypad enter)
+  (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
+  (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
+  (global-set-key (kbd "<f9>"    ) 'symbol-overlay-put        )
+  (global-set-key (kbd "<f5>"    ) 'jpt-toggle-mark-word-at-point)
+  (global-set-key (kbd "C-="     ) 'er/expand-region          )
+  (global-set-key (kbd "C-c f"   ) 'eww-open-in-new-buffer    )
+  ;; (global-set-key (kbd "<return>") 'newline                )
+  ;; (global-set-key (kbd "C m"     ) 'insert-newline-before-line)
+  (global-set-key (kbd "C-c a"   ) 'org-agenda                )
+  (global-set-key (kbd "C-c z"   ) 'show-file-name            )
+  (global-set-key (kbd "C-c C-j" ) 'regenerate-tags-file      )
+  (global-set-key (kbd "C-c d"   ) 'open-diary-file           )
+  (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
+  (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
+  (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
+  (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
+  (global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file
+  (global-set-key (kbd "C-x C-b" ) 'buffer-menu               ) ; Buffer-Menu shouldn't open
+  (global-set-key (kbd "C-c C-c" ) 'fundamental-mode          ) ;  in another window
+  (global-set-key (kbd "C-j"     ) 'scroll-down-command       )
+  (global-set-key (kbd "C-x p"   ) 'navigate-backwards        ) ; Navigate Buffers Backwards
+  ; bind them to emacs's default shortcut keys:
+  (global-set-key (kbd "C-c C-u" ) 'my-delete-line-backward   )
+  (global-set-key (kbd "C-c C-k" ) 'my-delete-line            )
+  ;; (global-set-key (kbd "M-d"     ) 'describe-key              )
+  ;; (global-set-key (kbd "<M-backspace>") 'my-backward-delete-word)
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;The following section is from:;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;https://sites.google.com/site/steveyegge2/effective-emacs;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ; Easier killing
+  (global-set-key (kbd "C-w"     ) 'backward-kill-word        ) ; Added Bonus: Matches
+                                                                ; shell behavior
+  (global-set-key (kbd "C-x C-k" ) 'kill-region               )
+  (global-set-key (kbd "C-c C-k" ) 'kill-region               )
+  ; Bind Alternate M-x's
+  (global-set-key (kbd "C-x C-m" ) 'execute-extended-command  )
+  (global-set-key (kbd "C-c C-m" ) 'execute-extended-command  )
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;End Section;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (global-set-key (kbd "C-c C-a" ) 'copy-all                  ) ; Copy everything in buffer
+  (global-set-key (kbd "C-c C-r" ) 'revert-buffer             ) ; Revert Buffer
+  (global-set-key (kbd "C-c C-s" ) 'shell-script-mode         ) ; Shell-script-mode
+  ;; (global-set-key (kbd "C-m"    ) 'scroll-up-command          )
+  ;; (global-set-key (kbd "C-n"    ) 'next-line-and-recenter     )
+  ;; (global-set-key (kbd "C-P"    ) 'previous-line-and-recenter )
+  ;; (global-set-key (kbd "C-c C-m") 'makefile-mode              ) ; Makefile-mode (remap this)
+  ;; (global-set-key (kbd "C-c C-l") 'align-regexp               ) ; Line up all the = signs
+                                          ;  http://stackoverflow.com
+                                          ;   /questions
+                                          ;   /915985
+                                          ;   /in-emacs-how-to-line-up-equals-signs
+                                          ;  -in-a-series-of-initialization-statements
+  (global-set-key (kbd "M-g M-c" ) 'go-to-column              )
+  ;; (global-set-key [(control h)] 'delete-backward-char)
+  ;; (global-set-key (kbd "C-h"    ) 'delete-backward-char)
+  ;; (global-set-key (kbd "C-c C-l") 'clang-format-region) ; Auto-Formatting Code
+  ; Proper Undo
+  ;  since OSX doesn't default to the same shortcut as Ubuntu
+  ;  C-_ is always undo, but it requires the user to press <shift>
+  ;; (global-set-key (kbd "C-/"    ) 'undo)              ; Doesn't work
+  ; This is an X11 issue on OSX:
+  ;  http://apple.stackexchange.com/questions/24261/how-do-i-send-c-that-is-control
+  ;  -slash-to-the-terminal#comment27461_24282
+  ; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
+#+END_SRC
+
+* Variables
+#+BEGIN_SRC emacs-lisp
+(setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
+(setq compilation-scroll-output t)
 ;; TAGS file
 ;; (setq tags-file-name "path/to/TAGS")
 (setq tags-revert-without-query t)      ; Auto-update TAGS file if it changed on
@@ -241,10 +346,10 @@ or nil if not found."
                                         ;  in the buffer
 ;; Code
 (setq c-default-style                   ; Sane C bracket style
-      "linux"                           ;  4 space tabs for all c-modes
+      "bsd"                             ;  4 space tabs for all c-modes
       c-basic-offset 4)
 (setq auto-save-default nil)            ; Stop creating those #autosave# files
-;(setq make-backup-files nil)           ; Do not create tilde backup files
+(setq make-backup-files nil)            ; Do not create tilde backup files
 (setq max-mini-window-height 1)         ; Don't let echo area grow
                                         ;  This is useful for forcing
                                         ;  'shell-command-on-region' output to
@@ -280,14 +385,10 @@ or nil if not found."
                                         ;  (default: 300)
 )
 (setq Buffer-menu-name-width 40)        ; Width of buffer name in *buffer-list*
+#+END_SRC
 
-;;
-;;
-;;
-;; Hooks
-;;
-;;
-;;
+* Hooks
+#+BEGIN_SRC emacs-lisp
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 ;; (add-hook 'before-save-hook 'delete-trailing-whitespace)
@@ -297,18 +398,14 @@ or nil if not found."
 (add-hook 'emacs-startup-hook (lambda () (message "Welcome, %s!" (user-login-name))))
 ;; (add-hook 'prog-mode-hook 'column-enforce-mode)
 ;; (add-hook 'python-mode-hook 'flymake-mode-on)
+#+END_SRC
 
-
-;;
-;;
-;;
-;; Appearance
-;;
-;;
-;;
+* Appearance
+#+BEGIN_SRC emacs-lisp
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
 ;; (tool-bar-mode -1)                      ; Disable toolbar
+(menu-bar-mode 0)
 (setq require-final-newline t)          ; Newline at end of file
 (which-function-mode 1)                 ; Show the function you are in
 (fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
@@ -319,15 +416,29 @@ or nil if not found."
       scroll-preserve-screen-position 1);   /fix-to-get-smooth-scrolling-in-emacs
 (setq vc-handled-backends ())
 (setq inhibit-startup-screen t)         ; Don't show the welcome screen
+;; (set-window-scroll-bars (mini-buffer-window) nil nil) ; Hide tiny scrollbar in minibuffer
+(global-hl-line-mode)
+(use-package diff-hl
+  :config
+  (add-hook 'prog-mode-hook 'turn-on-diff-hl-mode)
+  (add-hook 'vc-dir-mode-hook 'turn-on-diff-hl-mode))
+#+END_SRC
 
+#+BEGIN_SRC emacs-lisp
+  (use-package moody
+    :config
+    (setq x-underline-at-descent-line t)
+    (moody-replace-mode-line-buffer-identification)
+    (moody-replace-vc-mode))
+#+END_SRC
 
-;;
-;;
-;;
-;; Behavior
-;;
-;;
-;;
+* Behavior
+#+BEGIN_SRC emacs-lisp
+(setq browse-url-browser-function 'w3m-browse-url)
+(autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
+;; optional keyboard short-cut
+(global-set-key "\C-xm" 'browse-url-at-point)
+
 ;; Java Mode file types
 (setq auto-mode-alist (cons '("\\.aidl$" . java-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.proto$" . java-mode) auto-mode-alist))
@@ -355,19 +466,32 @@ or nil if not found."
 ; -that-go-over-80-chars
 ; free of trailing whitespace and to use 80-column width, standard indentation
 (setq whitespace-line-column 80)
+(setq inhibit-splash-screen t)
+(bookmark-bmenu-list)
+(switch-to-buffer "*Bookmark List*")
+(defengine duckduckgo
+  "https://duckduckgo.com/?q=%s"
+  :keybinding "d")
+(defengine github
+  "https://github.com/search?ref=simplesearch&q=%s"
+  :keybinding "g")
+(defengine wikipedia
+  "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s"
+  :keybinding "w")
+(defengine youtube
+  "https://www.youtube.com/results?search_query=%s"
+  :keybinding "y")
+(engine-mode t)
+
 
 ; Load Emacs Libraries
 (add-to-list 'load-path "~/.emacs.d/themes")
 (add-to-list 'load-path "~/.emacs.d/elpa")
 ;; (add-to-list 'load-path "~/.emacs.d/") ; Not needed in Emacs 24.x
+#+END_SRC
 
-;;
-;;
-;;
-;; Package Customizations
-;;
-;;
-;;
+* Package Customizations
+#+BEGIN_SRC emacs-lisp
 ;; Bind-key
 ;; (bind-key* "C-i" 'some-function)
 ;; Autocomplete
@@ -380,15 +504,24 @@ or nil if not found."
                          indentation
                          space-after-tab))
 ;; (setq whitespace-style '(trailing tabs newline tab-mark newline-mark))
+(global-set-key (kbd "C-h f") #'helpful-callable)
+(global-set-key (kbd "C-h v") #'helpful-variable)
+(global-set-key (kbd "C-h k") #'helpful-key)
+#+END_SRC
 
+* Org-mode
+#+BEGIN_SRC emacs-lisp
+(add-hook 'org-mode-hook
+          (lambda ()
+            (org-bullets-mode t)))
+(setq org-hide-leading-stars t)
+(setq org-todo-keywords
+  (quote ((sequence "TODO(t)" "PAUSED(p)" "|" "ABANDONED(b)" "DONE(d)" "SUFFICIENT(s)"))))
+(setq org-log-done t)
+#+END_SRC
 
-;;
-;;
-;;
-;; Shortcuts to Remember
-;;
-;;
-;;
+* Shortcuts to Remember
+#+BEGIN_SRC emacs-lisp
 ;; C-x +: balance-windows
 ;; M-t: transpose word (remap this)
 ;; C-t: transpose letter
@@ -402,14 +535,10 @@ or nil if not found."
 ;; C-x k: kill-buffer
 ;; M-|: shell-command-on-region
 ;; C-x C-p: mark-page
+#+END_SRC
 
-;;
-;;
-;;
-;; Junkyard
-;;
-;;
-;;
+* Junkyard
+#+BEGIN_SRC emacs-lisp
 ;; https://en.wikipedia.org/wiki/Common_Lisp#Comparison_with_other_Lisps
 ;;
 ; 80 Char whitespace minor mode
@@ -444,15 +573,4 @@ or nil if not found."
 ;;   (kill-new (file-truename buffer-file-name))
 ;;   )
 ;; (global-set-key "\C-cz" 'show-file-name)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages (quote (mo-git-blame auto-complete flycheck))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+#+END_SRC
