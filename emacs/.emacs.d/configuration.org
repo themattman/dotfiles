@@ -6,6 +6,27 @@
 #+EMACS VERSION: 26.2
 
 
+* Work machine theme-default
+#+BEGIN_SRC emacs-lisp
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ansi-color-faces-vector
+   [default default default italic underline success warning error])
+ '(ansi-color-names-vector
+   ["#242424" "#e5786d" "#95e454" "#cae682" "#8ac6f2" "#333366" "#ccaa8f" "#f6f3e8"])
+ '(custom-enabled-themes (quote (whiteboard)))
+ '(package-selected-packages (quote (mo-git-blame auto-complete flycheck))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+#+END_SRC
+
 * Packages
 ** Packages Installed
 *** existing
@@ -130,6 +151,11 @@ Always compile packages, and use the newest version available.
 (defun insert-timestamp ()
   (interactive)
   (insert (format-time-string "%m/%d/%Y")))
+(defun insert-datestring ()
+  (interactive)
+  (insert "##############\n")
+  (insert (format-time-string "# %m/%d/%Y #\n"))
+  (insert "##############\n"))
 (defun navigate-backwards ()
   (interactive)
   (other-window -1))
@@ -263,6 +289,8 @@ This command does not push text to `kill-ring'."
   (global-set-key (kbd "C-c d"   ) 'open-diary-file           )
   (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
   (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
+  (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
+  (global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
   (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
   (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
   (global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file

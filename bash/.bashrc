@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  05/29/2017
+# Last updated:  12/08/2019
 # Configuration: MACHINE_NAME # TODO a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -14,10 +14,10 @@
 # Notes:
 # * Only tested on:
 #   * Bash version:
-#     * 4.x
+#     * 4.x & 4.4.x
 #   * Platforms:
 #     * Mac OS X 10.11
-#     * Ubuntu 12.04/14.04
+#     * Ubuntu 12.04/14.04/18.04
 # * TODOs exist for areas of code smell or customizable fields
 #
 #
@@ -236,6 +236,16 @@ _add_alias variables "echo \${!_custom_user_variables[@]} | tr ' ' '\n' | sort |
 _add_alias _everything "echo \${!_custom_user_functions[@]} \${!_custom_user_auto_alias_completion_functions[@]} \${!_custom_user_aliases[@]} \${!_custom_user_completion_functions[@]} \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
 _add_alias _num_everything "echo \${!_custom_user_functions[@]} \${!_custom_user_auto_alias_completion_functions[@]} \${!_custom_user_aliases[@]} \${!_custom_user_completion_functions[@]} \${!_custom_user_variables[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' | wc -w"
 
+check_all_aliases() {
+    for _alias in "${!_custom_user_aliases[@]}"; do
+        #echo "alias [$_alias] -> ${_custom_user_aliases[${_alias}]}"
+        if [[ ${_custom_user_aliases[${_alias}]%% *} = "cd" ]]; then
+            echo "${_custom_user_aliases[${_alias}]}"
+        fi
+    done
+}
+_add_function check_all_aliases
+
 _remove_all_functions() {
     local _counter=0
     echo -n "unsetting all custom user functions..."
@@ -377,32 +387,32 @@ _add_to_variable_with_path_separator PATH "/usr/bin"
 _add_to_variable_with_path_separator PATH "/bin"
 
 # Android Studio/Intellij Paths
-# _add_variable STUDIO_JDK ../android/jdk1.8.0_65
-# _add_variable ANDROID_SDK .../android/android-sdk-linux
-# _add_variable JDK_HOME "$STUDIO_JDK"
-# _add_variable ANDROID_HOME "$ANDROID_SDK"
-# _add_variable ANDROID_NDK .../android/android-ndk-r10e
-# _add_variable GRADLE_HOME .../android/android-studio/gradle/gradle-2.8/bin
-# _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
 # _add_to_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
-# _add_to_variable_with_path_separator PATH  ../android/android-studio/bin
-# _add_to_variable_with_path_separator PATH "$GRADLE_HOME"
+# _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
 # _add_to_variable_with_path_separator PATH "$JAVA_HOME"
-# _add_to_variable_with_path_separator PATH "$ANDROID_SDK/platform-tools"
-# _add_to_variable_with_path_separator PATH "$ANDROID_SDK/tools"
-# _add_to_variable_with_path_separator PATH "$ANDROID_SDK/build-tools"
-# _add_to_variable_with_path_separator PATH "$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin"
 
 # local binaries
 # _add_to_variable_with_path_separator PATH $HOME/bin #begin
 # _add_to_variable_with_path_separator PATH /usr/bin
 # _add_to_variable_with_path_separator PATH /bin
 
+_add_to_variable_with_path_separator PATH /usr/local/sbin
+_add_to_variable_with_path_separator PATH /usr/sbin
+_add_to_variable_with_path_separator PATH /sbin
+
 # Make sure IFS is set correctly
 unset IFS
 
-# Make backspace work
+# Make backspace work in Emacs
+# TODO: make these work conditionally based on OS/Environ
 #stty erase ^H
+_add_variable LANG C
+stty ixany       # Turn off Ctrl-S XOFF "feature", particularly helpful for
+stty ixoff -ixon #  GNU screen sessions.
+                 #  https://raamdev.com
+                 #   /2007
+                 #   /recovering-from-ctrls-in-putty
+#stty ek
 
 source_file /etc/bash_completion
 
@@ -442,11 +452,12 @@ linux*|msys*)
     _add_alias sl "ls -Slh"
     _add_alias lsl "ls -F --color -lh"
     _add_alias lh "ls -F --color -alh"
-    _add_alias l "ls -F --color -alh"
+    _add_alias l "ls -F --color -lh"
     _add_alias als "ls -F --color -alth"
     _add_alias asl "ls -F --color -alth"
     _add_alias las "ls -F --color -alth"
     _add_alias lsa "ls -F --color -alth"
+    _add_alias lsah "ls -F --color -althH" # Follow symlinks
     _add_alias lsar "ls -F --color -alth -r"
     _add_alias sal "ls -F --color -alth"
     _add_alias sla "ls -F --color -alth"
@@ -508,6 +519,7 @@ _add_alias mv "mv -i"        # Warn when overwriting
 _add_alias ln "ln -i"        # Warn when overwriting
 _add_alias d "diff -U 0"
 _add_alias dr "diff -r"
+_add_alias dy "diff -y -W 180"
 _add_alias dw "diff -U 0 -w" # Ignore whitespace differences
 _add_alias dff "diff --changed-group-format='%<' --unchanged-group-format=''"
 _add_alias s "source"
@@ -516,6 +528,7 @@ _add_alias un "unalias"
 _add_alias rd "readlink -f"
 _add_alias dx "dos2unix"
 _add_alias sum "paste -sd+ - | bc" # A column of numbers should be piped into this one
+_add_alias avg "awk '{ sum += \$0 } END { if (NR > 0) print sum / NR }'" # Ditto, spits out a float, TODO doesn't work yet
 _add_alias pu "pushd"
 _add_alias po "popd"
 _add_alias wh "which"
@@ -531,7 +544,11 @@ _add_alias no "yes | tr 'y' 'n'"
 _add_alias tmake "(\time -v make -j\$(cores)) &> \$(date $DATE_FORMAT)"
 _add_alias cdate "date $DATE_FORMAT"
 _add_alias nof "find ./ -maxdepth 1 -type f | wc -l" # Faster than: _add_alias nof "ls -l . | egrep -c '^-'"
-_add_alias o "echo \$OLDPWD"
+_add_alias old "echo \$OLDPWD"
+_add_alias sus no "sort | uniq -c | sort -h"
+_add_alias blame  no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no-pager blame -L\$g,\$g \$f 2>/dev/null | cut -d'(' -f2 | awk '{print \$1}'; done | sus"
+_add_alias blamer no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no-pager blame -L\$g,\$g \$f 2>/dev/null; done"
+_add_alias extensions "find . -type f | awk -F. '!a[\$NF]++{print \$NF}'"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 _add_alias f "fg"       # Yes, I'm really lazy
@@ -574,12 +591,12 @@ esac
 ## 4c) Short program aliases
 # CD
 _add_alias .. "cd .."
-_add_alias dot "cd ${DOTFILES_LOCATION}"
+_add_alias dots "cd ${DOTFILES_LOCATION}"
 # ECHO
 _add_alias ec "echo"
 _add_alias ep "echo \$PATH"
 _add_alias epp "echo \$PYTHONPATH"
-_add_alias el "echo \$LD_LIBRARY_PATH"
+#_add_alias el "echo \$LD_LIBRARY_PATH"
 # Emacs
 _add_alias e "\emacs -nw"     # Escape emacs so that -nw only
 _add_alias emasc "\emacs -nw" #  gets appended once
@@ -587,10 +604,12 @@ _add_alias emacs "\emacs -nw"
 # Repo
 _add_alias rf "repo forall -c"
 _add_alias rfs "repo forall -c 'pwd && git status -s -uno'"
+_add_alias rfb "repo forall -pc 'git rev-parse --abbrev-ref HEAD'"
 _add_alias rfps "repo forall -c 'pwd && git status -s'"
 _add_alias rfg "repo forall -c 'pwd && git remote | xargs -I{} git pull {}'"
 #_add_alias rfg "repo forall -c 'pwd && git rev-parse --abbrev-ref HEAD | xargs -I{} git pull origin {}'"
-_add_alias rs "repo sync -j\$(cores)"
+#_add_alias rs "repo sync -j\$(cores)"
+_add_alias rs "repo sync -j16 --no-tags --force-sync"
 # Screen
 _add_alias scr "screen -r"
 _add_alias sc "screen -S"
@@ -618,6 +637,8 @@ if [[ -f ~/.git-completion ]]; then
     __git_complete gdsss _git_diff && _add_completion_function gdsss
     __git_complete gl _git_log && _add_completion_function gl
     __git_complete gls _git_log && _add_completion_function gls
+    __git_complete glsn _git_log && _add_completion_function glsn
+    __git_complete glo _git_log && _add_completion_function glo
     __git_complete gll _git_log && _add_completion_function gll
     __git_complete gg _git_log && _add_completion_function gg
     __git_complete g _git_pull && _add_completion_function g
@@ -632,15 +653,19 @@ if [[ -f ~/.git-completion ]]; then
     __git_complete gshhn _git_show && _add_completion_function gshhn
     __git_complete gbd _git_branch && _add_completion_function gbd
     __git_complete gmm _git_merge && _add_completion_function gmm
+    __git_complete gmb _git_checkout && _add_completion_function gmb
 fi
 
-_add_alias branches "for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
-_add_alias g "git pull origin \$(git rev-parse --abbrev-ref HEAD)"
+_add_alias rbranches "for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
+_add_alias branches  "for k in \$(git branch | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r | head -n 30"
+_add_alias g "git pull \$(git remote | head -n 1) \$(git rev-parse --abbrev-ref HEAD)"
 _add_alias gf "git fetch"
 _add_alias gp "git push"
 _add_alias gb "git branch"
 _add_alias gba "git branch -a"
 _add_alias gvv "git branch -vv"
+_add_alias gmb "git merge-base"        # Find best common ancestor of two branches
+_add_alias gmba "git merge-base --all" # Find all common ancestors of two branches
 _add_alias gbl "git blame"
 _add_alias ga "git add"
 _add_alias gau "git add -u"
@@ -663,6 +688,7 @@ _add_alias gss "git status"
 _add_alias gssi "git status --ignored"   # Show ignored files
 _add_alias gsu "git status -s --ignored" # Show ignored files
 _add_alias gs "git status -s -uno"       # Don't show untracked files
+_add_alias gsm "git status -s -uno | grep '^ M'"
 _add_alias gd "git diff"
 _add_alias gds "git diff --staged"
 _add_alias gdss "git diff --stat"
@@ -672,8 +698,11 @@ _add_alias gdrs "git diff -R --staged"
 _add_alias gdbb "git diff -b"
 _add_alias gdsb "git diff --staged -b"
 _add_alias gdc "echo 'Staged files:' && git diff --name-only --cached"
+_add_alias gdscrb "git describe"
 _add_alias gl "git log"
 _add_alias gls "git log --stat"
+_add_alias glsn "git log --stat -n 3"
+_add_alias glo "git log --oneline"
 _add_alias gll "git log --graph --pretty=oneline --abbrev-commit"
 _add_alias gg "git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cblue%an %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 _add_alias ggs "gg --stat"
@@ -681,8 +710,12 @@ _add_alias gsl "git shortlog -sn"            # All authors in this branch's hist
 _add_alias gnew "git log HEAD@{1}..HEAD@{0}" # Show commits since last pull
 _add_alias gc "git checkout"
 _add_alias gch "git checkout -- ."
+_add_alias gcp "git cherry-pick"
+_add_alias gcpx "git cherry-pick -x"
+_add_alias gcpa "git cherry-pick --abort"
+_add_alias gcpc "git cherry-pick --continue"
 _add_alias gcf "git config --list" # List all inherited Git config values
-_add_alias gpo "git push origin \$(git rev-parse --abbrev-ref HEAD)"
+_add_alias gpo "git push origin"
 _add_alias gbr "git rev-parse --abbrev-ref HEAD" # Works on 1.7.x & 1.8.x
 _add_alias grf "git reflog" # List all commits current branch points to
 _add_alias gsh "git show"
@@ -696,6 +729,11 @@ _add_alias gr "git reset"
 _add_alias grh "git reset HEAD"
 _add_alias grhh "git reset HEAD~1"
 _add_alias grhhs "git reset HEAD~1 --soft"
+_add_alias grb "git rebase"
+_add_alias grbi "git rebase -i"
+_add_alias grbc "git rebase --continue"
+_add_alias grba "git rebase --abort"
+_add_alias gct "git checkout --theirs"
 _add_alias g-- "git --version"
 _add_alias ge "git config user.email"
 _add_alias gu "git config user.name"
@@ -734,6 +772,9 @@ _add_alias getip "nslookup"
 # LESS
 # _add_alias less "\less -iFXR" # I typically don't like aliasing program names
 _add_alias les "\less -iFXR +G" # +G goes to end of file
+if [[ -f /usr/share/source-highlight/src-hilite-lesspipe.sh ]]; then
+    _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
+fi
 # Node.js
 _add_alias n "node"
 _add_alias nd "node server"
@@ -778,7 +819,9 @@ _add_alias gaid "./gradlew assemble installDebug"
 
 ## 4d) Common
 _add_alias en "\$EDITOR ~/.nomad"
-_add_alias ed "\$EDITOR +\$((\$(wc -l ~/.diary | awk '{print \$1}')+1)) ~/.diary" # Programmer's Diary
+#_add_alias ed "\$EDITOR +\$((\$(wc -l ~/.diary | awk '{print \$1}')+1)) ~/.diary" # Programmer's Diary
+_add_alias dl "grep --color -o -E \"^# [0-9]{2}/[0-9]{2}/[0-9]{4}\" ~/.diary | tail -n 1 | cut -d' ' -f2-"
+_add_alias el "\$EDITOR +\$((\$(wc -l ~/.daily | awk '{print \$1}')+1)) ~/.daily" # Daily Journal
 _add_alias td "tail ~/.diary"
 _add_alias eb "\$EDITOR ~/.bashrc"
 _add_alias eeb "\$EDITOR ~/.emacs ~/.bashrc"
@@ -1071,11 +1114,18 @@ _add_function longer
 # Trailing Whitespace Remover
 remove_trailing_spaces() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
-    elif [[ ! -f $1 ]]; then
-        echo "$(basename -- ${0}): Error: $1 is not a regular file" >&2 && return 1
+        echo "Usage: ${FUNCNAME[0]} FILE|DIR" >&2 && return 1
     fi
-    sed -i 's/[ \t]*$//' "$1"
+    if [[ -d $1 ]]; then
+        echo "doing it"
+        find $1 | tail -n +2 | while read f; do sed -i 's/[ \t]*$//' "$f"; done
+        return
+    fi
+    if [[ -f $1 ]]; then
+        sed -i 's/[ \t]*$//' "$1"
+        return
+    fi
+    echo "$(basename -- ${0}): Error: $1 is not a regular file or directory" >&2 && return 1
 }
 _add_function remove_trailing_spaces
 
@@ -1135,17 +1185,18 @@ safely_call() {
 _add_function safely_call
 
 create_temp_src_file() {
-    local ext temp_dir tmpfile
-    ext=$1
-    temp_dir="${HOME}/tmp"
-    if [[ ! -f ${temp_dir}/template.${ext} ]]; then
-        echo "Error: template doesn't exist for ${ext}" >& 2 && return 1
+    local _ext _temp_dir _tmpfile
+    _ext=$1
+    _temp_dir="${HOME}/tmp"
+    if [[ ! -f ${_temp_dir}/template.${_ext} ]]; then
+        echo "Error: template doesn't exist for ${_ext}" >& 2 && return 1
     fi
-    tmpfile="$(mktemp ${temp_dir}/XXXXXXXXXX.${ext})" || return 1;
+    _temp_dir="${HOME}/tmp"
+    _tmpfile="$(mktemp ${_temp_dir}/XXXXXXXXXX.${_ext})" || return 1;
     # These sed's are designed to be cross-platform
-    sed -e "s/^# Created:$/& $(date)\n\# Dir:     ${PWD//\//\\/}/" "${temp_dir}/template.${ext}" \
-        | sed -e "s/^# Author:$/&  $USER/" > "${tmpfile}"
-    ${EDITOR} +$(($(wc -l "${temp_dir}/template.${ext}" | awk '{print $1}')+2)) "${tmpfile}"
+    sed -e "s/^# Created:$/& $(date)\n\# Dir:     ${PWD//\//\\/}/" "${temp_dir}/template.${_ext}" \
+        | sed -e "s/^# Author:$/&  $USER/" > "${_tmpfile}"
+    ${EDITOR} +$(($(wc -l "${_temp_dir}/template.${_ext}" | awk '{print $1}')+2)) "${_tmpfile}"
 }
 _add_function create_temp_src_file
 
@@ -1202,12 +1253,18 @@ _add_function rmp
 # Git Push to all remotes
 gpa() {
     if [[ "function" = $(type -t __git_remotes) ]]; then
-        local current_branch
-        current_branch=$(git rev-parse --abbrev-ref HEAD)
+        local cur_branch
+        cur_branch=$(git rev-parse --abbrev-ref HEAD)
         for _ith_remote in $(__git_remotes); do
-            set -x
-            git push "${_ith_remote}" "${current_branch}"
-            { set +x; } 2>/dev/null
+            if [[ $# -eq 1 ]]; then
+                set -x
+                git push "${1}" "${_ith_remote}" "${cur_branch}"
+                { set +x; } 2>/dev/null
+            else
+                set -x
+                git push "${_ith_remote}" "${cur_branch}"
+                { set +x; } 2>/dev/null
+            fi
         done
     else
         echo "$(basename -- ${0}): Error: You need to have the well-known ~/.git-completion file." >&2
@@ -1216,6 +1273,11 @@ gpa() {
     fi
 }
 _add_function gpa
+
+gpfa() {
+    gpa -f
+}
+_add_function gpfa
 
 create_shortcut() {
     if [[ $# -ne "1" ]]; then
@@ -1226,7 +1288,7 @@ create_shortcut() {
     if [[ "${is_alias}" = "alias" ]]; then
         echo "$(basename -- ${0}): Error: $1 is already an alias." >&2 && return 1
     fi
-    echo "_add_alias $1 \"cd ${PWD// /\\ }\" #generated by alias 'short'" >> ~/.machine
+    echo "_add_alias __$(hostname)__ $1 \"cd ${PWD// /\\ }\" #generated by alias 'short'" >> ~/.machine
     source_file ~/.machine
     echo "_add_alias $1 \"cd ${PWD// /\\ }\" #generated by alias 'short'"
 }
@@ -1327,7 +1389,10 @@ se() { _search_file_wrapper $# "${@}" ~/.bashrc; }
 _add_function se
 
 sd() { _search_file_wrapper $# "${@}" ~/.diary; }
-_add_function se
+_add_function sd
+
+sm() { _search_file_wrapper $# "${@}" ~/.machine; }
+_add_function sm
 
 seb() { _search_file_wrapper $# "${@}" ~/.emacs; }
 _add_function seb
@@ -1350,7 +1415,7 @@ sel() { _search_file_occur_wrapper $# "$1" ~/.bashrc; }
 _add_function sel
 
 sdl() { _search_file_occur_wrapper $# "$1" ~/.diary; }
-_add_function sel
+_add_function sdl
 
 sebl() { _search_file_occur_wrapper $# "$1" ~/.emacs; }
 _add_function sebl
@@ -1380,7 +1445,7 @@ gentags() {
 }
 _add_function gentags
 
-# Similar to mkd() but for Git Clone
+# Similar to mkd() but for git-clone(1)
 gcl() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} URL" >&2 && return 1
@@ -1416,10 +1481,17 @@ bk() {
 _add_function bk
 
 rtrav() {
-    if [[ $# -ne 2 ]]; then
-        echo "Usage: ${FUNCNAME[0]} NAME PATH" >&2 && return 1
+    # TODO: _file should be allowed to have wildcards (e.g. $ rtrav images*)
+    local _file="${1}"
+    local _dir="${2}"
+    if [[ $# -eq 1 ]]; then
+        _dir=$(readlink -f .)
+        test -e "${_dir}"/"${_file}" && echo "${_dir}" || { test "${_dir}" != / && rtrav "${_file}" "$(dirname ${_dir})";};
+    elif [[ $# -eq 2 ]]; then
+        test -e "${_dir}"/"${_file}" && echo "${_dir}" || { test "${_dir}" != / && rtrav "${_file}" "$(dirname ${_dir})";};
+    else
+        echo "Usage: ${FUNCNAME[0]} NAME [PATH]" >&2 && return 1
     fi
-    test -e "${2}"/"${1}" && echo "$2" || { test "$2" != / && rtrav "$1" "$(dirname $2)";};
 }
 _add_function rtrav
 
@@ -1455,7 +1527,7 @@ _git_branch_delete() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -en "\nDeleting branch [${_branch}] from local and remote..."
         set -x
-        git branch -d "${_branch}"
+        git branch -d "${_branch}" || git branch -D "${_branch}"
         git push origin ":${_branch}"
         { set +x; } 2>/dev/null
         echo " Done!"
@@ -1529,7 +1601,8 @@ if [[ -f ~/.ssh/config ]]; then
 fi
 
 _complete_most_recently_modified_file() {
-    # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
+    #echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
+    # Args:[cdc out cdc] C:[1] 1:[cdc] 2:[out]
     if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
         local latest_filename
         latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
@@ -1650,12 +1723,16 @@ complete -f bk && _add_completion_function bk
 complete -W "\$(complete -p | rev | cut -d' ' -f1 | rev)" comp && _add_completion_function comp
 complete -F _command wow wowz && _add_completion_function wow wowz
 
+_add_alias cdc "cd"
+complete -F _complete_most_recently_modified_file cdc && _add_completion_function
+
 
 ## 8) Miscellaneous
 # Set XTERM window name
 case "$TERM" in
 xterm*|rxvt*)
-    _add_variable PROMPT_COMMAND 'echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
+    #_add_variable PROMPT_COMMAND 'echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
+    _add_variable PROMPT_COMMAND 'if [ "$(id -u)" -ne 0 ]; then echo "$(date "+%Y-%m-%d.%H:%M:%S") $(pwd) $(history 1)" >> ~/.logs/bash-history-$(date "+%Y-%m-%d").log; fi; echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
 ;;
 *)
 ;;
@@ -1663,8 +1740,7 @@ esac
 _add_variable EDITOR "emacs -nw"
 _add_variable GIT_EDITOR "emacs -nw"
 _add_variable MAN_PAGER "less -i"
-# _add_variable USER_EMAIL "<EMAIL_ADDRESS>" # TODO
-# _add_variable _PKG_LOG "~/pkg.test.${USER}"
+# _add_variable USER_EMAIL "${USER}@${HOSTNAME}"
 
 
 ## 9) Machine-Specific

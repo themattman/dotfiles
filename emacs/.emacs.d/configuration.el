@@ -442,6 +442,11 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-h v") #'helpful-variable)
 (global-set-key (kbd "C-h k") #'helpful-key)
 
+;;
+;;
+;; Org Mode
+;;
+;;
 (add-hook 'org-mode-hook
           (lambda ()
             (org-bullets-mode t)))
@@ -449,6 +454,7 @@ This command does not push text to `kill-ring'."
 (setq org-todo-keywords
   (quote ((sequence "TODO(t)" "PAUSED(p)" "|" "ABANDONED(b)" "DONE(d)" "SUFFICIENT(s)"))))
 (setq org-log-done t)
+(setq org-default-notes-file (concat org-directory "/notes.org"))
 
 ;; C-x +: balance-windows
 ;; M-t: transpose word (remap this)

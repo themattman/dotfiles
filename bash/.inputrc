@@ -1,0 +1,16 @@
+#
+# C-x C-r to reload this file
+#
+
+# Complete unambiguously on first tab, then show completions
+set show-all-if-unmodified on
+
+# Replace common prefix with ellipsis for completion
+set completion-prefix-display-length 2
+
+set visible-stats on
+set colored-stats on
+
+# C-a Delete-forward-word, bind this to C-j
+# what's the command to get the last arg from prev-line? should be similar, document in diary or somewhere else
+# "\C-j" : 

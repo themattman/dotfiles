@@ -1025,6 +1025,7 @@ mm -B                                   # AOSP Build System, Unconditionally
 Command                                 Comments
 ---------------------------------------------------------------------------------
 head -n -4                              # Print all but the last 4 lines
+sed \$d                                 # Print all but the last line
 tail -n +4                              # Print all but the first 4 lines
 watch -n1 -d prebuilts/misc/linux-x86/ccache/ccache -s
                                         # Watch CCache being used for the AOSP
@@ -2028,13 +2029,515 @@ Command                                 Comments
 inotifywait -mr . --format "%e | %w"    # Print out all files touched in a dir
 
 #
+# 05/31/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+tar caf my.tar.gz --remove-files file1  # Compress file1 into archive and remove
+                                        #  the uncompressed original file1.
+                                        #  Used for backups.
+
+#
+# 06/02/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git commit -m 'First line' -m 'Next'    # Multi-line commit messages that conform
+                                        #  to commit standards. 'Next' shows up
+                                        #  with a newline in between
+find . \( -path ../stubs -o -path ../inc \) -prune \
+     -type f -name "*.c" -o -name "*.cc" \
+     -o -name "*.cpp" -o -name "*.h"    # Exclude multiple paths from find
+git diff-index --quiet --cached HEAD    # Repo has staged changes
+git diff-files --quiet                  # Working tree has changes
+git diff-index --quiet HEAD             # Checks for both of above
+history -a                              # Append current commands to history
+history -c
+history -r
+
+#
+# 06/07/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git status
+M  my/file
+ M my/other
+git stash save "message"                # Dangerous behavior
+git stash show stash@{0}                # Doesn't show staged changes
+git stash apply --index                 # Reverts stash
+git status
+M  my/file
+ M my/other
+
+#
+# 06/11/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+for i in $(grep -Irs "^#include " mysrc.cpp | cut -d' ' -f2 | tr -d '"'); do
+    (find mydir -name mysrch_$i | grep -q ".") && echo " mysrch_${i}";
+done                                    # Find all headers in dir
+
+#
+# 06/13/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+wget https://raw.githubusercontent.com/llvm-mirror/clang/master/tools/clang-format/{clang-format.py,clang-format.el}
+                                        # Brace Expansion from man bash
+clang-tidy -dump-config -checks=-*,readability-identifier-naming
+           | grep readability | awk '{print $3}'
+           | cut -d'.' -f2
+           | sed 's/Prefix//'
+           | sed 's/Suffix//'
+           | sed 's/Case//'
+           | sort | uniq
+
+#
+# 06/14/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+https://github.com/emacs-mirror/emacs/blob/emacs-25/lisp/emacs-lisp/copyright.el
+                                        # Emacs file for updating copyright
+                                        #  Similar to my copyright hook!
+https://www.gnu.org/software/emacs/manual/html_node/elisp/Saving-Buffers.html#Saving-Buffers
+                                        # Lots of inspiration here for mature
+                                        #  software process
+
+#
+# 06/19/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+man terminfo
+less --RAW-CONTROL-CHARS                # Will show raw color codes
+
+
+#
+# 06/27/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+alt+shift+<arrow>                       # Visual Studio, multiple cursors
+ctrl+<arrow>                            # Visual Studio, Scroll window
+
+#
+# 06/28/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+diff --width=180 -y file.h <(sed -e '/EDIT HISTORY/,/\*\//{//!d}' file.h ) \
+     | head -n 50                       # Testing the removal of EDIT HISTORY
+                                        # TODO: remove any empty /*= */ blocks
+                                        #  before first #include
+diff -W 180 -y <(sed -e 's/\s\+/\n/g' my_c) <(sed -e 's/\s\+/\n/g' my_d) | less
+                                        # Comparing compile commands in 2 files
+
+#
+# 06/30/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Shift-F8                                # Source Insight, un/highlight word
+
+#
+# 07/06/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sed -e 's/\s\+/\n/g' compile_command    # Replace spaces with newlines
+
+
+#
+# 07/14/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-x scroll-all-mode                     # Emacs, scroll 2 buffers same time
+                                        #  good for diffs
+
+#
+# 08/03/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Trying to find the syslog command on ubuntu I used for the 410c...
+journalctl -p 8??
+
+#
+# 08/09/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+GIT_COMMITTER_DATE="Wed Aug 9 14:42:27 2017 -0700" git commit \
+                        --date="Wed Aug 9 14:42:27 2017 -0700" -m 'Fixing bug'
+                                        # Git, change date when committing
+
+#
+# 08/24/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+bison -v grammar.y                      # Spits out ".output" file with very
+                                        #  helpful info that describes your
+                                        #  grammar, shows unused tokens, etc
+less -N                                 # Line numbers
+
+
+#
+# 11/14/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+awk '{print substr($0,OFFSET,LENGTH)}'  # Print second half of output from offset
+
+#
+# 11/14/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+https://www.training.nih.gov/assets/Lab_Notebook_508_(new).pdf
+
+#
+# 12/11/2017
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git push origin <HASH>:<BRANCH>         # Git, push up to and including a commit
+
+#
+# 01/11/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git log --pretty="format:%<(20,trunc)%an|%<(60,trunc)%s" SOME_TAG..HEAD
+                                        # Git, pad fields in pretty format
+
+#
+# 01/24/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+comm -12 file1 file2                    # Print lines present in both files
+
+#
+# 01/26/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+M-x linum-mode                          # Emacs, line number
+
+#
+# 03/07/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+https://gist.github.com/amitchhajer/4461043 # Count number of code lines in git
+                                            # repo per user
+
+#
+# 03/08/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git checkout --ours <path>              # Git rebase, chooses HEAD version
+
+#
+# 03/14/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git merge-base branch1 branch2          # Git, most recent common ancestor
+
+#
+# 03/21/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+while read f; do \
+      size -t $f | tail -n 1; \
+done < rf_mem_usage.txt \
+2>&1 >&3 3>&- 1>/dev/null | wc -l       # Bash, redirect only stderr to pipe
+                                        # Still wrapping my mind around this one
+seq -w 15                               # Bash, pads all numbers to equal length
+http://www.tldp.org/LDP/abs/html/io-redirection.html
+
+#
+# 03/22/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+http://theory.stanford.edu/~aiken/moss/ # Anti-plagiarism tool
+
+#
+# 03/23/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git rm --cached -r .                    # Git, when a file stubbornly doesn't get
+git reset --hard                        #  discarded by git checkout
+for i in $(git diff --name-only); do sha=$(
+git log -n 1 --pretty=format:%H -- "$i"); printf "%s: %s\n" "${sha}" "${i}"; done
+                                        # Show last modified SHA of every file
+                                        #  that's modified
+git checkout --theirs <path>            # Git rebase, recipe for resolving
+git add <path>                          #  conflicts. This can happen when a
+git rebase --continue                   #  change is made back&forth on a branch
+                                        #  Cleanup/squashing branch prevents this
+<line number> <enter>                   # Less, go to line number (top of screen)
+
+#
+# 03/29/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ctags -x --c++-kinds=fp <file.h>        # List all function decl and impl's in
+                                        #  a header
+find ./api | while read f; do
+      ctags -x --c++-kinds=fp $f;
+done | awk '{print $1}' | sort | uniq
+
+#
+# 04/25/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git log --pretty=short -u -L 679,679:full_path_from_base_of_git_dir
+                                        # Git, history of one-line
+
+#
+# 05/30/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+find . -type f -name '*.scons' \
+     | while read r; do grep -HnIrs "TODO" $r \
+     | cut -d':' -f1,2 | tr ':' ' ' \
+     | while read f g; do sed -i -e "$g"'d' $f; done; done
+                                        # Delete all lines with TODO in them
+
+#
+# 06/11/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+c++filt                                 # Unmangle C++ symbols from compiler
+
+#
+# 06/21/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git update-index --assume-unchanged f   # Untrack tracked file
+git ls-files -v | grep '^[[:lower:]]'   # List all files marked --assume-unchngd
+
+#
+# 07/09/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+grep "^#include \"header.h" .           # Insert prefix onto header in many files
+     | head -n 5
+     | xargs -I{} sed -i 's/\(header\)/prefix_\1/' {}
+
+#
+# 08/14/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+awk '/^{/{l=0} /} [[:alnum:]_]+;/{p=$2; a[p]=l} {l++} END{for(i in a) print i a[i]-1}' structs.h
+    | grep intf
+    | cut -d';' -f2
+    | awk '{ sum += $0 } END { if (NR > 0) print sum / NR }'
+                                        # Average number of members in structs
+                                        #  when '{' is on a bare line followed by
+                                        #  '} struct_name;' on another
+
+#
+# 09/06/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+man gitrevisions
+
+#
+# 10/17/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+cat /proc/<pid>/stack                   # Show stacktrace of running process
+
+#
+# 10/25/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sudo dmidecode -q | grep Z              # Get hardware info (i.e. HP Z2x0)
+
+#
+# 11/05/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+awk '($4 != $5) && ($1 != substr($5, 0, 1)) && ($1 == substr($4, 0, 1))' office.csv
+                                        # Awk, Data mining CSV file
+
+#
+# 11/06/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+https://arxiv.org/pdf/1603.07285.pdf    # Deep Learning, CNNs, Convolution basics
+${output/ /_}                           # Bash, Replace first space with under
+${output// /_}                          # Bash, Replace all spaces with unders
+awk '($2 == substr($3, 0, 1)) && ($5~"Matt_*")' file.csv
+                                        # Awk, pattern match on variable
+
+#
+# 11/20/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+https://github.com/green7ea/cpp-compilation/blob/master/README.md
+gcc -H                                  # Print the name of each header file used
+
+#
+# 11/30/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+${var%%-*} # hello-world-today          # Bash substitution, Prints "hello"
+
+#
+# 12/04/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sed "s/[!@#$%^&*()-]/\\\&/g"            # Escape all special chars
+
+#
+# 12/07/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+find . -printf "%a\n"                   # Formatted output from find for things
+                                        #  file access times, size, group, etc
+
+#
+# 12/10/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+http://www.gnu.org/prep/standards/html_node/Option-Table.html#Option-Table
+                                        # Helpful list of options used in GNUtils
+${var//\//\\/}                          # Substitution, escape a file path
+
+#
+# 12/12/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+commitizen                              # The concept of someone who takes care
+                                        #  to write helpful, instructive, and
+                                        #  well-formed commit messages
+https://github.com/commitizen/cz-cli
+https://github.com/marionebl/commitlint
+
+#
+# 12/14/2018
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git blame HEAD <file>                   # Disregard "Not Committed Yet" changes
+ls -H                                   # Follow symlinks
+find /sdfksd/sdflks -printf '%P\n'      # Find, remove starting-point from output
+
+#
+# 01/10/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+${var:-10}                              # Bash, default variable to value of 10
+
+#
+# 01/15/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+cat <<EOT >$tmpfile                     # Heredoc, here document
+blahblah
+EOT
+grep -crPn "[\x00-\x08\x0E-\x1F\x80-\xFF]" . # Grep, find non-ASCII characters
+find . | perl -ne 'print if /[^[:ascii:]]/' # Find any filenames in w/non-ASCII
+
+#
+# 01/17/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+grep -IscH "something\/[^s]" ./* | sort -nk 2 -t ':' # Sort by counts in grep
+     | awk -F':' '{ if ($2 > 0) print $0 }' # Filter by values in 2nd col >0
+dpkg --get-selections                   # CMake, env output
+env                                     # CMake, env output
+lsb_release -irc                        # CMake, env output
+uname -a                                # CMake, env output
+alias                                   # CMake, env output
+
+#
+# 02/05/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+https://review.xx.com/#/c/1234/2  # Gerrit link, use this to pull changes
+git ls-remote | grep 1234               # Gerrit, find SHA for commit
+ <SHA>  refs/changes/34/1234
+git fetch origin refs/changes/34/1234/2 # Gerrit, fetch a review
+git checkout/cherry-pick <SHA>
+
+#
+# 02/14/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+objdump -x blahblah.so                  # Great formatting of Symbol Tables
+
+#
+# 02/15/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ldd /lib/x86_64-linux-gnu/libm.so.6     # Show dependencies of a shared lib
+                                        #  used for dynamic linking
+objdump -p | grep NEEDED                # Safe alternative for untrusted exe's
+gcc -Wl,-t simple.c                     # Trace of files processed by linker
+gcc -Wl,-y,sin simple.c                 # Print the name of every file in which
+                                        #  the symbol "sin" appears
+gcc -Wl,-M simple.c                     # Print a link map used for linker
+
+#
+# 02/19/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git ls-files --others --exclude-standard# List all untracked files
+
+#
+# 02/25/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git-notes                               # Explore adding these beyond a commit
+gd -U(wc -l file |) $(commit-before)...commit # full context diff TODO
+
+#
 # 12/01/2019
 #
 Command                                 Comments
 ---------------------------------------------------------------------------------
-rm -P					                # secure delete, 3x overwrite did this
+rm -P                                   # secure delete, 3x overwrite did this
                                         #  to SD card before disposal
-sudo apt-get
 sudo apt-get -s autoremove              # apt-get dry run
 sudo apt-get autoremove                 # apt-get, useful to run after upgrade
 sudo apt-get --with-new-pkgs upgrade    # apt-get, installs new pkgs instead
@@ -2047,3 +2550,66 @@ WebDAV                                  # "Web Distributed Authoring and
                                         #  edit files on Web servers
                                         # https://doc.owncloud.com/server
                                         #  /user_manual/files/access_webdav.html
+
+#
+# 01/19/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+d -> down                               # Less, visual jumping
+u -> up                                 # Less, visual jumping
+less -j .5                              # Less, search result shows up in middle
+                                        #  of screen, not bottom/top
+
+#
+# 01/20/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+shrink-window-if-larger-than-buffer     # Emacs, does as expected
+                                        # More info: https://stackoverflow.com
+                                        #  /questions
+                                        #  /4987760
+                                        #  /how-to-change-size-of-split-screen
+                                        #   -emacs-windows
+
+#
+# 01/21/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+man readline
+M-.                                     # readline, yank last arg from last
+                                        #  command
+C-/                                     # readline/emacs, Undo
+C-v TAB                                 # readline/emacs, insert tab
+M-y                                     # readline/emacs, yank-pop only works
+                                        #  after yank to rotate kill rink
+M-*                                     # readline, insert all completions,
+                                        #  inline after point
+C-]                                     # readline, search for next char in
+                                        #  current command
+C-x C-v                                 # readline, display current bash version
+rlwrap <tool>                           # Avoids ^[[C spew by wrapping tool with
+                                        #  readline support
+with-readline                           # similar thing as rlwrap?
+bind -v                                 # readline, print all readline keywords
+bind -p                                 # readline, print all readline bindings
+~/.inputrc                              # readline, powerful for vi users
+    set show-mode-in-prompt on          #  to show their mode from cmd line
+    set vi-cmd-mode-string "cmd:"
+    set vi-ins-mode-string "ins:"
+
+#
+# 01/22/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+rdiff-backup                            # like rsync, remote incremental backup
+
+#
+# 01/25/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+awk '!visited[$0]++' big_filename       # faster than sort | uniq
