@@ -2613,3 +2613,15 @@ rdiff-backup                            # like rsync, remote incremental backup
 Command                                 Comments
 ---------------------------------------------------------------------------------
 awk '!visited[$0]++' big_filename       # faster than sort | uniq
+
+#
+# 02/08/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+pr                                      # pager, mentioned in `diff -l` manpage
+diff -y -W 200 s0 s1 | colordiff | less -iFXR
+                                        # correct colorizing of diff, better than
+                                        #  diff --color=always which doesn't
+                                        #  colorize lines that differ only adds/
+                                        #  subtractions

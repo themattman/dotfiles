@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  12/08/2019
+# Last updated:  02/08/2020
 # Configuration: MACHINE_NAME # TODO a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -89,6 +89,8 @@ _add_auto_alias_completion_function() {
 }
 _add_function _add_auto_alias_completion_function
 
+# TODO: Add a usage to this function
+# Alias shall inherit completion function of the base program it's aliasing
 _optionally_add_completion_function_to_alias() {
     local _alias _second _third _potential_prog _prog_type _completion_function
     _alias=$1
@@ -130,40 +132,89 @@ _optionally_add_completion_function_to_alias() {
 _add_function _optionally_add_completion_function_to_alias
 
 declare -A _custom_user_aliases
+declare -A _custom_user_aliases_broken
 _add_alias() {
-    local _alias _already_exists _cmd _location _add_comp_func
-    # TODO: Should hostname be part of .machine aliases?? This would help with the error message below
+    local _alias _already_exists _cmd _full_cmd _location _host _add_comp_func
     # TODO: Check for "$" in aliased cmd, and print the evaluated value as well as variable name
+    #
+    # ~~Interface~~
+    # [__HOSTNAME__]: (optional) ignore machine configs not for current machine
+    #          ALIAS: name of alias
+    #           [no]: (optional) the string "no" here indicates to NOT prepend the alias with the
+    #                  pretty-printed echo. This is for aliases intended to take stdin piped to it
+    #        COMMAND: the command to map to the alias
     if [[ $# -lt 2 ]]; then
         echo "bad alias: $*"
-        echo "Usage: ${FUNCNAME[0]} ALIAS COMMAND" >&2 && return 1
+        echo "Usage: ${FUNCNAME[0]} [__HOSTNAME__] ALIAS [no] COMMAND" >&2 && return 1
     fi
+
+    # Extract "alias" & "cmd"
     _alias="${1}"
-    _cmd="${@:2}"
+    if [[ ${2} = "no" ]]; then
+        _cmd="${@:3}"
+    elif [[ ${1:0:2} = "__" ]]; then
+        _alias="${2}"
+        _cmd="${@:3}"
+    else
+        _cmd="${@:2}"
+    fi
     if [[ -z "${_cmd}" ]]; then
+        _custom_user_aliases_broken[${_alias}]="${_cmd}"
         echo "$(basename -- ${0}): Error: alias [${_alias}] doesn't have a target. You need something to alias this word to" >&2
         return 1
     fi
+
+    # Handle alias collision
     _already_exists=$(type -t "${_alias}" 2>&1)
     if [[ $? -eq 0 ]]; then
         if [[ "file" = "${_already_exists}" ]]; then
             _already_exists=$(type -p "${_alias}" 2>&1)
         fi
-        _add_comp_func="bad"
+        if [[ ${_cmd} != ${_custom_user_aliases[${_alias}]} ]]; then
+            _custom_user_aliases_broken[${_alias}]="${_cmd}"
+        fi
         echo -e "$(basename -- ${0}): Warning: alias [${_alias}] \t already exists as [${_already_exists}]" >&2
     fi
-    if [[ ${2% *} = "cd" ]]; then
-        _location="${2#* }"
-        if [[ ! -d ${_location} && ${_location:0:1} != "$" ]]; then
-            echo "$(basename -- ${0}): Error: location [${2#* }] for alias [${1}] is broken and does not exist" >&2
+
+
+    # Wrap "cmd" with pretty-printing
+    #
+    # 3 classes of aliases:
+    # 1: CD commands with a location to be checked
+    if [[ ${_cmd% *} = "cd" ]]; then
+        _location="${_cmd#* }"
+        if [[ ${_cmd} != "cd" && ! -d ${_location} && ${_location:0:1} != "$" ]]; then
+            if [[ ${1:0:2} = "__" ]]; then
+                _host=${1:2:-2}
+                if [[ ${_host} == "${HOSTNAME}" ]]; then
+                    echo "$(basename -- ${0}): Error: location [${_location}] for alias [${_alias}] is broken and does not exist due to wrong host, expected host [${_host}]" >&2
+                else
+                    # ignore, wrong host, not expected to exist
+                    return 1
+                fi
+            else
+                echo "$(basename -- ${0}): Error: location [${_location}] for alias [${_alias}] is broken and does not exist" >&2
+            fi
+            _custom_user_aliases_broken[${_alias}]="${_cmd}"
             return 1
         fi
-        _cmd="echo -e \"alias [\${PURPLE}${1}\${ENDCOLOR}] cd [\${PURPLE}${2#* }\${ENDCOLOR}]\"; ${_cmd}"
+        _full_cmd="echo -e \"alias [\${PURPLE}${_alias}\${ENDCOLOR}] cd [\${PURPLE}${_cmd#* }\${ENDCOLOR}]\"; ${_cmd}"
+
+
+    # 2: Bare commands that accept stdin
+    elif [[ ${2} = "no" ]]; then
+        _full_cmd="${@:3}"
+
+
+    # 3: All other aliases that should be wrapped with a pretty-print describing the alias
+    #     so the user doesn't get confused by the non-standard behavior of the shell (executing an alias)
     else
-        _cmd="echo -e \"alias [\${PURPLE}${1}\${ENDCOLOR}] to [\${PURPLE}${_cmd//$/\\$}\${ENDCOLOR}]\"; ${_cmd}"
+        _full_cmd="echo -e \"alias [\${PURPLE}${_alias}\${ENDCOLOR}] to [\${PURPLE}${_cmd//$/\\$}\${ENDCOLOR}]\"; ${_cmd}"
     fi
-    alias ${_alias}="${_cmd}"
-    _custom_user_aliases["${_alias}"]=""
+
+    # Add alias and cmd to database
+    alias ${_alias}="${_full_cmd}"
+    _custom_user_aliases["${_alias}"]="${_cmd}"
     if [[ -z ${_add_comp_func+x} ]]; then
         _optionally_add_completion_function_to_alias "$@"
     fi
@@ -365,15 +416,26 @@ dba() {
 _add_function dba
 
 cpa() {
-    for _dotfile in $(\ls -a "${DOTFILES_LOCATION}" | grep "^\." | grep -Ev "^(\.|\.\.|\.git)$"); do
+    _dotfiles=$(find "${DOTFILES_LOCATION}" -type f -path "${DOTFILES_LOCATION}/.*" \
+                     -not -path "${DOTFILES_LOCATION}/.git*" -a -not -path "${DOTFILES_LOCATION}/templates*" \
+                     -printf "%P\n")
+                     # -printf "%h/%f\n" \
+                     #   | sed -e "s/^${DOTFILES_LOCATION//\//\\/}\///" -)
+    for _dotfile in ${_dotfiles}; do
+        echo "${_dotfile}"
         if [[ -d "${DOTFILES_LOCATION}/${_dotfile}" ]]; then
             \diff -qr ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}" 2>/dev/null 2>&1
-        else
+        elif [[ -f "${DOTFILES_LOCATION}/${_dotfile}" ]]; then
             \diff -q ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}" 2>/dev/null 2>&1
         fi
         if [[ $? -ne 0 ]]; then
-            echo "+ cp -i ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile}"
-            \cp -i ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}"
+            if [[ -d "${DOTFILES_LOCATION}/${_dotfile}" ]]; then
+                echo "+ cp -ir ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile}"
+                \cp -ir ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}"
+            elif [[ -f "${DOTFILES_LOCATION}/${_dotfile}" ]]; then
+                echo "+ cp -i ~/${_dotfile} ${DOTFILES_LOCATION}/${_dotfile}"
+                \cp -i ~/"${_dotfile}" "${DOTFILES_LOCATION}/${_dotfile}"
+            fi
         fi
     done
 }
@@ -430,6 +492,7 @@ if [[ ! -x $(which wget 2>/dev/null) ]]; then
     _add_alias wget "curl -LO"
 fi
 _add_alias icurl "curl -I"
+# TODO: check "_longopt" or something else to check for bash_completion
 
 
 ## 4) Aliases
@@ -752,6 +815,8 @@ _add_alias lgre "grep -iIlnrs --color=always" # case-insensitive
 _add_alias grel "grep -iIlnrs --color=always" # case-insensitive
 _add_alias hgre "grep -hiIrs --color=always"  # case-insensitive
 _add_alias gree "grep -Inrs --color=always"
+# _add_alias greb "grep -Inrs --color=always --exclude-dir=build --exclude-dir=${BLOATED_DIR}"
+# _add_alias lgreb "grep -Ilnrs --color=always --exclude-dir=build --exclude-dir=${BLOATED_DIR}"
 _add_alias lgree "grep -Ilnrs --color=always"
 _add_alias greel "grep -Ilnrs --color=always"
 _add_alias hgree "grep -hIrs --color=always"
@@ -1538,6 +1603,108 @@ _git_branch_delete() {
 _add_function _git_branch_delete
 _rename_function gbd _git_branch_delete
 
+_git_pull_rebase() {
+    local _remote_name="origin"
+    if [[ $# -eq 1 ]]; then
+        _remote_name="${1}"
+    elif [[ $# -gt 1 ]]; then
+        echo "$(basename -- ${0}): Error: only zero or one arguments allowed" >&2
+        echo "Usage: ${FUNCNAME[0]} REMOTE_NAME" >&2
+        return 1
+    fi
+    local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
+    set -x
+    git fetch "${_remote_name}"
+    git rebase -p "${_remote_name}/${_cur_branch}"
+    { set +x; } 2>/dev/null
+}
+_add_function _git_pull_rebase
+_rename_function gpr _git_pull_rebase
+
+_git_cherrypick_file() {
+    local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
+    local _branch="${1}"
+    local _file="${2}"
+    if [[ $# -ne 2 ]]; then
+        echo "Error: only zero or one arguments allowed" >&2
+        echo "Usage: ${FUNCNAME[0]} BRANCH_NAME FILE_PATH" >&2
+        return 1
+    fi
+    git rev-parse --verify --quiet "${_branch}" >/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Error: branch ${_branch} doesn't exist" >&2
+        return 1
+    fi
+    if [[ ! -f ${_file} ]]; then
+        echo "Error: file ${_file} doesn't exist" >&2
+        return 1
+    fi
+    set -x
+    git diff ${_cur_branch}^..${_branch} -- ${_file} | git apply
+    { set +x; } 2>/dev/null
+}
+_add_function _git_cherrypick_file
+_rename_function gcpf _git_cherrypick_file
+
+_git_log_unpushed_commits() {
+    local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
+    local _remote_name="origin"
+    if [[ $# -eq 1 ]]; then
+        _remote_name="${1}"
+    elif [[ $# -gt 1 ]]; then
+        echo "$(basename -- ${0}): Error: only zero or one arguments allowed" >&2
+        echo "Usage: ${FUNCNAME[0]} REMOTE_NAME" >&2
+        return 1
+    fi
+    git rev-parse --verify --quiet "${_cur_branch}" >/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Error: branch ${_cur_branch} doesn't exist" >&2
+        return 1
+    fi
+    set -x
+    git log ${_remote_name}/${_cur_branch}..HEAD
+    { set +x; } 2>/dev/null
+}
+_add_function _git_log_unpushed_commits
+_rename_function unpushed _git_log_unpushed_commits
+_rename_function unp _git_log_unpushed_commits
+
+_git_log_ff() {
+    local _first_branch="${1}"
+    local _second_branch="${2}"
+    if [[ $# -gt 2 || $# -lt 1 ]]; then
+        echo "$(basename -- ${0}): Error: incorrect number of arguments provided" >&2
+        echo "Usage: ${FUNCNAME[0]} BRANCH1 BRANCH2" >&2
+        return 1
+    fi
+    git rev-parse --verify --quiet "${_first_branch}" >/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Error: branch ${_first_branch} doesn't exist" >&2
+        return 1
+    fi
+    if [[ $# -eq 1 ]]; then
+        #git rev-parse --abbrev-ref HEAD
+        _second_branch=$(git rev-parse --abbrev-ref HEAD)
+    fi
+    git rev-parse --verify --quiet "${_second_branch}" >/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Error: branch ${_second_branch} doesn't exist" >&2
+        return 1
+    fi
+    set -x
+    # git merge-base --is-ancestor ${_second_branch} ${_first_branch}
+    # git merge-base --is-ancestor ${_first_branch} ${_second_branch}
+    git merge-base ${_first_branch} ${_second_branch}
+    { set +x; } 2>/dev/null
+    merge_base_sha=$(git merge-base ${_first_branch} ${_second_branch})
+    if [[ $? -eq 0 ]]; then
+        echo
+        git show $merge_base_sha
+    fi
+}
+_add_function _git_log_ff
+_rename_function ff _git_log_ff
+
 num_files() {
     for i in ./*; do
         if [[ -d $i ]]; then
@@ -1585,6 +1752,223 @@ vers() {
     "${@}" --version
 }
 _add_function vers
+
+header_locations() {
+    local _header=$1
+    grep --color=never -Inrs "^#include" $_header                              \
+        | cut -d' ' -f2                                                        \
+        | tr -d "\""                                                           \
+        | while read f; do                                                     \
+            echo "--$f--";                                                     \
+            find . -name $f;                                                   \
+            printf "%0.s-" {1..80} && echo;                                    \
+          done
+}
+_add_function header_locations
+_rename_function hl header_locations
+
+_git_rebase_theirs() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} MAINLINE_BRANCH" >&2
+        return 1
+    fi
+    mainline_branch=${1}
+
+    echo -ne "${PURPLE}" && set -x
+    git rebase $mainline_branch
+    local rebase_ret=$?
+    { set +x; } &> /dev/null
+
+    local num_rebase_commit_conflicts=0
+    local num_rebase_file_conflicts=0
+    IFS=''
+    while [[ ${rebase_ret} -ne 0 ]]; do
+        git status --porcelain -uno | while read l; do
+            echo -ne "${ENDCOLOR}"
+            echo "output: [${l}]"
+            git_status_flag=${l:0:2}
+            file_path=${l:3}
+            full_path=$(git rev-parse --show-toplevel)/${file_path}
+
+            if [[ ${git_status_flag:1:1} != " " ]]; then
+                echo -ne "${PURPLE}" && set -x
+                git checkout --theirs $full_path
+                git add -u $full_path
+                { set +x; } &> /dev/null && echo -ne "${ENDCOLOR}"
+                num_rebase_file_conflicts=$((num_rebase_file_conflicts+1))
+            fi
+        done
+        num_rebase_commit_conflicts=$((num_rebase_commit_conflicts+1))
+        echo -ne "${PURPLE}" && set -x
+        git rebase --continue
+        rebase_ret=$?
+        { set +x; } &> /dev/null && echo -ne "${ENDCOLOR}"
+    done
+    echo -ne "${ENDCOLOR}"
+
+    echo "--conflicts--"
+    echo "commits: [${num_rebase_commit_conflicts}] | files: [${num_rebase_file_conflicts}]"
+}
+_add_function _git_rebase_theirs
+_rename_function grbt _git_rebase_theirs
+
+# branches() {
+#     for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do
+#         echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k;
+#     done | sort -r
+# }
+
+
+# (W)hat (H)ave (I) (D)one?
+# You know how you can't remember what you worked on recently?
+#  This shortcut presents you with all git objects you have modified
+#  in the past week to help you pick up where you left off and not
+#  lose work.
+whid() {
+    # Branches
+    echo -e "${PURPLE}# Branches${ENDCOLOR}"
+    # for k in $(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do
+    #     echo -e $(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k;
+    # done | sort -r | grep days | rev | awk '{print $1}' | rev | while read f; do echo " $f"; done
+    for k in $(git branch | perl -pe 's/^..(.*?)( ->.*)?$/\1/'); do echo -e $(git show --pretty=format:"%Cgreen%ci %Cblue%cr%Creset " $k -- | head -n 1)\\\t$k; done | sort -r | head
+    #branches | sort -r | grep days | rev | awk '{print $1}' | rev | while read f; do echo " $f"; done
+    # Stashes
+    # set -x
+    _num_stashes=$(git stash list | wc -l | while read l; do echo "$l - 1"; done | bc)
+    # echo "${_num_stashes}"
+    echo -e "${PURPLE}# Stashes${ENDCOLOR}"
+    for i in $(seq 0 ${_num_stashes}); do echo -en "${CYAN}stash@{${i}}:${GREEN}" && git show --format="%ad%Creset %s" stash@{$i} | head -n 1; done
+    # set +x
+}
+_add_function whid
+
+color() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} [SEARCH_WORDS...]" >&2
+        return 1
+    fi
+    grep --color "^\|${@}"
+}
+_add_function color
+
+# Programmer's Diary
+# Works! Now try to send the new date into the emacs buffer unsaved
+#  This way, one can leave the file if just searching
+ed() {
+    local _cur_date _most_recent_date
+    _cur_date=$(date +%m/%d/%Y)
+    echo "${_cur_date}"
+    _most_recent_date=$(grep --color -o -E "^# [0-9]{2}/[0-9]{2}/[0-9]{4}" ~/.diary | tail -n 1 | cut -d' ' -f2-)
+    if [[ "${_cur_date}" != "${_most_recent_date}" ]]; then
+        echo -e "\n#\n# ${_cur_date}\n#" >> ~/.diary
+        echo "Command                                 Comments" >> ~/.diary
+        printf "%0.s-" {1..81} >> ~/.diary
+        echo >> ~/.diary
+    fi
+    $EDITOR +$(($(wc -l ~/.diary | awk '{print $1}')+1)) ~/.diary
+}
+_add_function ed
+
+# Given a path, find the greatest common ancestor of the
+#  CWD, current working directory, and the given path
+gca() {
+    local _path1 _path2
+    _path1=${1}
+    _path2=${PWD}
+    echo "PATH1: [${_path1}]"
+    if [[ ! -z ${2} ]]; then
+        _path2=${2}
+        echo "PATH2: [${_path2}]"
+    else
+        echo " PWD: [${_path2}]"
+    fi
+    greatest_common_ancestor=$(sed -e 's,$,/,;1{h;d;}' -e 'G;s,\(.*/\).*\n\1.*,\1,;h;$!d;s,/$,,' \
+                               <(echo "${_path1}") \
+                               <(echo "${_path2}"))
+    printf "%0.s-" {1..80} && echo
+    echo " GCA: [${greatest_common_ancestor}]"
+    # https://unix.stackexchange.com
+    #  /questions
+    #  /67078
+    #  /decomposition-of-path-specs-into-longest-common-prefix-suffix
+    #  /67121
+    #  #67121
+}
+_add_function gca
+
+remove_starting_point() {
+    local _path1 _path2
+    _path1=${1}
+    _path2=${PWD}
+    echo "PATH1: [${_path1}]"
+    if [[ ! -z ${2} ]]; then
+        _path2=${2}
+        echo "PATH2: [${_path2}]"
+    else
+        echo " PWD: [${_path2}]"
+    fi
+    greatest_common_ancestor=$(sed -e 's,$,/,;1{h;d;}' -e 'G;s,\(.*/\).*\n\1.*,\1,;h;$!d;s,/$,,' \
+                               <(echo "${_path1}") \
+                               <(echo "${_path2}"))
+    printf "%0.s-" {1..80} && echo
+    echo "${without_starting_point}"
+}
+_add_function remove_starting_point
+
+# More traceable pkg mgmt
+_agi() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} PACKAGE" >&2
+        return 1
+    fi
+    _prog=$1
+    mkdir -p ~/.${HOSTNAME}.d
+    echo "$(date) [${_prog}]" >> ~/.${HOSTNAME}.d/apt_get_packages
+    sudo apt-get install ${_prog} |& tee -a ~/.${HOSTNAME}.d/apt_get_packages
+}
+_add_function _agi
+
+opt() {
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: ${FUNCNAME[0]} CMD OPT" >&2
+        return 1
+    fi
+    man -P cat "${1}" | ul | grep "\-${2}[ ,]"
+}
+_add_function opt
+
+# Find 
+findn() {
+    local _ext="py"
+    if [[ $# -eq 1 ]]; then
+        _ext=$1
+    elif [[ $3 -gt 1 ]]; then
+        echo "Usage: ${FUNCNAME[0]} EXTENSION" >&2
+    fi
+    for f in $(ls .); do
+        echo "$f";
+        find $f -type f | sed -e '/.*\/[^\/]*\.[^\/]*$/!s/.*/(none)/' -e 's/.*\.//' \
+            | LC_COLLATE=C sort \
+            | uniq -c \
+            | grep $_ext;
+    done
+}
+_add_function findn
+
+# Most Recent N modified files
+mrf() {
+    local _n=${1:-3}
+    case $OSTYPE in
+        linux*|msys*)
+            find . -type f -exec stat -c '%X %n' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | while read t f; do d=$(date -d @$t "+%b %d %T %Y"); echo "$d -- $f"; done
+            ;;
+        darwin*)
+            find . -type f -exec stat -f '%Dm %N' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | xargs -I{} stat -f '%Sm %N' {}
+            ;;
+    esac
+}
+_add_function mrf
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -1667,27 +2051,7 @@ _apt_get_install() {
     fi
 }
 _add_function _apt_get_install
-complete -F _apt_get_install agi acs agu && _add_completion_function agi acs agu
-
-# _agi() {
-#     local pkgs=($@)
-#     if [[ ! -f ${_PKG_LOG} ]]; then
-# 	echo "${FUNCNAME[0]} Warning: file [${_PKG_LOG}] doesn't exist"
-# 	: "${_PKG_LOG}"
-#     fi
-#     for pkg in "${pkgs[@]}"; do
-# 	echo -n "=>Installing [${pkg}] @ [$(date $DATE_FORMAT)]... " |& tee -a ${_PKG_LOG}
-# 	output=$(echo "pretending to install")
-# 	#output=$(sudo apt-get install $pkg)
-# 	ret=$?
-# 	if [[ $ret -eq 0 ]]; then
-# 	    echo "[SUCCESS]" |& tee -a ${_PKG_LOG}
-# 	else
-# 	    echo "[FAIL(${ret})]" |& tee -a ${_PKG_LOG}
-# 	fi
-# 	echo "OUTPUT:[${output}]" |& tee -a ${_PKG_LOG}
-#     done
-# }
+complete -F _apt_get_install _agi agi acs && _add_completion_function _agi agi acs
 
 _mail_addresses() {
     local cur prev;
@@ -1732,6 +2096,7 @@ complete -F _complete_most_recently_modified_file cdc && _add_completion_functio
 case "$TERM" in
 xterm*|rxvt*)
     #_add_variable PROMPT_COMMAND 'echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
+    # Store *all* bash history in ~/.logs
     _add_variable PROMPT_COMMAND 'if [ "$(id -u)" -ne 0 ]; then echo "$(date "+%Y-%m-%d.%H:%M:%S") $(pwd) $(history 1)" >> ~/.logs/bash-history-$(date "+%Y-%m-%d").log; fi; echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
 ;;
 *)
