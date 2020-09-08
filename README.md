@@ -12,7 +12,9 @@ Add aliases and functions customized for each machine's environment. For me, thi
 
 https://github.com/bamos/dotfiles
 
-http://dotfiles.github.io/
+https://dotfiles.github.io/
+
+https://github.com/rafi/etc-skel
 
 
 ## In Action

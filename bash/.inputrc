@@ -2,15 +2,52 @@
 # C-x C-r to reload this file
 #
 
+# Good Defaults
+# - "\C-x\C-u": undo
+# - "\et": transpose-words
+# - "\e#": insert-comment (meta-shift-3)
+
+############
+# Settings #
+############
 # Complete unambiguously on first tab, then show completions
 set show-all-if-unmodified on
+set show-all-if-ambiguous on
 
 # Replace common prefix with ellipsis for completion
 set completion-prefix-display-length 2
 
+# ls -F style indicators
 set visible-stats on
 set colored-stats on
 
-# C-a Delete-forward-word, bind this to C-j
-# what's the command to get the last arg from prev-line? should be similar, document in diary or somewhere else
-# "\C-j" : 
+###########
+# Cmd.exe #
+###########
+# set completion-ignore-case on
+
+############
+# Bindings #
+############
+#WIP: C-a Delete-forward-word, bind this to C-j
+#"\C-x\C-n" : '\C-a \M-d'
+
+##########
+# Macros #
+##########
+# Suggested from readline manpage
+Control-o: "> output.$(date +${DATE_FORMAT})"
+#-OR-  > $(mktemp)
+
+# Add less to end
+"\C-x\C-l": " | \\less"
+
+# Re-read Bashrc
+"\C-x\C-b": "sb\r"
+#"\C-x\C-m": backword-word # downcase-word
+
+# Prepend find to command
+"\eF": '\C-afind . -name '
+
+# Prepend grep to command
+"\eG": '\C-agrep -iInrs --color=always '

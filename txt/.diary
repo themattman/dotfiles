@@ -2625,3 +2625,12 @@ diff -y -W 200 s0 s1 | colordiff | less -iFXR
                                         #  diff --color=always which doesn't
                                         #  colorize lines that differ only adds/
                                         #  subtractions
+
+#
+# 09/03/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ar tv libmyarchive.a                    # Lists all files in archive with modes
+                                        #  and all other file info
+ar crv

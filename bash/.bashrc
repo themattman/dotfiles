@@ -233,11 +233,8 @@ _add_function _add_completion_function
 declare -A _custom_user_variables
 _add_variable() {
     local _variable _value
-    if [[ $# -eq 1 ]]; then
-        echo "${FUNCNAME[0]} Error: value parameter empty [$*]"
-        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
-    elif [[ $# -lt 1 ]]; then
-        echo "${FUNCNAME[0]} Error: variable parameter empty [$*]"
+    if [[ $# -lt 2 ]]; then
+        echo "bad variable: $*"
         echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
     fi
     _variable="${1}"
@@ -519,7 +516,7 @@ linux*|msys*)
     _add_alias als "ls -F --color -alth"
     _add_alias asl "ls -F --color -alth"
     _add_alias las "ls -F --color -alth"
-    _add_alias lsa "ls -F --color -alth"
+    _add_alias lsa "ls -F --color -alh"
     _add_alias lsah "ls -F --color -althH" # Follow symlinks
     _add_alias lsar "ls -F --color -alth -r"
     _add_alias sal "ls -F --color -alth"
@@ -528,6 +525,7 @@ linux*|msys*)
 
     # Disk Usage
     _add_alias dush "du -sh ./* | sort -h"
+    _add_alias dut "du -shx ./* | sort -rh | head"
 
     # Ubuntu Package Management
     _add_alias acs "sudo apt-cache search"
@@ -552,7 +550,7 @@ darwin*)
     _add_alias als "ls -alth -FG"
     _add_alias asl "ls -alth -FG"
     _add_alias las "ls -alth -FG"
-    _add_alias lsa "ls -alth -FG"
+    _add_alias lsa "ls -alh -FG"
     _add_alias sla "ls -alth -FG"
     _add_alias sla "ls -alth -FG"
     _add_alias lg "ls -alth -FG"
@@ -599,6 +597,10 @@ _add_alias m "man"
 _add_alias tlf "tail -f"
 _add_alias tl "tail -f"
 _add_alias t "tail"
+_add_alias bp "bind -p" # list all GNU Readline keyboard bindings
+_add_alias bl "bind -l" # list all GNU Readline functions
+_add_alias bv "bind -V"
+_add_alias bs "bind -S"
 _add_alias chax "chmod a+x"
 _add_alias chux "chmod u+x"
 _add_alias bell "tput bel"
@@ -612,6 +614,7 @@ _add_alias sus no "sort | uniq -c | sort -h"
 _add_alias blame  no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no-pager blame -L\$g,\$g \$f 2>/dev/null | cut -d'(' -f2 | awk '{print \$1}'; done | sus"
 _add_alias blamer no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no-pager blame -L\$g,\$g \$f 2>/dev/null; done"
 _add_alias extensions "find . -type f | awk -F. '!a[\$NF]++{print \$NF}'"
+_add_alias spell "aspell -c -l en_US"
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 _add_alias f "fg"       # Yes, I'm really lazy
@@ -825,6 +828,7 @@ _add_alias h "history"
 _add_alias hist "history | grep -P --color=always \"^.*?]\" | \less -iFRX +G"
 _add_alias hisd "history -d"
 _add_variable HISTCONTROL "erasedups"
+_add_alias freq "cut -f1 -d" " "$HISTFILE" | sort | uniq -c | sort -nr | head -n 30"
 # Give history timestamps
 _add_variable HISTTIMEFORMAT "[%F %T] "
 # Johannes Gutenberg's Bible
@@ -835,7 +839,7 @@ _add_alias r "fc -s"
 # Networking
 _add_alias getip "nslookup"
 # LESS
-# _add_alias less "\less -iFXR" # I typically don't like aliasing program names
+_add_alias less "\less -iFXR" # I typically don't like aliasing program names
 _add_alias les "\less -iFXR +G" # +G goes to end of file
 if [[ -f /usr/share/source-highlight/src-hilite-lesspipe.sh ]]; then
     _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
