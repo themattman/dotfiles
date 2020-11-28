@@ -103,7 +103,6 @@ Always compile packages, and use the newest version available.
    '("gnu" . "http://elpa.gnu.org/packages/") t)
   (setq package-list
         '(flycheck auto-complete mo-git-blame bookmark))
-  (package-initialize)
   (unless package-archive-contents      ; fetch the list of packages available
     (package-refresh-contents))
   (dolist (package package-list)        ; install the missing packages
@@ -117,7 +116,6 @@ Always compile packages, and use the newest version available.
              '("melpa-stable" . "https://stable.melpa.org/packages/"))
 ;; For important compatibility libraries like cl-lib
 (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/"))
-(package-initialize)
 ;; (add-to-list 'load-path "~/.emacs.d/mo-git-blame.el")
 ;; (autoload 'mo-git-blame-file "mo-git-blame" nil t)
 ;; (autoload 'mo-git-blame-current "mo-git-blame" nil t)
@@ -143,12 +141,10 @@ Always compile packages, and use the newest version available.
     (progn
       (end-of-buffer)
       (message "Today's entry already exists"))))
-  ;;(insert "                                 Comments\n")
 
 (defun mrk/get-diary-width ()
   (interactive)
   90)
-;;---------------------------------------------------------------------------------"))
 
 (defun jpt-toggle-mark-word-at-point ()
   (interactive)
@@ -299,11 +295,11 @@ This command does not push text to `kill-ring'."
     (setq p2 (point))
     (delete-region p1 p2)))
 
-(defun mrk/bottom-line
-  "Opens a file with the pointer at the bottom line."
+(defun mrk/load-diary-for-append ()
+  "Opens .diary with the pointer at the bottom line and dateline filled."
   (interactive)
-  while
-  (end-of-buffer))
+  (if (string-match "[.]diary" buffer-file-name)
+    (mrk/insert-diary-header)))
 #+END_SRC
 
 * Keybindings
@@ -460,8 +456,8 @@ This command does not push text to `kill-ring'."
 (add-hook 'emacs-startup-hook (lambda () (message "Welcome, %s!" (user-login-name))))
 ;; (add-hook 'prog-mode-hook 'column-enforce-mode)
 ;; (add-hook 'python-mode-hook 'flymake-mode-on)
-;; Hook for every file opened, execute the bottom-line function for certain files:
-(add-hook 'find-file-hook 'mrk/bottom-line)
+;; Open the diary specially
+(add-hook 'find-file-hook 'mrk/load-diary-for-append)
 #+END_SRC
 
 * Appearance

@@ -1,3 +1,21 @@
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ansi-color-faces-vector
+   [default default default italic underline success warning error])
+ '(ansi-color-names-vector
+   ["#242424" "#e5786d" "#95e454" "#cae682" "#8ac6f2" "#333366" "#ccaa8f" "#f6f3e8"])
+ '(custom-enabled-themes (quote (whiteboard)))
+ '(package-selected-packages (quote (mo-git-blame auto-complete flycheck))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
 (require 'use-package-ensure)
 (setq use-package-always-ensure t)
 
@@ -39,7 +57,6 @@
    '("gnu" . "http://elpa.gnu.org/packages/") t)
   (setq package-list
         '(flycheck auto-complete mo-git-blame bookmark))
-  (package-initialize)
   (unless package-archive-contents      ; fetch the list of packages available
     (package-refresh-contents))
   (dolist (package package-list)        ; install the missing packages
@@ -53,10 +70,32 @@
              '("melpa-stable" . "https://stable.melpa.org/packages/"))
 ;; For important compatibility libraries like cl-lib
 (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/"))
-(package-initialize)
 ;; (add-to-list 'load-path "~/.emacs.d/mo-git-blame.el")
 ;; (autoload 'mo-git-blame-file "mo-git-blame" nil t)
 ;; (autoload 'mo-git-blame-current "mo-git-blame" nil t)
+
+;; BOUND = (buffer-size)/2 or similar
+(defun mrk/insert-diary-header ()
+  (interactive)
+  (end-of-buffer)
+  (if (not (search-backward (mrk/get-timestamp) nil t))
+    (progn
+      (end-of-buffer)
+      (insert "\n\n#\n# ")
+      (insert-timestamp)
+      (insert "\n#\nCommand")
+      (insert-char ?  38)
+      (insert "Comments\n")
+      (insert-char ?- (mrk/get-diary-width))
+      (insert "\n")
+      (message "New Entry Created for Today"))
+    (progn
+      (end-of-buffer)
+      (message "Today's entry already exists"))))
+
+(defun mrk/get-diary-width ()
+  (interactive)
+  90)
 
 (defun jpt-toggle-mark-word-at-point ()
   (interactive)
@@ -81,9 +120,17 @@
     ; could be as well changed to simple (newline) it's metter of taste
     ; and of usage
     (newline)))
+(defun mrk/get-timestamp ()
+  (interactive)
+  (format-time-string "%m/%d/%Y"))
 (defun insert-timestamp ()
   (interactive)
   (insert (format-time-string "%m/%d/%Y")))
+(defun insert-datestring ()
+  (interactive)
+  (insert "##############\n")
+  (insert (format-time-string "# %m/%d/%Y #\n"))
+  (insert "##############\n"))
 (defun navigate-backwards ()
   (interactive)
   (other-window -1))
@@ -199,6 +246,12 @@ This command does not push text to `kill-ring'."
     (setq p2 (point))
     (delete-region p1 p2)))
 
+(defun mrk/load-diary-for-append ()
+  "Opens .diary with the pointer at the bottom line and dateline filled."
+  (interactive)
+  (if (string-match "[.]diary" buffer-file-name)
+    (mrk/insert-diary-header)))
+
 ;; <return> vs. <kp-enter> (keypad enter)
 (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
 (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
@@ -214,6 +267,8 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-c d"   ) 'open-diary-file           )
 (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
 (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
+(global-set-key (kbd "C-c i d" ) 'insert-datestring         )
+(global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
 (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
 (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
 (global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file
@@ -267,7 +322,7 @@ This command does not push text to `kill-ring'."
 ;  -slash-to-the-terminal#comment27461_24282
 ; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
 
-(setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
+;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
 (setq compilation-scroll-output t)
 ;; TAGS file
 ;; (setq tags-file-name "path/to/TAGS")
@@ -343,12 +398,14 @@ This command does not push text to `kill-ring'."
 (add-hook 'emacs-startup-hook (lambda () (message "Welcome, %s!" (user-login-name))))
 ;; (add-hook 'prog-mode-hook 'column-enforce-mode)
 ;; (add-hook 'python-mode-hook 'flymake-mode-on)
+;; Open the diary specially
+(add-hook 'find-file-hook 'mrk/load-diary-for-append)
 
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
 ;; (tool-bar-mode -1)                      ; Disable toolbar
 (menu-bar-mode 0)
-(setq require-final-newline t)          ; Newline at end of file
+;; (setq require-final-newline t)          ; Newline at end of file
 (which-function-mode 1)                 ; Show the function you are in
 (fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
 (setq redisplay-dont-pause t            ; Better Scrolling
@@ -442,11 +499,6 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-h v") #'helpful-variable)
 (global-set-key (kbd "C-h k") #'helpful-key)
 
-;;
-;;
-;; Org Mode
-;;
-;;
 (add-hook 'org-mode-hook
           (lambda ()
             (org-bullets-mode t)))
@@ -454,7 +506,6 @@ This command does not push text to `kill-ring'."
 (setq org-todo-keywords
   (quote ((sequence "TODO(t)" "PAUSED(p)" "|" "ABANDONED(b)" "DONE(d)" "SUFFICIENT(s)"))))
 (setq org-log-done t)
-(setq org-default-notes-file (concat org-directory "/notes.org"))
 
 ;; C-x +: balance-windows
 ;; M-t: transpose word (remap this)
@@ -504,3 +555,8 @@ This command does not push text to `kill-ring'."
 ;;   (kill-new (file-truename buffer-file-name))
 ;;   )
 ;; (global-set-key "\C-cz" 'show-file-name)
+
+;; Handy
+;; what-line
+;; count-lines-page
+;; current-column

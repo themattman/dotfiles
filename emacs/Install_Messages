@@ -1,0 +1,408 @@
+Contacting host: elpa.gnu.org:443
+Contacting host: melpa.org:443
+Package refresh done
+Contacting host: melpa.org:443
+  INFO     Scraping files for bind-key-autoloads.el... 
+Generating autoloads for bind-key.el...done
+  INFO     Scraping files for bind-key-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/bind-key-20200805.1727/bind-key-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/bind-key-20200805.1727... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/bind-key-20200805.1727/bind-key.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/bind-key-20200805.1727/bind-key.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/bind-key-20200805.1727...
+Done (Total of 1 file compiled, 2 skipped)
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for use-package-autoloads.el... 
+Generating autoloads for use-package-bind-key.el...done
+Generating autoloads for use-package-core.el...done
+Generating autoloads for use-package-delight.el...done
+Generating autoloads for use-package-diminish.el...done
+Generating autoloads for use-package-ensure.el...done
+Generating autoloads for use-package-jump.el...done
+Generating autoloads for use-package-lint.el...done
+Generating autoloads for use-package-pkg.el...done
+Generating autoloads for use-package.el...done
+  INFO     Scraping files for use-package-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133... [2 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-bind-key.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-bind-key.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-core.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-core.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-delight.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-delight.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-diminish.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-diminish.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-ensure.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-ensure.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-jump.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-jump.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-lint.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package-lint.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133... [2 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133/use-package.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/use-package-20201110.2133...
+Done (Total of 8 files compiled, 2 skipped)
+Loading c:/Users/Matt/AppData/Roaming/.emacs.d/configuration.el (source)...
+Contacting host: melpa.org:443
+  INFO     Scraping files for packed-autoloads.el... 
+Generating autoloads for packed.el...done
+  INFO     Scraping files for packed-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/packed-20201120.2047/packed-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/packed-20201120.2047... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/packed-20201120.2047/packed.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/packed-20201120.2047/packed.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/packed-20201120.2047...
+Done (Total of 1 file compiled, 2 skipped)
+  INFO     Scraping files for auto-compile-autoloads.el... 
+Generating autoloads for auto-compile.el...done
+  INFO     Scraping files for auto-compile-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/auto-compile-20201122.1157/auto-compile-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/auto-compile-20201122.1157... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/auto-compile-20201122.1157/auto-compile.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/auto-compile-20201122.1157/auto-compile.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/auto-compile-20201122.1157...
+Done (Total of 1 file compiled, 2 skipped)
+  INFO     Scraping files for htmlize-autoloads.el... 
+Generating autoloads for htmlize.el...done
+  INFO     Scraping files for htmlize-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/htmlize-20200816.746/htmlize-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/htmlize-20200816.746... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/htmlize-20200816.746/htmlize.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/htmlize-20200816.746/htmlize.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/htmlize-20200816.746...
+Done (Total of 1 file compiled, 2 skipped)
+Contacting host: melpa.org:443
+  INFO     Scraping files for engine-mode-autoloads.el... 
+Generating autoloads for engine-mode.el...done
+  INFO     Scraping files for engine-mode-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/engine-mode-20200611.1825/engine-mode-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/engine-mode-20200611.1825... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/engine-mode-20200611.1825/engine-mode.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/engine-mode-20200611.1825/engine-mode.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/engine-mode-20200611.1825...
+Done (Total of 1 file compiled, 2 skipped)
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for async-autoloads.el... 
+Generating autoloads for async-bytecomp.el...done
+Generating autoloads for async-pkg.el...done
+Generating autoloads for async.el...done
+Generating autoloads for dired-async.el...done
+Generating autoloads for smtpmail-async.el...done
+  INFO     Scraping files for async-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/async-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501... [2 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/async-bytecomp.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/async-bytecomp.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501... [2 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/async.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/async.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/dired-async.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/dired-async.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501...
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/smtpmail-async.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501/smtpmail-async.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/async-20200809.501...
+Done (Total of 4 files compiled, 2 skipped)
+Contacting host: melpa.org:443
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for with-editor-autoloads.el... 
+Generating autoloads for with-editor-pkg.el...done
+Generating autoloads for with-editor.el...done
+  INFO     Scraping files for with-editor-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/with-editor-20201030.1232/with-editor-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/with-editor-20201030.1232... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/with-editor-20201030.1232/with-editor.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/with-editor-20201030.1232/with-editor.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/with-editor-20201030.1232...
+Done (Total of 1 file compiled, 2 skipped)
+Contacting host: melpa.org:443
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for transient-autoloads.el... 
+Generating autoloads for transient-pkg.el...done
+Generating autoloads for transient.el...done
+  INFO     Scraping files for transient-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/transient-20201114.1825/transient-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/transient-20201114.1825... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/transient-20201114.1825/transient.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/transient-20201114.1825/transient.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/transient-20201114.1825...
+Done (Total of 1 file compiled, 2 skipped)
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for dash-autoloads.el... 
+Generating autoloads for dash-pkg.el...done
+Generating autoloads for dash.el...done
+  INFO     Scraping files for dash-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/dash-20200803.1520/dash-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/dash-20200803.1520... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/dash-20200803.1520/dash.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/dash-20200803.1520/dash.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/dash-20200803.1520...
+Done (Total of 1 file compiled, 2 skipped)
+Contacting host: melpa.org:443
+  INFO     Scraping files for git-commit-autoloads.el... 
+Generating autoloads for git-commit.el...done
+  INFO     Scraping files for git-commit-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/git-commit-20201115.2313/git-commit-autoloads.el [2 times]
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/git-commit-20201115.2313... [3 times]
+Compiling c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/git-commit-20201115.2313/git-commit.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/git-commit-20201115.2313/git-commit.elc
+Checking c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/git-commit-20201115.2313...
+Done (Total of 1 file compiled, 2 skipped)
+Contacting host: melpa.org:443
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for magit-autoloads.el... 
+Generating autoloads for git-rebase.el...done
+Generating autoloads for magit-apply.el...done
+Generating autoloads for magit-autorevert.el...done
+Generating autoloads for magit-bisect.el...done
+Generating autoloads for magit-blame.el...done
+Generating autoloads for magit-bookmark.el...done
+Generating autoloads for magit-branch.el...done
+Generating autoloads for magit-clone.el...done
+Generating autoloads for magit-commit.el...done
+Generating autoloads for magit-core.el...done
+Generating autoloads for magit-diff.el...done
+Generating autoloads for magit-ediff.el...done
+Generating autoloads for magit-extras.el...done
+Generating autoloads for magit-fetch.el...done
+Generating autoloads for magit-files.el...done
+Generating autoloads for magit-git.el...done
+Generating autoloads for magit-gitignore.el...done
+Generating autoloads for magit-imenu.el...done
+Generating autoloads for magit-log.el...done
+Generating autoloads for magit-margin.el...done
+Generating autoloads for magit-merge.el...done
+Generating autoloads for magit-mode.el...done
+Generating autoloads for magit-notes.el...done
+Generating autoloads for magit-obsolete.el...done
+Generating autoloads for magit-patch.el...done
+Generating autoloads for magit-pkg.el...done
+Generating autoloads for magit-process.el...done
+Generating autoloads for magit-pull.el...done
+Generating autoloads for magit-push.el...done
+  INFO     Scraping files for magit-autoloads.el...65% 
+Generating autoloads for magit-reflog.el...done
+Generating autoloads for magit-refs.el...done
+Generating autoloads for magit-remote.el...done
+Generating autoloads for magit-repos.el...done
+Generating autoloads for magit-reset.el...done
+Generating autoloads for magit-section.el...done
+Generating autoloads for magit-sequence.el...done
+Generating autoloads for magit-stash.el...done
+Generating autoloads for magit-status.el...done
+Generating autoloads for magit-submodule.el...done
+Generating autoloads for magit-subtree.el...done
+Generating autoloads for magit-tag.el...done
+Generating autoloads for magit-transient.el...done
+Generating autoloads for magit-utils.el...done
+Generating autoloads for magit-wip.el...done
+Generating autoloads for magit-worktree.el...done
+Generating autoloads for magit.el...done
+  INFO     Scraping files for magit-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/magit-20201125.1230/magit-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for yasnippet-autoloads.el... 
+Generating autoloads for yasnippet.el...done
+  INFO     Scraping files for yasnippet-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/yasnippet-20200604.246/yasnippet-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for yaml-mode-autoloads.el... 
+Generating autoloads for yaml-mode.el...done
+  INFO     Scraping files for yaml-mode-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/yaml-mode-20201109.1026/yaml-mode-autoloads.el [2 times]
+Loading async...done
+  INFO     Scraping files for markdown-mode-autoloads.el... 
+Generating autoloads for markdown-mode.el...done
+  INFO     Scraping files for markdown-mode-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/markdown-mode-20201115.635/markdown-mode-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for web-mode-autoloads.el... 
+Generating autoloads for web-mode.el...done
+  INFO     Scraping files for web-mode-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/web-mode-20201107.1152/web-mode-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for multi-term-autoloads.el... 
+Generating autoloads for multi-term.el...done
+  INFO     Scraping files for multi-term-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/multi-term-20200514.428/multi-term-autoloads.el [2 times]
+Loading async...done
+  INFO     Scraping files for log4e-autoloads.el... 
+Generating autoloads for log4e.el...done
+  INFO     Scraping files for log4e-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/log4e-20200420.745/log4e-autoloads.el [2 times]
+Loading async...done
+  INFO     Scraping files for gntp-autoloads.el... 
+Generating autoloads for gntp.el...done
+  INFO     Scraping files for gntp-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/gntp-20141025.250/gntp-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for alert-autoloads.el... 
+Generating autoloads for alert.el...done
+  INFO     Scraping files for alert-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/alert-20200303.2118/alert-autoloads.el [2 times]
+Loading async...done
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for org-pomodoro-autoloads.el... 
+Generating autoloads for org-pomodoro-pidgin.el...done
+Generating autoloads for org-pomodoro-pkg.el...done
+Generating autoloads for org-pomodoro.el...done
+  INFO     Scraping files for org-pomodoro-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/org-pomodoro-20190530.1445/org-pomodoro-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for s-autoloads.el... 
+Generating autoloads for s.el...done
+  INFO     Scraping files for s-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/s-20180406.808/s-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for elisp-refs-autoloads.el... 
+Generating autoloads for elisp-refs.el...done
+  INFO     Scraping files for elisp-refs-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/elisp-refs-20200815.2357/elisp-refs-autoloads.el [2 times]
+Loading async...done
+  INFO     Scraping files for f-autoloads.el... 
+Generating autoloads for f.el...done
+  INFO     Scraping files for f-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/f-20191110.1357/f-autoloads.el [2 times]
+Loading async...done
+  INFO     Scraping files for dash-functional-autoloads.el... 
+Generating autoloads for dash-functional.el...done
+  INFO     Scraping files for dash-functional-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/dash-functional-20200617.702/dash-functional-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for helpful-autoloads.el... 
+Generating autoloads for helpful.el...done
+  INFO     Scraping files for helpful-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/helpful-20201012.614/helpful-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for expand-region-autoloads.el... 
+Generating autoloads for cc-mode-expansions.el...done
+Generating autoloads for clojure-mode-expansions.el...done
+Generating autoloads for cperl-mode-expansions.el...done
+Generating autoloads for css-mode-expansions.el...done
+Generating autoloads for enh-ruby-mode-expansions.el...done
+Generating autoloads for er-basic-expansions.el...done
+Generating autoloads for erlang-mode-expansions.el...done
+Generating autoloads for expand-region-core.el...done
+Generating autoloads for expand-region-custom.el...done
+Generating autoloads for expand-region-pkg.el...done
+Generating autoloads for expand-region.el...done
+Generating autoloads for feature-mode-expansions.el...done
+Generating autoloads for html-mode-expansions.el...done
+Generating autoloads for js-mode-expansions.el...done
+Generating autoloads for js2-mode-expansions.el...done
+Generating autoloads for jsp-expansions.el...done
+Generating autoloads for latex-mode-expansions.el...done
+Generating autoloads for nxml-mode-expansions.el...done
+Generating autoloads for octave-expansions.el...done
+Generating autoloads for python-el-expansions.el...done
+Generating autoloads for python-el-fgallina-expansions.el...done
+Generating autoloads for python-mode-expansions.el...done
+Generating autoloads for ruby-mode-expansions.el...done
+Generating autoloads for sml-mode-expansions.el...done
+Generating autoloads for subword-mode-expansions.el...done
+Generating autoloads for text-mode-expansions.el...done
+Generating autoloads for the-org-mode-expansions.el...done
+Generating autoloads for web-mode-expansions.el...done
+  INFO     Scraping files for expand-region-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/expand-region-20200304.1839/expand-region-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for symbol-overlay-autoloads.el... 
+Generating autoloads for symbol-overlay.el...done
+  INFO     Scraping files for symbol-overlay-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/symbol-overlay-20200828.425/symbol-overlay-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for epl-autoloads.el... 
+Generating autoloads for epl.el...done
+  INFO     Scraping files for epl-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/epl-20180205.2049/epl-autoloads.el [2 times]
+Loading async...done
+  INFO     Scraping files for pkg-info-autoloads.el... 
+Generating autoloads for pkg-info.el...done
+  INFO     Scraping files for pkg-info-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/pkg-info-20150517.1143/pkg-info-autoloads.el [2 times]
+Loading async...done
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for flycheck-autoloads.el... 
+Generating autoloads for flycheck-buttercup.el...done
+Generating autoloads for flycheck-ert.el...done
+Generating autoloads for flycheck-pkg.el...done
+Generating autoloads for flycheck.el...done
+  INFO     Scraping files for flycheck-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/flycheck-20201105.423/flycheck-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for popup-autoloads.el... 
+Generating autoloads for popup.el...done
+  INFO     Scraping files for popup-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/popup-20200610.317/popup-autoloads.el [2 times]
+Loading async...done
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for auto-complete-autoloads.el... 
+Generating autoloads for auto-complete-config.el...done
+Generating autoloads for auto-complete-pkg.el...done
+Generating autoloads for auto-complete.el...done
+  INFO     Scraping files for auto-complete-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/auto-complete-20201011.1341/auto-complete-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for mo-git-blame-autoloads.el... 
+Generating autoloads for mo-git-blame.el...done
+  INFO     Scraping files for mo-git-blame-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/mo-git-blame-20160129.1759/mo-git-blame-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+Parsing tar file...done
+Extracting...done
+  INFO     Scraping files for diff-hl-autoloads.el... 
+Generating autoloads for diff-hl-amend.el...done
+Generating autoloads for diff-hl-dired.el...done
+Generating autoloads for diff-hl-flydiff.el...done
+Generating autoloads for diff-hl-margin.el...done
+Generating autoloads for diff-hl-pkg.el...done
+Generating autoloads for diff-hl.el...done
+  INFO     Scraping files for diff-hl-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/diff-hl-20201117.1959/diff-hl-autoloads.el [2 times]
+Loading async...done
+Contacting host: melpa.org:443
+  INFO     Scraping files for moody-autoloads.el... 
+Generating autoloads for moody.el...done
+  INFO     Scraping files for moody-autoloads.el...done
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/elpa/moody-20200514.1946/moody-autoloads.el [2 times]
+Loading async...done
+Loading c:/Users/Matt/AppData/Roaming/.emacs.d/configuration.el (source)...done
+Saving file c:/Users/Matt/AppData/Roaming/.emacs.d/init.el...
+Wrote c:/Users/Matt/AppData/Roaming/.emacs.d/init.el
+Turning on magit-auto-revert-mode...done
+For information about GNU Emacs and the GNU system, type C-h C-a.
+Welcome, Matt!
