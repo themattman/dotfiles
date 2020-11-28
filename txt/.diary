@@ -2532,6 +2532,15 @@ git-notes                               # Explore adding these beyond a commit
 gd -U(wc -l file |) $(commit-before)...commit # full context diff TODO
 
 #
+# 11/27/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+g                                       # Emacs dired, refresh buffer
+https://gist.githubusercontent.com/mlocati/fdabcaeb8071d5c75a2d51712db24011/raw/b710612d6320df7e146508094e84b92b34c77d48/win10colors.cmd
+                                        # Win Cmd Prompt, colorized output seqs
+
+#
 # 12/01/2019
 #
 Command                                 Comments
@@ -2550,6 +2559,14 @@ WebDAV                                  # "Web Distributed Authoring and
                                         #  edit files on Web servers
                                         # https://doc.owncloud.com/server
                                         #  /user_manual/files/access_webdav.html
+
+#
+# 12/02/2019
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+xcopy /E                                # cmd equivalent of "cp -r"
+C-/                                     # Emacs, undo w/less keystrokes than C-_
 
 #
 # 01/19/2020
@@ -2606,6 +2623,18 @@ bind -p                                 # readline, print all readline bindings
 Command                                 Comments
 ---------------------------------------------------------------------------------
 rdiff-backup                            # like rsync, remote incremental backup
+Org-Journal / diary-mode / org-capture
+https://i.redd.it/vx93yzzvcub41.png
+https://www.reddit.com/r/emacs/comments/er6dq7/my_gtd_workflow_with_emacsorgmode/
+https://www.reddit.com/r/emacs/comments/527jg8/what_is_the_difference_between_diary_mode_and/
+https://www.reddit.com/r/emacs/comments/erhb05/how_to_start_with_emacs_org_mode/
+
+#
+# 01/23/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+align-regexp                            # emacs, align region on character
 
 #
 # 01/25/2020
@@ -2627,6 +2656,36 @@ diff -y -W 200 s0 s1 | colordiff | less -iFXR
                                         #  subtractions
 
 #
+# 02/20/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-y C-xC-x                              # Emacs, re-highlight pasted text
+                                        #  useful for formatting pasted text
+
+#
+# 03/19/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+git clean -nd                           # Remove untracked files/dirs
+
+#
+# 08/27/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Function split line by char. Preferably built-in but could roll my own
+shell-command-on-region "tr | '\n'" should work on linux, but Windows doesn't have short cmds
+
+#
+# 08/27/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+lmlsm                                   # Windbg, list alphabetically mods w/syms
+
+#
 # 09/03/2020
 #
 Command                                 Comments
@@ -2634,3 +2693,19 @@ Command                                 Comments
 ar tv libmyarchive.a                    # Lists all files in archive with modes
                                         #  and all other file info
 ar crv
+
+#
+# 11/13/2020
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+[[][^]]*] -> ""                              # Emacs regex, Deletes bracket groups [..]
+                                             #  query-replace-regexp == ESC-CTRL-SHIFT-5
+
+#
+# 11/27/2020
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git diff --staged --ignore-cr-at-eol emacs   # Ignores ^M from win/linux diffs
+dos2unix filename                            # Git bash, remove DOS endings, ^M, in-place

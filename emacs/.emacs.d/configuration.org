@@ -2,7 +2,7 @@
 #+AUTHOR:        Matt Kneiser
 #+CREATED:       11/06/2014
 #+MIGRATED:      08/27/2019
-#+LAST UPDATED:  08/27/2019
+#+LAST UPDATED:  11/27/2020
 #+EMACS VERSION: 26.2
 
 
@@ -125,6 +125,31 @@ Always compile packages, and use the newest version available.
 
 * Functions
 #+BEGIN_SRC emacs-lisp
+  ;; BOUND = (buffer-size)/2 or similar
+(defun mrk/insert-diary-header ()
+  (interactive)
+  (end-of-buffer)
+  (if (not (search-backward (mrk/get-timestamp) nil t))
+    (progn
+      (end-of-buffer)
+      (insert "\n\n#\n# ")
+      (insert-timestamp)
+      (insert "\n#\nCommand")
+      (insert-char ?  38)
+      (insert "Comments\n")
+      (insert-char ?- (mrk/get-diary-width))
+      (insert "\n")
+      (message "New Entry Created for Today"))
+    (progn
+      (end-of-buffer)
+      (message "Today's entry already exists"))))
+  ;;(insert "                                 Comments\n")
+
+(defun mrk/get-diary-width ()
+  (interactive)
+  90)
+;;---------------------------------------------------------------------------------"))
+
 (defun jpt-toggle-mark-word-at-point ()
   (interactive)
   (if hi-lock-interactive-patterns
@@ -148,6 +173,9 @@ Always compile packages, and use the newest version available.
     ; could be as well changed to simple (newline) it's metter of taste
     ; and of usage
     (newline)))
+(defun mrk/get-timestamp ()
+  (interactive)
+  (format-time-string "%m/%d/%Y"))
 (defun insert-timestamp ()
   (interactive)
   (insert (format-time-string "%m/%d/%Y")))
@@ -270,6 +298,12 @@ This command does not push text to `kill-ring'."
     (beginning-of-line 1)
     (setq p2 (point))
     (delete-region p1 p2)))
+
+(defun mrk/bottom-line
+  "Opens a file with the pointer at the bottom line."
+  (interactive)
+  while
+  (end-of-buffer))
 #+END_SRC
 
 * Keybindings
@@ -347,7 +381,7 @@ This command does not push text to `kill-ring'."
 
 * Variables
 #+BEGIN_SRC emacs-lisp
-(setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
+;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
 (setq compilation-scroll-output t)
 ;; TAGS file
 ;; (setq tags-file-name "path/to/TAGS")
@@ -426,6 +460,8 @@ This command does not push text to `kill-ring'."
 (add-hook 'emacs-startup-hook (lambda () (message "Welcome, %s!" (user-login-name))))
 ;; (add-hook 'prog-mode-hook 'column-enforce-mode)
 ;; (add-hook 'python-mode-hook 'flymake-mode-on)
+;; Hook for every file opened, execute the bottom-line function for certain files:
+(add-hook 'find-file-hook 'mrk/bottom-line)
 #+END_SRC
 
 * Appearance
@@ -434,7 +470,7 @@ This command does not push text to `kill-ring'."
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
 ;; (tool-bar-mode -1)                      ; Disable toolbar
 (menu-bar-mode 0)
-(setq require-final-newline t)          ; Newline at end of file
+;; (setq require-final-newline t)          ; Newline at end of file
 (which-function-mode 1)                 ; Show the function you are in
 (fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
 (setq redisplay-dont-pause t            ; Better Scrolling
@@ -601,4 +637,12 @@ This command does not push text to `kill-ring'."
 ;;   (kill-new (file-truename buffer-file-name))
 ;;   )
 ;; (global-set-key "\C-cz" 'show-file-name)
+
+;; Handy
+;; what-line
+;; count-lines-page
+;; current-column
 #+END_SRC
+
+
+
