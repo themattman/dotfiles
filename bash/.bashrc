@@ -232,7 +232,7 @@ _add_function _add_completion_function
 
 declare -A _custom_user_variables
 _add_variable() {
-    local _variable _value
+    local _variable _value _contents_of_variable
     if [[ $# -lt 2 ]]; then
         echo "bad variable: $*"
         echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
@@ -459,6 +459,8 @@ _add_to_variable_with_path_separator PATH /usr/local/sbin
 _add_to_variable_with_path_separator PATH /usr/sbin
 _add_to_variable_with_path_separator PATH /sbin
 
+EMACS_INIT_FILE="~/.emacs.d/configuration.org" #"~/.emacs"
+
 # Make sure IFS is set correctly
 unset IFS
 
@@ -664,9 +666,9 @@ _add_alias ep "echo \$PATH"
 _add_alias epp "echo \$PYTHONPATH"
 #_add_alias el "echo \$LD_LIBRARY_PATH"
 # Emacs
-_add_alias e "\emacs -nw"     # Escape emacs so that -nw only
-_add_alias emasc "\emacs -nw" #  gets appended once
-_add_alias emacs "\emacs -nw"
+_add_alias e "\emacs ${EDITOR_OPTS}"
+_add_alias emasc "\emacs ${EDITOR_OPTS}"
+_add_alias emacs "\emacs ${EDITOR_OPTS}"
 # Repo
 _add_alias rf "repo forall -c"
 _add_alias rfs "repo forall -c 'pwd && git status -s -uno'"
@@ -887,17 +889,16 @@ _add_alias gid "./gradlew installDebug"
 _add_alias gaid "./gradlew assemble installDebug"
 
 ## 4d) Common
-_add_alias en "\$EDITOR ~/.nomad"
 #_add_alias ed "\$EDITOR +\$((\$(wc -l ~/.diary | awk '{print \$1}')+1)) ~/.diary" # Programmer's Diary
 _add_alias dl "grep --color -o -E \"^# [0-9]{2}/[0-9]{2}/[0-9]{4}\" ~/.diary | tail -n 1 | cut -d' ' -f2-"
 _add_alias el "\$EDITOR +\$((\$(wc -l ~/.daily | awk '{print \$1}')+1)) ~/.daily" # Daily Journal
 _add_alias td "tail ~/.diary"
 _add_alias eb "\$EDITOR ~/.bashrc"
-_add_alias eeb "\$EDITOR ~/.emacs ~/.bashrc"
+_add_alias eeb "\$EDITOR ${EMACS_INIT_FILE} ~/.bashrc"
 _add_alias ebb "\$EDITOR ~/.bash_profile"
 _add_alias em "\$EDITOR ~/.machine"
 _add_alias tm "tail ~/.machine"
-_add_alias ee "\$EDITOR ~/.emacs"
+_add_alias ee "\$EDITOR ${EMACS_INIT_FILE}"
 _add_alias eg "\$EDITOR ~/.gitconfig"
 _add_alias es "\$EDITOR ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
@@ -1154,8 +1155,7 @@ mkd() { mkdir -p "${@}" && cd "${@: -1}"; }
 _add_function mkd
 
 mkdd() {
-    local dir
-    dir=$(date $DATE_FORMAT);
+    local dir=$(date $DATE_FORMAT);
     mkdir -p "${dir}" && cd "${dir}";
 }
 _add_function mkdd
@@ -1226,8 +1226,7 @@ _add_function cd
 hooks() {
     if [[ $(git rev-parse --is-bare-repository) == "false" ]]; then
         if [[ $(git rev-parse --is-inside-work-tree) == "true" ]]; then
-            local gitdir
-            gitdir=$(git rev-parse --git-dir)
+            local gitdir=$(git rev-parse --git-dir)
             realpath "${gitdir}/hooks/"
             ls -lh "${gitdir}/hooks/"
         else
@@ -1260,7 +1259,6 @@ create_temp_src_file() {
     if [[ ! -f ${_temp_dir}/template.${_ext} ]]; then
         echo "Error: template doesn't exist for ${_ext}" >& 2 && return 1
     fi
-    _temp_dir="${HOME}/tmp"
     _tmpfile="$(mktemp ${_temp_dir}/XXXXXXXXXX.${_ext})" || return 1;
     # These sed's are designed to be cross-platform
     sed -e "s/^# Created:$/& $(date)\n\# Dir:     ${PWD//\//\\/}/" "${temp_dir}/template.${_ext}" \
@@ -1322,8 +1320,7 @@ _add_function rmp
 # Git Push to all remotes
 gpa() {
     if [[ "function" = $(type -t __git_remotes) ]]; then
-        local cur_branch
-        cur_branch=$(git rev-parse --abbrev-ref HEAD)
+        local cur_branch=$(git rev-parse --abbrev-ref HEAD)
         for _ith_remote in $(__git_remotes); do
             if [[ $# -eq 1 ]]; then
                 set -x
@@ -1416,8 +1413,7 @@ linux*|msys*)
         fi
         echo "There are [$(numtabs ${1})] tabs in [${1}]"
         echo "Tabs -> 4 spaces in [${1}]..."
-        local tmpfilename
-        tmpfilename="${1}.expanded4.$(date $DATE_FORMAT)"
+        local tmpfilename="${1}.expanded4.$(date $DATE_FORMAT)"
         tab "${1}" > "${tmpfilename}"
         \mv -i "${tmpfilename}" "${1}"
     }
@@ -1463,7 +1459,7 @@ _add_function sd
 sm() { _search_file_wrapper $# "${@}" ~/.machine; }
 _add_function sm
 
-seb() { _search_file_wrapper $# "${@}" ~/.emacs; }
+seb() { _search_file_wrapper $# "${@}" ${EMACS_INIT_FILE}; }
 _add_function seb
 
 # 1: Number of args to calling script
@@ -1486,7 +1482,7 @@ _add_function sel
 sdl() { _search_file_occur_wrapper $# "$1" ~/.diary; }
 _add_function sdl
 
-sebl() { _search_file_occur_wrapper $# "$1" ~/.emacs; }
+sebl() { _search_file_occur_wrapper $# "$1" ${EMACS_INIT_FILE}; }
 _add_function sebl
 
 # Tell if something is a new alias
@@ -1494,8 +1490,7 @@ al() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: ${FUNCNAME[0]} ALIAS" >&2 && return 1
     fi
-    local is_defined
-    is_defined="$(type -t $1)"
+    local is_defined="$(type -t $1)"
     if [[ -n "${is_defined}" ]]; then
         echo "Yes"
     else
@@ -1973,6 +1968,38 @@ mrf() {
 }
 _add_function mrf
 
+# Cpp Greps
+cpptype () {
+    local _opt=$2
+    local _search_term=$1
+    local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
+    echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}]"
+    GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
+	       "^[[:space:]]*\(typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" \
+	| grep --color=always ${_opt} "${_search_term}"
+    unset _search_term _grep_colors
+}
+_add_function cpptype
+
+cppdef () {
+    local _opt=$2
+    local _search_term=$1
+    local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
+    echo -e "Searching for C++ #define [${CYAN}${_search_term}${ENDCOLOR}]"
+    GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
+	       "^[[:space:]]*\(#define\)[[:space:]]*${_search_term}\([[:space:]]*(\|[[:space:]]*$\)" \
+	| grep --color=always ${_opt} "${_search_term}"
+    unset _search_term _grep_colors
+}
+_add_function cppdef
+
+
+cpptypectx () {
+    local _search_term=$1
+    cpptype "${_search_term}" "-A 8"
+}
+_add_function cpptypectx
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -1992,8 +2019,7 @@ _complete_most_recently_modified_file() {
     #echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
     # Args:[cdc out cdc] C:[1] 1:[cdc] 2:[out]
     if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
-        local latest_filename
-        latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
+        local latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
         if [[ -n "${latest_filename}" ]]; then
             if [[ "${2}" == */ ]]; then
                 COMPREPLY="${2}${latest_filename}"
@@ -2011,8 +2037,7 @@ complete -o default -F _complete_most_recently_modified_file tl l les dx unz \
 
 # Add bash auto-completion to `screen -r` alias
 _complete_scr() {
-    local does_screen_exist
-    does_screen_exist=$(type -t _screen_sessions)
+    local does_screen_exist=$(type -t _screen_sessions)
     local cur=$2 # Needed by _screen_sessions
     if [[ "function" = "${does_screen_exist}" ]]; then
         _screen_sessions "Detached"
@@ -2023,8 +2048,7 @@ complete -F _complete_scr scr && _add_completion_function scr
 
 # Add bash auto-completion to `screen -D -R` alias
 _complete_scd() {
-    local does_screen_exist
-    does_screen_exist=$(type -t _screen_sessions)
+    local does_screen_exist=$(type -t _screen_sessions)
     local cur=$2 # Needed by _screen_sessions
     if [[ "function" = "${does_screen_exist}" ]]; then
         _screen_sessions "Attached"
@@ -2106,8 +2130,9 @@ xterm*|rxvt*)
 *)
 ;;
 esac
-_add_variable EDITOR "emacs -nw"
-_add_variable GIT_EDITOR "emacs -nw"
+_add_variable EDITOR_OPTS "-nw" # --no-init"
+_add_variable EDITOR "emacs ${EDITOR_OPTS}"
+_add_variable GIT_EDITOR "emacs ${EDITOR_OPTS}"
 _add_variable MAN_PAGER "less -i"
 # _add_variable USER_EMAIL "${USER}@${HOSTNAME}"
 
