@@ -153,8 +153,14 @@ _add_alias() {
     if [[ ${2} = "no" ]]; then
         _cmd="${@:3}"
     elif [[ ${1:0:2} = "__" ]]; then
-        _alias="${2}"
-        _cmd="${@:3}"
+        target_hostname=${1:2:-2}
+        if [[ "${HOSTNAME}" = "${target_hostname}" ]]; then
+            _alias="${2}"
+            _cmd="${@:3}"
+        else
+            echo "$(basename -- ${0}): Warning: Wrong hostname: [${target_hostname}], not applying" >&2
+            return 1
+        fi
     else
         _cmd="${@:2}"
     fi
@@ -2141,6 +2147,14 @@ _add_variable MAN_PAGER "less -i"
 source_file ~/.machine
 sem() { _search_file_wrapper $# "${@}" ~/.machine; }
 _add_function sem
+case $OSTYPE in
+darwin*)
+    _add_alias vpnc "scutil --nc start \"${VPN_NAME}\""
+    _add_alias vpnd "scutil --nc stop \"${VPN_NAME}\""
+    _add_alias vpns "scutil --nc status \"${VPN_NAME}\""
+;;
+esac
+
 
 seml() { _search_file_occur_wrapper $# "$1" ~/.machine; }
 _add_function seml
