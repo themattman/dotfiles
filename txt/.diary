@@ -2709,3 +2709,28 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 git diff --staged --ignore-cr-at-eol emacs   # Ignores ^M from win/linux diffs
 dos2unix filename                            # Git bash, remove DOS endings, ^M, in-place
+
+#
+# 12/22/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+uuidgen                                 # Generate uuid from cmd line
+security add-generic-password help      # keychain help
+security add-generic-password \
+ -a "${USER}" -l "<LABEL>"    \
+ -D "<LABEL>" -w "<PASSWORD>" \
+ -s "<UUID>" -T "/usr/bin/security"     # OSK Keychain, Add password
+read -s -p "Enter pw:" pass && \
+security add-generic-password  \
+ -a "${USER}" -l "<LABEL>"     \
+ -D "<LABEL>" -w "${pass}"     \
+ -s "<UUID>" -T "/usr/bin/security"; \
+ unset pass; echo                       # Keep pw out of bash history
+security find-generic-password \
+ -s "<UUID>" -w                         # OSX Keychain, Print Password to stdout
+security remove-generic-password \
+ -s "<UUID>"                            # Keychain, Remove password
+
+  100* [2021-12-22 10:10:01] ls         # History, the asterisk means the line
+                                        #  was modified. "mark-modified-lines"

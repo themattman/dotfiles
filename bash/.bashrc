@@ -1999,12 +1999,19 @@ cppdef () {
 }
 _add_function cppdef
 
-
 cpptypectx () {
     local _search_term=$1
     cpptype "${_search_term}" "-A 8"
 }
 _add_function cpptypectx
+
+enterMacPassword() {
+  sleep 1
+  osascript -e "tell application \"System Events\" to keystroke tab"
+  osascript -e "tell application \"System Events\" to keystroke \"${1}\""
+  osascript -e "tell application \"System Events\" to keystroke return"
+}
+_add_function enterMacPassword
 
 
 ## 7) Bash Completion
@@ -2149,9 +2156,10 @@ sem() { _search_file_wrapper $# "${@}" ~/.machine; }
 _add_function sem
 case $OSTYPE in
 darwin*)
-    _add_alias vpnc "scutil --nc start \"${VPN_NAME}\""
+    _add_alias vpnc "scutil --nc start \"${VPN_NAME}\" --user ${USER} --password \$(security find-generic-password -s ${VPN_KEYCHAIN_NAME} -w) --secret \$(security find-generic-password -s ${VPN_KEYCHAIN_NAME}.SS -w)"
     _add_alias vpnd "scutil --nc stop \"${VPN_NAME}\""
-    _add_alias vpns "scutil --nc status \"${VPN_NAME}\""
+    _add_alias vpns "scutil --nc status '${VPN_NAME}'"
+    _add_alias vpnl "scutil --nc list"
 ;;
 esac
 

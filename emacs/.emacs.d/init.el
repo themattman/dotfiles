@@ -69,6 +69,8 @@
 
 
   (global-set-key (kbd "C-c z"   ) 'show-file-name            )
+  (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
+  (global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
   (global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file
   (global-set-key (kbd "C-x C-b" ) 'buffer-menu               ) ; Buffer-Menu shouldn't open
   (global-set-key (kbd "C-j"     ) 'scroll-down-command       )
