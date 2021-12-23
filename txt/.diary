@@ -10,6 +10,10 @@
 Command                                 Comments
 ---------------------------------------------------------------------------------
 git log -S<string>                      # git pickaxe
+                                        # 12/03/21:
+                                        # https://gist.github.com
+                                        #  /phil-blain
+                                        #  /2a1cf81a0030001d33158e44a35ceda6
 tput bel                                # makes system ding, good for chaining
                                         #  with long-running commands so they
                                         #  notify you on completion
@@ -2709,6 +2713,38 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 git diff --staged --ignore-cr-at-eol emacs   # Ignores ^M from win/linux diffs
 dos2unix filename                            # Git bash, remove DOS endings, ^M, in-place
+
+#
+# 11/23/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+TODO: hyphenate everything in a man cmd # readline wishlist
+ go from $ git show| to $ man git-show|
+
+#
+# 11/30/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+TODO: Emacs command invoked from within the ()'s of a multi-line query,
+ highlights query,
+ removes all spaces and sends to clipboard
+ shell-command-on-region "tr -d ' ' | tr -d '\n' | pbcopy"
+
+#
+# 12/03/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+Command-k                               # Github, open cmd window, like cmd-space
+
+#
+# 12/21/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+networksetup -connectpppoeservice "VPN" # Mac, Connect to VPN from Terminal
 
 #
 # 12/22/2021
