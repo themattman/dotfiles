@@ -754,6 +754,9 @@ _add_alias gmam "git commit --amend -C HEAD"
 _add_alias gmamn "git commit --amend -C HEAD --no-verify"
 _add_alias gmm "git merge --no-ff"
 _add_alias gt "git stash"
+_add_alias gtt "git show stash@{0}"
+_add_alias gttn "git show --name-only stash@{0}"
+_add_alias gtts "git show --stat stash@{0}"
 _add_alias gtc "git stash clear"
 _add_alias gtd "git stash drop"
 _add_alias gtl "git stash list"
@@ -2151,6 +2154,9 @@ _add_variable MAN_PAGER "less -i"
 
 
 ## 9) Machine-Specific
+# Recommended to define in .machine:
+#  - VPN_NAME: machine-consumable name of VPN network to connect to
+#  - VPN_KEYCHAIN_NAME: uuid generated str
 source_file ~/.machine
 sem() { _search_file_wrapper $# "${@}" ~/.machine; }
 _add_function sem

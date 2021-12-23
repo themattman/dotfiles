@@ -2731,6 +2731,13 @@ security find-generic-password \
  -s "<UUID>" -w                         # OSX Keychain, Print Password to stdout
 security remove-generic-password \
  -s "<UUID>"                            # Keychain, Remove password
+                                        # Helpful: https://4ndrs.xyz
+                                        #           /posts
+                                        #           /macos-vpn-command-line
 
   100* [2021-12-22 10:10:01] ls         # History, the asterisk means the line
                                         #  was modified. "mark-modified-lines"
+help help                               # `help` shows relevant Bash Manual
+                                        #  section for builtins
+help history
+help set
