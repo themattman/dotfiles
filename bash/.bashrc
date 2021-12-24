@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  02/08/2020
+# Last updated:  12/23/2021
 # Configuration: MACHINE_NAME # TODO a script should update this
 #
 # To refresh bash environment with changes to this file:
@@ -33,6 +33,7 @@
 # 8) Miscellaneous
 # 9) Machine-Specific
 # 10) Cleanup
+# 11) SSH
 
 
 ## 0) Bashrc Guard
@@ -281,6 +282,32 @@ _add_to_variable_with_path_separator() {
     fi
 }
 _add_function _add_to_variable_with_path_separator
+
+_prepend_to_variable_with_path_separator() {
+    local _variable _value _contents_of_variable
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
+    fi
+    _variable="${1}"
+    _value="${2}"
+    if [[ ! -d ${_value} ]]; then
+        echo "$(basename ${0}): Error: location ${_value} doesn't exist and won't be appended to ${_variable}" >&2
+        return 1
+    fi
+    eval _contents_of_variable="\$${_variable}"
+    if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
+        # Variable isn't tracked yet in custom env
+        _custom_user_path_variables["${_variable}"]="${_contents_of_variable}"
+        if [[ -z "${_contents_of_variable+x}" ]]; then
+            export "${_variable}=${_value}"
+        else
+            export "${_variable}=:${_value}:${_contents_of_variable}"
+        fi
+    else
+        export "${_variable}=:${_value}:${_contents_of_variable}"
+    fi
+}
+_add_function _prepend_to_variable_with_path_separator
 
 _add_alias functions "echo \${!_custom_user_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
 _add_alias auto_added_alias_completion_functions "echo \${!_custom_user_auto_alias_completion_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
@@ -1980,7 +2007,9 @@ mrf() {
 }
 _add_function mrf
 
+#
 # Cpp Greps
+#
 cpptype () {
     local _opt=$2
     local _search_term=$1
@@ -2181,5 +2210,18 @@ _add_function seml
 unset DATE_FORMAT
 
 
-## 11) Improvements
-# isdos() checks output of fromdos, and outputs yes or no
+## 11) SSH
+if ps -p $SSH_AGENT_PID > /dev/null; then
+    echo -e "${LIGHTPURPLE}ssh-agent already running${ENDCOLOR}"
+else
+    if [[ -f ~/.ssh/id_rsa ]]; then
+        if [[ ! -d ~/.keychain ]]; then
+            set -x
+            mkdir -p ~/.keychain
+            { set +x; } &>/dev/null
+        fi
+        eval "$(ssh-agent -s)"
+        keychain id_rsa
+        . ~/.keychain/`uname -n`-sh
+    fi
+fi
