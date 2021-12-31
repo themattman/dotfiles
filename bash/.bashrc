@@ -1358,10 +1358,15 @@ _add_function rmp
 
 # Git Push to all remotes
 gpa() {
+    if [[ "dryrun" = ${1} ]]; then
+        echo "dry run.."
+    fi
     if [[ "function" = $(type -t __git_remotes) ]]; then
         local cur_branch=$(git rev-parse --abbrev-ref HEAD)
         for _ith_remote in $(__git_remotes); do
-            if [[ $# -eq 1 ]]; then
+            if [[ "dryrun" = ${1} ]]; then
+                echo "git push ${_ith_remote} ${cur_branch}"
+            elif [[ $# -eq 1 ]]; then
                 set -x
                 git push "${1}" "${_ith_remote}" "${cur_branch}"
                 { set +x; } 2>/dev/null
@@ -1378,6 +1383,11 @@ gpa() {
     fi
 }
 _add_function gpa
+
+gpas() {
+    gpa dryrun
+}
+_add_function gpas
 
 gpfa() {
     gpa -f
