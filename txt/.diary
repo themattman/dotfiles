@@ -2786,3 +2786,11 @@ help help                               # `help` shows relevant Bash Manual
                                         #  section for builtins
 help history
 help set
+
+#
+# 12/28/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+reptyr                                  # Move active terminal session to GNU
+                                        #  Screen

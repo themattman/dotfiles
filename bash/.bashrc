@@ -2017,7 +2017,10 @@ cpptype () {
     echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}]"
     GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
 	       "^[[:space:]]*\(typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" \
-	| grep --color=always ${_opt} "${_search_term}"
+	    | grep --color=always ${_opt} "${_search_term}"
+    if [[ $? -ne 0 ]]; then
+        cppdef ${_search_term}
+    fi
     unset _search_term _grep_colors
 }
 _add_function cpptype
@@ -2047,6 +2050,21 @@ enterMacPassword() {
   osascript -e "tell application \"System Events\" to keystroke return"
 }
 _add_function enterMacPassword
+
+gitdiffhead() {
+    local _num_commits=$1
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: gitdiffhead <NUMBER_OF_COMMITS>" >&2
+        return 1
+    elif [[ ! "${_num_commits}" -gt 0 ]]; then
+        echo "Error: num commits must be greater than 0" >&2
+        return 1
+    fi
+    echo -e "git diff [${PURPLE}HEAD~${_num_commits}${ENDCOLOR}]..HEAD"
+    git diff HEAD~${_num_commits}..HEAD
+}
+_add_function gitdiffhead
+_rename_function gdh gitdiffhead
 
 
 ## 7) Bash Completion
@@ -2211,8 +2229,8 @@ unset DATE_FORMAT
 
 
 ## 11) SSH
-if ps -p $SSH_AGENT_PID > /dev/null; then
-    echo -e "${LIGHTPURPLE}ssh-agent already running${ENDCOLOR}"
+if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
+   echo -e "${LIGHTPURPLE}ssh-agent already running${ENDCOLOR}"
 else
     if [[ -f ~/.ssh/id_rsa ]]; then
         if [[ ! -d ~/.keychain ]]; then
