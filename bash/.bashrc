@@ -837,7 +837,6 @@ _add_alias grh "git reset HEAD"
 _add_alias grhh "git reset HEAD~1"
 _add_alias grhhs "git reset HEAD~1 --soft"
 _add_alias grb "git rebase"
-_add_alias grbi "git rebase -i"
 _add_alias grbc "git rebase --continue"
 _add_alias grba "git rebase --abort"
 _add_alias gct "git checkout --theirs"
@@ -1359,7 +1358,7 @@ _add_function rmp
 # Git Push to all remotes
 gpa() {
     if [[ "dryrun" = ${1} ]]; then
-        echo "dry run.."
+        echo -e "[${PURPLE}dry run${ENDCOLOR}]"
     fi
     if [[ "function" = $(type -t __git_remotes) ]]; then
         local cur_branch=$(git rev-parse --abbrev-ref HEAD)
@@ -2020,13 +2019,14 @@ _add_function mrf
 #
 # Cpp Greps
 #
+# TODO: retry searches with case-insensitive searches if no match found
 cpptype () {
     local _opt=$2
     local _search_term=$1
     local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
     echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}]"
     GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
-	       "^[[:space:]]*\(typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" \
+	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" \
 	    | grep --color=always ${_opt} "${_search_term}"
     if [[ $? -ne 0 ]]; then
         cppdef ${_search_term}
@@ -2063,19 +2063,49 @@ _add_function enterMacPassword
 
 gitdiffhead() {
     local _num_commits=$1
-    if [[ $# -ne 1 ]]; then
+    local _args=${@:2}
+    local _file
+    local _git_args
+    local _is_file_delim_found=0
+    local _pretty_print_file
+    local _pretty_print_git_args
+    if [[ $# -eq 0 ]]; then
         echo "Usage: gitdiffhead <NUMBER_OF_COMMITS>" >&2
         return 1
     elif [[ ! "${_num_commits}" -gt 0 ]]; then
         echo "Error: num commits must be greater than 0" >&2
         return 1
     fi
-    echo -e "git diff [${PURPLE}HEAD~${_num_commits}${ENDCOLOR}]..HEAD"
-    git diff HEAD~${_num_commits}..HEAD
+    for i in ${_args}; do
+        if [ "${i}" == "--" ] || [ ${_is_file_delim_found} -eq 1 ]; then
+            _is_file_delim_found=1
+            _file+=($i)
+        else
+            _git_args+=(${i})
+        fi
+    done
+    if [[ "${#_git_args[@]}" -gt 0 ]]; then
+    _pretty_print_git_args="[${PURPLE}${_git_args[*]}${ENDCOLOR}]"
+    fi
+    if [[ "${#_file[@]}" -gt 0 ]]; then
+        _pretty_print_file="[${PURPLE}${_file[*]}${ENDCOLOR}]"
+    fi
+    echo -e "git diff ${_pretty_print_git_args} HEAD~[${PURPLE}${_num_commits}${ENDCOLOR}]..HEAD ${_pretty_print_file}"
+    git diff ${_git_args[*]} HEAD~${_num_commits}..HEAD ${_file[*]}
 }
 _add_function gitdiffhead
 _rename_function gdh gitdiffhead
 
+grbi() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: grbi <NUMBER_OF_COMMITS>" >&2
+    fi
+    local _num_commits=$1
+    set -x
+    git rebase -i HEAD~${_num_commits}
+    { set +x; } &>/dev/null
+}
+_add_function grbi
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
