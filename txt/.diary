@@ -2413,6 +2413,7 @@ gcc -H                                  # Print the name of each header file use
 Command                                 Comments
 ---------------------------------------------------------------------------------
 ${var%%-*} # hello-world-today          # Bash substitution, Prints "hello"
+${var##*-} # hello-world-today          # Bash substitution, Prints "today"
 
 #
 # 12/04/2018

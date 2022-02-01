@@ -759,7 +759,7 @@ fi
 
 _add_alias rbranches "for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
 _add_alias branches  "for k in \$(git branch | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r | head -n 30"
-_add_alias g "git pull \$(git remote | head -n 1) \$(git rev-parse --abbrev-ref HEAD)"
+_add_alias redate "git commit --amend --date=\"\$(date)\""
 _add_alias gf "git fetch"
 _add_alias gp "git push"
 _add_alias gb "git branch"
@@ -1354,6 +1354,37 @@ rmp() {
     safely_call remove_all_empty_temp_files "${arg}" "${dry_run}"
 }
 _add_function rmp
+
+# Usage: g [DRY_RUN]
+# Will let user select if more than 1 remote
+# Any arguments coming after g implies dry run
+g() {
+    local _remote=$(git remote)
+    local _num_remotes=$(git remote | wc -l)
+    local _branch=$(git rev-parse --abbrev-ref HEAD)
+    local _r
+
+    if [[ $# -gt 1 ]]; then
+        echo "[dry run]"
+    fi
+
+    if [[ ${_num_remotes} -eq 1 ]]; then
+        echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_remote} ${_branch}${ENDCOLOR}]"
+        if [[ $# -gt 1 ]]; then
+            git pull ${_remote} ${_branch}
+        fi
+    elif [[ ${_num_remotes} -gt 1 ]]; then
+        select _r in ${_remote[@]}
+        do
+            echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_r} ${_branch}${ENDCOLOR}]"
+            if [[ $# -gt 1 ]]; then
+                git pull ${_r} ${_branch}
+            fi
+            break
+        done
+    fi
+}
+_add_function g
 
 # Git Push to all remotes
 gpa() {
@@ -2099,6 +2130,7 @@ _rename_function gdh gitdiffhead
 grbi() {
     if [[ $# -ne 1 ]]; then
         echo "Usage: grbi <NUMBER_OF_COMMITS>" >&2
+        return 1
     fi
     local _num_commits=$1
     set -x
@@ -2106,6 +2138,20 @@ grbi() {
     { set +x; } &>/dev/null
 }
 _add_function grbi
+
+# Find Multiple Strings in file
+# Returns files that contain all strings
+# i.e. a logical AND operator
+fms() {
+    if [[ $# -ne 2 ]]; then
+        echo "Error: requires 2 arguments"
+        echo "Usage: fms <SEARCH_TERM1> <SEARCH_TERM2> ..." >&2
+        return 1
+    fi
+    # TODO: Support N args
+    grep -Iilrs --color=never "${1}" . | xargs -I{} grep -lIirs "${2}" {}
+}
+_add_function fms
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
