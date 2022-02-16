@@ -2795,3 +2795,16 @@ Command                                 Comments
 ---------------------------------------------------------------------------------
 reptyr                                  # Move active terminal session to GNU
                                         #  Screen
+
+#
+# 02/10/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+fuser -v <file>                         # Show pids using a file
+fuser -k <file>                         # Kill processes using a file
+C-x a                                   # gdb, toggle TUI mode
+info locals                             # gdb, show local vars
+info break                              # gdb, show bps
+info threads                            # gdb, show threads
+entr                                    # http://eradman.com/entrproject/

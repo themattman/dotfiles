@@ -190,7 +190,7 @@ _add_alias() {
     # 1: CD commands with a location to be checked
     if [[ ${_cmd% *} = "cd" ]]; then
         _location="${_cmd#* }"
-        if [[ ${_cmd} != "cd" && ! -d ${_location} && ${_location:0:1} != "$" ]]; then
+        if [[ ${_cmd} != "cd" && ! -d ${_location} && ${_location:0:1} != "$" && ${_location:0:1} != "." ]]; then
             if [[ ${1:0:2} = "__" ]]; then
                 _host=${1:2:-2}
                 if [[ ${_host} == "${HOSTNAME}" ]]; then
@@ -257,7 +257,7 @@ _add_variable() {
 _add_function _add_variable
 
 declare -A _custom_user_path_variables
-_add_to_variable_with_path_separator() {
+_append_variable_with_path_separator() {
     local _variable _value _contents_of_variable
     if [[ $# -ne 2 ]]; then
         echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
@@ -281,7 +281,7 @@ _add_to_variable_with_path_separator() {
         export "${_variable}=${_contents_of_variable}:${_value}"
     fi
 }
-_add_function _add_to_variable_with_path_separator
+_add_function _append_variable_with_path_separator
 
 _prepend_to_variable_with_path_separator() {
     local _variable _value _contents_of_variable
@@ -474,23 +474,23 @@ _add_function cpa
 
 ## 2) PATH
 # Basic PATHs
-_add_to_variable_with_path_separator PATH "/usr/local/bin"
-_add_to_variable_with_path_separator PATH "/usr/bin"
-_add_to_variable_with_path_separator PATH "/bin"
+_append_variable_with_path_separator PATH "/usr/local/bin"
+_append_variable_with_path_separator PATH "/usr/bin"
+_append_variable_with_path_separator PATH "/bin"
 
 # Android Studio/Intellij Paths
-# _add_to_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
+# _append_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
 # _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
-# _add_to_variable_with_path_separator PATH "$JAVA_HOME"
+# _append_variable_with_path_separator PATH "$JAVA_HOME"
 
 # local binaries
-# _add_to_variable_with_path_separator PATH $HOME/bin #begin
-# _add_to_variable_with_path_separator PATH /usr/bin
-# _add_to_variable_with_path_separator PATH /bin
+# _append_variable_with_path_separator PATH $HOME/bin #begin
+# _append_variable_with_path_separator PATH /usr/bin
+# _append_variable_with_path_separator PATH /bin
 
-_add_to_variable_with_path_separator PATH /usr/local/sbin
-_add_to_variable_with_path_separator PATH /usr/sbin
-_add_to_variable_with_path_separator PATH /sbin
+_append_variable_with_path_separator PATH /usr/local/sbin
+_append_variable_with_path_separator PATH /usr/sbin
+_append_variable_with_path_separator PATH /sbin
 
 EMACS_INIT_FILE="~/.emacs.d/configuration.org" #"~/.emacs"
 
@@ -1364,20 +1364,20 @@ g() {
     local _branch=$(git rev-parse --abbrev-ref HEAD)
     local _r
 
-    if [[ $# -gt 1 ]]; then
+    if [[ $# -gt 0 ]]; then
         echo "[dry run]"
     fi
 
     if [[ ${_num_remotes} -eq 1 ]]; then
         echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_remote} ${_branch}${ENDCOLOR}]"
-        if [[ $# -gt 1 ]]; then
+        if [[ $# -eq 0 ]]; then
             git pull ${_remote} ${_branch}
         fi
     elif [[ ${_num_remotes} -gt 1 ]]; then
         select _r in ${_remote[@]}
         do
             echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_r} ${_branch}${ENDCOLOR}]"
-            if [[ $# -gt 1 ]]; then
+            if [[ $# -eq 0 ]]; then
                 git pull ${_r} ${_branch}
             fi
             break
@@ -2052,15 +2052,16 @@ _add_function mrf
 #
 # TODO: retry searches with case-insensitive searches if no match found
 cpptype () {
-    local _opt=$2
     local _search_term=$1
+    local _opt=$2
+    local _dir=${3:-src}
     local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
     echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}]"
     GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
-	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" \
+	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" ${_dir} \
 	    | grep --color=always ${_opt} "${_search_term}"
     if [[ $? -ne 0 ]]; then
-        cppdef ${_search_term}
+        cppdef ${@}
     fi
     unset _search_term _grep_colors
 }
