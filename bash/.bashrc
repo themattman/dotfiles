@@ -53,7 +53,7 @@ fi
 
 ## 1) Internal Functions
 source_file() {
-    if [[ -f $1 ]]; then
+    if [[ -r $1 ]]; then
         # Printing anything to stdout from a .bashrc breaks scp
         # (and probably other things as well)
         # https://en.wikipedia.org
@@ -508,8 +508,14 @@ stty ixoff -ixon #  GNU screen sessions.
                  #   /recovering-from-ctrls-in-putty
 #stty ek
 
-source_file /etc/bash_completion
-
+case $OSTYPE in
+linux*)
+    source_file /etc/bash_completion
+;;
+darwin*)
+    source_file $(brew --prefix)/etc/profile.d/bash_completion.sh
+;;
+esac
 
 ## 3) Polyfills
 # Tree

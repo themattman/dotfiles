@@ -321,6 +321,7 @@ This command does not push text to `kill-ring'."
   (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
   (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
   (global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
+  (global-set-key (kbd "C-c t"   ) 'delete-trailing-whitespace)
   (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
   (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
   (global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file

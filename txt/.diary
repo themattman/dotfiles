@@ -2796,6 +2796,22 @@ Command                                 Comments
 reptyr                                  # Move active terminal session to GNU
                                         #  Screen
 
+# 12/29/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+https://gitlab.kitware.com/cmake
+  /community/-/wikis/doc/tutorials
+  /How-To-Write-Platform-Checks         # CMake, platform detection
+
+#
+# 02/01/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+set filename-display basename           # GDB, default 'relative'
+set print frame-arguments none          # GDB, default 'scalar'
+
 #
 # 02/10/2022
 #
