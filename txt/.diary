@@ -2718,15 +2718,15 @@ dos2unix filename                            # Git bash, remove DOS endings, ^M,
 #
 # 11/23/2021
 #
-Command                                 Comments
+Command                                      Comments
 ---------------------------------------------------------------------------------
-TODO: hyphenate everything in a man cmd # readline wishlist
+TODO: hyphenate everything in a man cmd      # readline wishlist
  go from $ git show| to $ man git-show|
 
 #
 # 11/30/2021
 #
-Command                                 Comments
+Command                                      Comments
 ---------------------------------------------------------------------------------
 TODO: Emacs command invoked from within the ()'s of a multi-line query,
  highlights query,
@@ -2736,179 +2736,187 @@ TODO: Emacs command invoked from within the ()'s of a multi-line query,
 #
 # 12/03/2021
 #
-Command                                 Comments
+Command                                      Comments
 ---------------------------------------------------------------------------------
-Command-k                               # Github, open cmd window, like cmd-space
+Command-k                                    # Github, open cmd window, like cmd-space
 
 #
 # 12/07/2021
 #
-Command                                 Comments
+Command                                      Comments
 ---------------------------------------------------------------------------------
-sed '<line_no>!d'                       # Sed, print only line_no
+sed '<line_no>!d'                            # Sed, print only line_no
 awk -F'-' '{a[$1]+=$2;}END{for(i in a)print i","a[i];}' # Awk, group by
-echo "scale=2;100*{}/23831994" | bc     # Bash calc, precision to 2 decimal pts
+echo "scale=2;100*{}/23831994" | bc          # Bash calc, precision to 2 decimal pts
 
 #
 # 12/21/2021
 #
-Command                                 Comments
+Command                                      Comments
 ---------------------------------------------------------------------------------
-networksetup -connectpppoeservice "VPN" # Mac, Connect to VPN from Terminal
+networksetup -connectpppoeservice "VPN"      # Mac, Connect to VPN from Terminal
 
 #
 # 12/22/2021
 #
-Command                                 Comments
+Command                                      Comments
 ---------------------------------------------------------------------------------
-uuidgen                                 # Generate uuid from cmd line
-security add-generic-password help      # keychain help
+uuidgen                                      # Generate uuid from cmd line
+security add-generic-password help           # keychain help
 security add-generic-password \
  -a "${USER}" -l "<LABEL>"    \
  -D "<LABEL>" -w "<PASSWORD>" \
- -s "<UUID>" -T "/usr/bin/security"     # OSK Keychain, Add password
+ -s "<UUID>" -T "/usr/bin/security"          # OSK Keychain, Add password
 read -s -p "Enter pw:" pass && \
 security add-generic-password  \
  -a "${USER}" -l "<LABEL>"     \
  -D "<LABEL>" -w "${pass}"     \
  -s "<UUID>" -T "/usr/bin/security"; \
- unset pass; echo                       # Keep pw out of bash history
+ unset pass; echo                            # Keep pw out of bash history
 security find-generic-password \
- -s "<UUID>" -w                         # OSX Keychain, Print Password to stdout
+ -s "<UUID>" -w                              # OSX Keychain, Print Password to stdout
 security remove-generic-password \
- -s "<UUID>"                            # Keychain, Remove password
-                                        # Helpful: https://4ndrs.xyz
-                                        #           /posts
-                                        #           /macos-vpn-command-line
+ -s "<UUID>"                                 # Keychain, Remove password
+                                             # Helpful: https://4ndrs.xyz
+                                             #           /posts
+                                             #           /macos-vpn-command-line
 
-  100* [2021-12-22 10:10:01] ls         # History, the asterisk means the line
-                                        #  was modified. "mark-modified-lines"
-help help                               # `help` shows relevant Bash Manual
-                                        #  section for builtins
+  100* [2021-12-22 10:10:01] ls              # History, the asterisk means the line
+                                             #  was modified. "mark-modified-lines"
+help help                                    # `help` shows relevant Bash Manual
+                                             #  section for builtins
 help history
 help set
 
 #
 # 12/28/2021
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-reptyr                                  # Move active terminal session to GNU
-                                        #  Screen
+Command                                      Comments
+------------------------------------------------------------------------------------------
+reptyr                                       # Move active terminal session to GNU
+                                             #  Screen
 
 # 12/29/2021
 #
-Command                                 Comments
----------------------------------------------------------------------------------
+Command                                      Comments
+------------------------------------------------------------------------------------------
 https://gitlab.kitware.com/cmake
   /community/-/wikis/doc/tutorials
-  /How-To-Write-Platform-Checks         # CMake, platform detection
+  /How-To-Write-Platform-Checks              # CMake, platform detection
 
 #
 # 02/01/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-set filename-display basename           # GDB, default 'relative'
-set print frame-arguments none          # GDB, default 'scalar'
+Command                                      Comments
+------------------------------------------------------------------------------------------
+set filename-display basename                # GDB, default 'relative'
+set print frame-arguments none               # GDB, default 'scalar'
 
 #
 # 02/10/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-fuser -v <file>                         # Show pids using a file
-fuser -k <file>                         # Kill processes using a file
-C-x a                                   # gdb, toggle TUI mode
-info locals                             # gdb, show local vars
-info break                              # gdb, show bps
-info threads                            # gdb, show threads
-entr                                    # http://eradman.com/entrproject/
+Command                                      Comments
+------------------------------------------------------------------------------------------
+fuser -v <file>                              # Show pids using a file
+fuser -k <file>                              # Kill processes using a file
+C-x a                                        # gdb, toggle TUI mode
+info locals                                  # gdb, show local vars
+info break                                   # gdb, show bps
+info threads                                 # gdb, show threads
+entr                                         # http://eradman.com/entrproject/
 
 # 02/28/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-ulimit -a                               # Show all resource limits
+Command                                      Comments
+------------------------------------------------------------------------------------------
+ulimit -a                                    # Show all resource limits
 help ulimit
 man core
-/proc/sys/kernel/core_pattern           # Sets policy for core dump names
-ulimit -c unlimited                     # Anything besides 0 allows core dumps
+/proc/sys/kernel/core_pattern                # Sets policy for core dump names
+ulimit -c unlimited                          # Anything besides 0 allows core dumps
 
 #
 # 03/02/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-cmd+opt+i                               # Mac, shortcut for dev tools
-cmd+shift+4 space click                 # Mac, screenshot of any window
-opt+up/down                             # Google Sheets, navigate tabs
-git merge --squash                      # Git, squash merge! One command.
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cmd+opt+i                                    # Mac, shortcut for dev tools
+cmd+shift+4 space click                      # Mac, screenshot of any window
+opt+up/down                                  # Google Sheets, navigate tabs
+git merge --squash                           # Git, squash merge! One command.
 
 #
 # 03/07/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-xcode-select --install                  # Mac, install Git via Dev Tools
+Command                                      Comments
+------------------------------------------------------------------------------------------
+xcode-select --install                       # Mac, install Git via Dev Tools
 
 #
 # 03/15/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-sed "s/'//g"                            # Remove single quote from input
-tr -d ',"'                              # Removes multiple chars from input
+Command                                      Comments
+------------------------------------------------------------------------------------------
+sed "s/'//g"                                 # Remove single quote from input
+tr -d ',"'                                   # Removes multiple chars from input
 
 #
 # 03/18/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
+Command                                      Comments
+------------------------------------------------------------------------------------------
 dot -T?
-dot -Tjpeg -oincgraph.jpg incgraph.txt  # Generate c++ include graph
+dot -Tjpeg -oincgraph.jpg incgraph.txt       # Generate c++ include graph
 
 #
 # 03/20/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-CMAKE_EXE_LINKER_FLAGS                  # CMake, linker flags, for like -v debug
+Command                                      Comments
+------------------------------------------------------------------------------------------
+CMAKE_EXE_LINKER_FLAGS                       # CMake, linker flags, for like -v debug
 
 #
 # 03/21/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-untar <archive> -C <out-dir>            # tar, untar to named dir
+Command                                      Comments
+------------------------------------------------------------------------------------------
+untar <archive> -C <out-dir>                 # tar, untar to named dir
 
 #
 # 03/22/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-p <varname>                             # gdb, print
-f <frameNum>                            # gdb, jump to frame in bt
-bt <numFramesToShow>                    # gdb, show fewer number of frames
-p (<type>)* <addr>)._metadata.options   # gdb, cast to ptr, deref ptrs
-info frame => i f                       # gdb, print info on current frame
-info args => i ar                       # gdb, print args to current function
-
-p ((CollectionImpl)* 0x559f51afb990)._metadata.get().options.clusteredIndex
+Command                                      Comments
+------------------------------------------------------------------------------------------
+p <varname>                                  # gdb, print
+f <frameNum>                                 # gdb, jump to frame in bt
+bt <numFramesToShow>                         # gdb, show fewer number of frames
+p (<type>)* <addr>)._metadata.options        # gdb, cast to ptr, deref ptrs
+info frame => i f                            # gdb, print info on current frame
+info args => i ar                            # gdb, print args to current function
+p ((CollectionImpl)* 0x559f51afb990)._metadata.get().options
 
 #
 # 03/25/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-hexdump -C <file>                       # Print hex + ASCII
+Command                                      Comments
+------------------------------------------------------------------------------------------
+hexdump -C <file>                            # Print hex + ASCII
+
+#
+# 03/28/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+echo "/a/file.js | awk -F'/' '{print $NF}'   # Get last field (cut can't do this)
+cat -e file.txt                              # Print '$' for each newline
+-n $(tail -c 1 <file>)                       # Does a file end with newline
 
 #
 # 03/29/2022
 #
-Command                                 Comments
----------------------------------------------------------------------------------
-dirs                                    # Print pushd/popd dir stack
-cmd+shift+e                             # VSCode for Mac, go to explorer
-cmd+shift+f                             # VSCode for mac, go to finder
-cmd+p                                   # VSCode for mac, pop everything search box
+Command                                      Comments
+------------------------------------------------------------------------------------------
+dirs                                         # Print pushd/popd dir stack
+cmd+shift+e                                  # VSCode for Mac, go to explorer
+cmd+shift+f                                  # VSCode for mac, go to finder
+cmd+p                                        # VSCode for mac, pop everything search box

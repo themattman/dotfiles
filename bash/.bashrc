@@ -955,7 +955,7 @@ _add_alias eg "\$EDITOR ~/.gitconfig"
 _add_alias es "\$EDITOR ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
 _add_alias sb "ps2; _clear_environment; source ~/.bashrc"
-_add_alias exts "find . -type f | awk -F. '!a[\$NF]++{print \$NF}'"
+_add_alias exts "find . -type f | awk -F'/' '{print \$NF}' | awk -F'.' '{print \$NF}' | sort | uniq -c | sort -h"
 # This command should wipe out the previous environment and start over
 _add_alias sbb "ps2; _clear_environment; source ~/.bash_profile"
 # Clear all custom aliases, useful when they get in the way
@@ -1966,9 +1966,12 @@ ed() {
     _cur_date=$(date +%m/%d/%Y)
     _most_recent_date=$(grep --color -o -E "^# [0-9]{2}/[0-9]{2}/[0-9]{4}" ~/.diary | tail -n 1 | cut -d' ' -f2-)
     if [[ "${_cur_date}" != "${_most_recent_date}" ]]; then
+        if [[ -n "$(tail -c 1 ~/.diary)" ]]; then
+            echo >> ~/.diary
+        fi
         echo -e "\n#\n# ${_cur_date}\n#" >> ~/.diary
-        echo "Command                                 Comments" >> ~/.diary
-        printf "%0.s-" {1..81} >> ~/.diary
+        echo "Command                                      Comments" >> ~/.diary
+        printf "%0.s-" {1..90} >> ~/.diary
         echo >> ~/.diary
     fi
     $EDITOR +$(($(wc -l ~/.diary | awk '{print $1}')+1)) ~/.diary
