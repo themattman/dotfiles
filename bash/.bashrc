@@ -1971,7 +1971,7 @@ ed() {
         fi
         echo -e "\n#\n# ${_cur_date}\n#" >> ~/.diary
         echo "Command                                      Comments" >> ~/.diary
-        printf "%0.s-" {1..90} >> ~/.diary
+        printf "%0.s-" {1..90}  >> ~/.diary
         echo >> ~/.diary
     fi
     $EDITOR +$(($(wc -l ~/.diary | awk '{print $1}')+1)) ~/.diary
