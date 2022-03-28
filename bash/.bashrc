@@ -785,12 +785,13 @@ _add_alias gaf "git add -f"
 _add_alias gco "git commit"
 _add_alias gcon "git commit --no-verify"
 _add_alias gm "git commit -m"
-_add_alias gma "git commit --amend"
+_add_alias gca "git commit --amend"
 _add_alias gmn "git commit --no-verify -m"
 _add_alias gmna "git commit --no-verify --amend"
 _add_alias gmam "git commit --amend -C HEAD"
 _add_alias gmamn "git commit --amend -C HEAD --no-verify"
 _add_alias gtu "git restore --staged" # Unstage
+_add_alias gma "git merge --abort"
 _add_alias gmm "git merge --no-ff"
 _add_alias gt "git stash"
 _add_alias gta "git stash apply"
@@ -852,10 +853,10 @@ _add_alias grbc "git rebase --continue"
 _add_alias grba "git rebase --abort"
 _add_alias gct "git checkout --theirs"
 _add_alias g-- "git --version"
-_add_alias ge "git config user.email"
-_add_alias gu "git config user.name"
-_add_alias gcn "git config"
-_add_alias gconl "git config --list"
+_add_alias gcf "git config"
+_add_alias gcfl "git config --list"
+_add_alias gcfe "git config user.email"
+_add_alias gcfu "git config user.name"
 _add_alias findgit "git rev-parse --git-dir"
 _add_alias gitdir "git rev-parse --git-dir"
 _add_alias toplevel "dirname \$(git rev-parse --git-dir)"
@@ -889,6 +890,7 @@ _add_variable HISTFILESIZE 100000
 _add_alias r "fc -s"
 # Networking
 _add_alias getip "nslookup"
+_add_alias watch "watch -n 1 "
 # LESS
 _add_alias less "\less -iFXR" # I typically don't like aliasing program names
 _add_alias les "\less -iFXR +G" # +G goes to end of file
@@ -906,6 +908,7 @@ _add_alias vv "virtualenv"
 _add_alias psa "ps aux"
 _add_alias p "ps aux | grep -v grep | grep \$(echo \$USER)"
 _add_alias psm "ps aux | grep mongo | grep -v grep"
+_add_alias psp "ps -C mongod | grep -v grep"
 _add_alias pse "ps fe -o \"%c %p %P\""
 _add_alias pe "ps fe -o \"%p\" --no-headers --ppid"
 _add_alias pid "ps fe --pid"
@@ -1961,7 +1964,6 @@ _add_function color
 ed() {
     local _cur_date _most_recent_date
     _cur_date=$(date +%m/%d/%Y)
-    echo "${_cur_date}"
     _most_recent_date=$(grep --color -o -E "^# [0-9]{2}/[0-9]{2}/[0-9]{4}" ~/.diary | tail -n 1 | cut -d' ' -f2-)
     if [[ "${_cur_date}" != "${_most_recent_date}" ]]; then
         echo -e "\n#\n# ${_cur_date}\n#" >> ~/.diary
@@ -1975,7 +1977,7 @@ _add_function ed
 
 # Given a path, find the greatest common ancestor of the
 #  CWD, current working directory, and the given path
-gca() {
+gcar() {
     local _path1 _path2
     _path1=${1}
     _path2=${PWD}
@@ -1998,7 +2000,7 @@ gca() {
     #  /67121
     #  #67121
 }
-_add_function gca
+_add_function gcar
 
 remove_starting_point() {
     local _path1 _path2
@@ -2077,6 +2079,8 @@ _add_function mrf
 # Cpp Greps
 #
 # TODO: retry searches with case-insensitive searches if no match found
+# TODO: Handle this:
+# class MONGO_WARN_UNUSED_RESULT_CLASS Status {
 cpptype () {
     local _search_term=$1
     local _opt=$2
@@ -2087,7 +2091,10 @@ cpptype () {
 	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" ${_dir} \
 	    | grep --color=always ${_opt} "${_search_term}"
     if [[ $? -ne 0 ]]; then
-        cppdef ${@}
+        cpptype ${@} --color=always build
+        if [[ $? -ne 0 ]]; then
+            cppdef ${@}
+        fi
     fi
     unset _search_term _grep_colors
 }
@@ -2179,6 +2186,19 @@ fms() {
     grep -Iilrs --color=never "${1}" . | xargs -I{} grep -lIirs "${2}" {}
 }
 _add_function fms
+
+most_recent_file() {
+    # Alternative: \ls -t --color=never | head -n 1
+    local _path=${1:-.}
+    find ${_path} -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | grep -v ' \.$' | sort -n | tail -n 1 | cut -d' ' -f2-
+}
+_add_function most_recent_file
+
+most_recent_file_exclude_hidden() {
+    local _path=${1:-.}
+    find ${_path} -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | grep -v ' \.' | sort -n | tail -n 1
+}
+_add_function most_recent_file_exclude_hidden
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells

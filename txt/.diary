@@ -2825,12 +2825,48 @@ info break                              # gdb, show bps
 info threads                            # gdb, show threads
 entr                                    # http://eradman.com/entrproject/
 
+# 02/28/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+ulimit -a                               # Show all resource limits
+help ulimit
+man core
+/proc/sys/kernel/core_pattern           # Sets policy for core dump names
+ulimit -c unlimited                     # Anything besides 0 allows core dumps
+
+#
+# 03/02/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+cmd+opt+i                               # Mac, shortcut for dev tools
+cmd+shift+4 space click                 # Mac, screenshot of any window
+opt+up/down                             # Google Sheets, navigate tabs
+git merge --squash                      # Git, squash merge! One command.
+
 #
 # 03/07/2022
 #
 Command                                 Comments
 ---------------------------------------------------------------------------------
 xcode-select --install                  # Mac, install Git via Dev Tools
+
+#
+# 03/15/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+sed "s/'//g"                            # Remove single quote from input
+tr -d ',"'                              # Removes multiple chars from input
+
+#
+# 03/18/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+dot -T?
+dot -Tjpeg -oincgraph.jpg incgraph.txt  # Generate c++ include graph
 
 #
 # 03/20/2022
