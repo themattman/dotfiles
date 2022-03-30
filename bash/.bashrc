@@ -846,8 +846,9 @@ _add_alias gshs "git show --stat"
 _add_alias gv "git remote -v"
 _add_alias gr "git reset"
 _add_alias grh "git reset HEAD"
-_add_alias grhh "git reset HEAD~1"
-_add_alias grhhs "git reset HEAD~1 --soft"
+_add_alias grhh "git log -n 1 --stat; git reset HEAD~1"
+_add_alias grhhs "git log -n 1 --stat; git reset HEAD~1 --soft"
+_add_alias grhhh "git log -n 1 --stat; git reset HEAD~1"
 _add_alias grb "git rebase"
 _add_alias grbc "git rebase --continue"
 _add_alias grba "git rebase --abort"
@@ -1409,7 +1410,7 @@ gpa() {
         local cur_branch=$(git rev-parse --abbrev-ref HEAD)
         for _ith_remote in $(__git_remotes); do
             if [[ "dryrun" = ${1} ]]; then
-                echo "git push ${_ith_remote} ${cur_branch}"
+                echo "git push ${2} ${_ith_remote} ${cur_branch}"
             elif [[ $# -eq 1 ]]; then
                 set -x
                 git push "${1}" "${_ith_remote}" "${cur_branch}"
@@ -1429,7 +1430,7 @@ gpa() {
 _add_function gpa
 
 gpas() {
-    gpa dryrun
+    gpa dryrun "${@}"
 }
 _add_function gpas
 
@@ -2202,6 +2203,7 @@ most_recent_file_exclude_hidden() {
     find ${_path} -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | grep -v ' \.' | sort -n | tail -n 1
 }
 _add_function most_recent_file_exclude_hidden
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells

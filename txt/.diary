@@ -2920,3 +2920,4 @@ dirs                                         # Print pushd/popd dir stack
 cmd+shift+e                                  # VSCode for Mac, go to explorer
 cmd+shift+f                                  # VSCode for mac, go to finder
 cmd+p                                        # VSCode for mac, pop everything search box
+echo "key:[1823rf2]" | tr 'a-z0-9' 'x'       # censor a string
