@@ -2824,3 +2824,55 @@ info locals                             # gdb, show local vars
 info break                              # gdb, show bps
 info threads                            # gdb, show threads
 entr                                    # http://eradman.com/entrproject/
+
+#
+# 03/07/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+xcode-select --install                  # Mac, install Git via Dev Tools
+
+#
+# 03/20/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+CMAKE_EXE_LINKER_FLAGS                  # CMake, linker flags, for like -v debug
+
+#
+# 03/21/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+untar <archive> -C <out-dir>            # tar, untar to named dir
+
+#
+# 03/22/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+p <varname>                             # gdb, print
+f <frameNum>                            # gdb, jump to frame in bt
+bt <numFramesToShow>                    # gdb, show fewer number of frames
+p (<type>)* <addr>)._metadata.options   # gdb, cast to ptr, deref ptrs
+info frame => i f                       # gdb, print info on current frame
+info args => i ar                       # gdb, print args to current function
+
+p ((CollectionImpl)* 0x559f51afb990)._metadata.get().options.clusteredIndex
+
+#
+# 03/25/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+hexdump -C <file>                       # Print hex + ASCII
+
+#
+# 03/29/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+dirs                                    # Print pushd/popd dir stack
+cmd+shift+e                             # VSCode for Mac, go to explorer
+cmd+shift+f                             # VSCode for mac, go to finder
+cmd+p                                   # VSCode for mac, pop everything search box

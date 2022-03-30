@@ -14,9 +14,9 @@
 # Notes:
 # * Only tested on:
 #   * Bash version:
-#     * 4.x & 4.4.x
+#     * 4.x, 4.4.x, 5.1.x
 #   * Platforms:
-#     * Mac OS X 10.11
+#     * Mac OS X 10.11, 12.3
 #     * Ubuntu 12.04/14.04/18.04
 # * TODOs exist for areas of code smell or customizable fields
 #
@@ -80,6 +80,16 @@ _add_function() {
     _custom_user_functions["${_func}"]=""
 }
 _add_function _add_function
+
+_error() {
+    local _error_msg="${1}"
+    if [[ -x $(which basename 2>/dev/null) ]]; then
+        echo "$(basename -- ${0}): Error: ${_error_msg}" >&2 && return 1
+    else
+        echo "Error: ${_error_msg}" >&2 && return 1
+    fi
+}
+_add_function _error
 
 declare -A _custom_user_auto_alias_completion_functions
 _add_auto_alias_completion_function() {
@@ -607,12 +617,6 @@ esac
 
 ## 4b) Basic bash aliases
 DATE_FORMAT="+%Y_%m_%d__%H_%M_%S"
-# TODO: finish this generalization of error messages
-if [[ -x $(which basename 2>/dev/null) ]]; then
-    ERROR_PREFIX="\$(basename -- \${0})"
-else
-    ERROR_PREFIX=""
-fi
 _add_alias rem "remove_trailing_spaces"
 #_add_alias ! "sudo !!" # This is a terrible alias and breaks a lot of stuff
 _add_alias c "cd \${OLDPWD}" # Use Ctrl-L instead of aliasing this to clear
@@ -1688,18 +1692,27 @@ _add_function _git_branch_delete
 _rename_function gbd _git_branch_delete
 
 _git_pull_rebase() {
-    local _remote_name="origin"
-    if [[ $# -eq 1 ]]; then
-        _remote_name="${1}"
-    elif [[ $# -gt 1 ]]; then
-        echo "$(basename -- ${0}): Error: only zero or one arguments allowed" >&2
-        echo "Usage: ${FUNCNAME[0]} REMOTE_NAME" >&2
+    local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
+    local _remote_name="${1:-origin}"
+    if [[ $# -gt 1 ]]; then
+        _error "only zero or one arguments allowed"
+        echo "Usage: ${FUNCNAME[0]} <remote_name>" >&2
         return 1
     fi
-    local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    if ! git rev-parse --verify --quiet "${_cur_branch}" >/dev/null; then
+        _error "branch [${_cur_branch}] doesn't exist"
+        return 1
+    fi
+
+    if ! git ls-remote --exit-code --quiet "${_remote_name}" "${_cur_branch}" >/dev/null 2>&1; then
+        _error "branch [${_cur_branch}] doesn't exist on remote [${_remote_name}]"
+        return 1
+    fi
+
     set -x
     git fetch "${_remote_name}"
-    git rebase -p "${_remote_name}/${_cur_branch}"
+    git pull --rebase "${_remote_name}" "${_cur_branch}"
     { set +x; } 2>/dev/null
 }
 _add_function _git_pull_rebase
@@ -1710,19 +1723,21 @@ _git_cherrypick_file() {
     local _branch="${1}"
     local _file="${2}"
     if [[ $# -ne 2 ]]; then
-        echo "Error: only zero or one arguments allowed" >&2
-        echo "Usage: ${FUNCNAME[0]} BRANCH_NAME FILE_PATH" >&2
+        echo "$(basename -- ${0}): Error: only zero or one arguments allowed" >&2
+        echo "Usage: ${FUNCNAME[0]} <branch_name> <file_path>" >&2
         return 1
     fi
-    git rev-parse --verify --quiet "${_branch}" >/dev/null
-    if [[ $? -ne 0 ]]; then
-        echo "Error: branch ${_branch} doesn't exist" >&2
+
+    if ! git rev-parse --verify --quiet "${_branch}" >/dev/null; then
+        _error "branch ${_branch} doesn't exist"
         return 1
     fi
-    if [[ ! -f ${_file} ]]; then
+
+    if [[ ! -f "${_file}" ]]; then
         echo "Error: file ${_file} doesn't exist" >&2
         return 1
     fi
+
     set -x
     git diff ${_cur_branch}^..${_branch} -- ${_file} | git apply
     { set +x; } 2>/dev/null
@@ -1732,19 +1747,23 @@ _rename_function gcpf _git_cherrypick_file
 
 _git_log_unpushed_commits() {
     local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
-    local _remote_name="origin"
-    if [[ $# -eq 1 ]]; then
-        _remote_name="${1}"
-    elif [[ $# -gt 1 ]]; then
-        echo "$(basename -- ${0}): Error: only zero or one arguments allowed" >&2
-        echo "Usage: ${FUNCNAME[0]} REMOTE_NAME" >&2
+    local _remote_name="${1:-origin}"
+    if [[ $# -gt 1 ]]; then
+        _error "only zero or one arguments allowed"
+        echo "Usage: ${FUNCNAME[0]} <remote_name>" >&2
         return 1
     fi
-    git rev-parse --verify --quiet "${_cur_branch}" >/dev/null
-    if [[ $? -ne 0 ]]; then
-        echo "Error: branch ${_cur_branch} doesn't exist" >&2
+
+    if ! git rev-parse --verify --quiet "${_cur_branch}" >/dev/null; then
+        _error "branch ${_cur_branch} doesn't exist"
         return 1
     fi
+
+    if ! git ls-remote --exit-code --quiet "${_remote_name}" "${_cur_branch}" >/dev/null 2>&1; then
+        _error "branch [${_cur_branch}] doesn't exist on remote [${_remote_name}]"
+        return 1
+    fi
+
     set -x
     git log ${_remote_name}/${_cur_branch}..HEAD
     { set +x; } 2>/dev/null
@@ -1761,9 +1780,9 @@ _git_log_ff() {
         echo "Usage: ${FUNCNAME[0]} BRANCH1 BRANCH2" >&2
         return 1
     fi
-    git rev-parse --verify --quiet "${_first_branch}" >/dev/null
-    if [[ $? -ne 0 ]]; then
-        echo "Error: branch ${_first_branch} doesn't exist" >&2
+    if ! git rev-parse --verify --quiet "${_first_branch}" >/dev/null; then
+        _error "${_first_branch}"
+        echo "$(basename -- ${0}) Error: branch ${_first_branch} doesn't exist" >&2
         return 1
     fi
     if [[ $# -eq 1 ]]; then
