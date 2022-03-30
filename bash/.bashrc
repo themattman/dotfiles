@@ -1420,7 +1420,7 @@ gpa() {
     else
         echo "$(basename -- ${0}): Error: You need to have the well-known ~/.git-completion file." >&2
         echo "It is located at:" >&2
-        echo "  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash" >&2 && return 1
+        echo "  https://raw.githubusercontent.com/git/git/main/contrib/completion/git-completion.bash" >&2 && return 1
     fi
 }
 _add_function gpa

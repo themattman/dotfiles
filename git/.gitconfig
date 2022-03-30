@@ -1,0 +1,6 @@
+[user]
+	name = Matt Kneiser
+[init]
+	defaultBranch = main
+[includeIf "gitdir:~/dotfiles/"]
+    path = ~/dotfiles/.gitconfig
