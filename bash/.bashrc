@@ -755,6 +755,7 @@ if [[ -f ~/.git-completion ]]; then
     __git_complete g _git_pull && _add_completion_function g
     __git_complete gp _git_push && _add_completion_function gp
     __git_complete gpo _git_push && _add_completion_function gpo
+    __git_complete gpr _git_push && _add_completion_function gpr
     __git_complete gr _git_reset && _add_completion_function gr
     __git_complete gsh _git_show && _add_completion_function gsh
     __git_complete gshh _git_show && _add_completion_function gshh
