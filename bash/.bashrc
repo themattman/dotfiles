@@ -74,7 +74,7 @@ _add_function() {
     local _func="${1}"
     if [[ $# -ne 1 ]]; then
         echo "bad function: $*"
-        echo "Usage: ${FUNCNAME[0]} FUNCTION_NAME" >&2 && return 1
+        return $(_error "" "<function_name>")
     fi
     export -f "${_func}"
     _custom_user_functions["${_func}"]=""
@@ -83,13 +83,29 @@ _add_function _add_function
 
 _error() {
     local _error_msg="${1}"
+    local _usage_msg="${2}"
     if [[ -x $(which basename 2>/dev/null) ]]; then
-        echo "$(basename -- ${0}): Error: ${_error_msg}" >&2 && return 1
+        echo -e "${RED}$(basename -- ${0}): Error:${ENDCOLOR} ${_error_msg}" >&2
     else
-        echo "Error: ${_error_msg}" >&2 && return 1
+        echo -e "${RED}Error:${ENDCOLOR} ${_error_msg}" >&2
     fi
+    if [[ -n "${_usage_msg}" ]]; then
+        echo -e "${RED}Usage:${ENDCOLOR} ${FUNCNAME[1]} ${_usage_msg}" >& 2
+    fi
+    return 1
 }
 _add_function _error
+
+_warning() {
+    local _warn_msg="${1}"
+    if [[ -x $(which basename 2>/dev/null) ]]; then
+        echo -e "${YELLOW}$(basename -- ${0}): Warning:${ENDCOLOR} ${_warn_msg}" >&2
+    else
+        echo -e "${YELLOW}Warning:${ENDCOLOR} ${_warn_msg}" >&2
+    fi
+    return 1
+}
+_add_function _warning
 
 declare -A _custom_user_auto_alias_completion_functions
 _add_auto_alias_completion_function() {
@@ -155,8 +171,7 @@ _add_alias() {
     #                  pretty-printed echo. This is for aliases intended to take stdin piped to it
     #        COMMAND: the command to map to the alias
     if [[ $# -lt 2 ]]; then
-        echo "bad alias: $*"
-        echo "Usage: ${FUNCNAME[0]} [__HOSTNAME__] ALIAS [no] COMMAND" >&2 && return 1
+        return $(_error "bad alias: $*" "[__hostname__] <alias> [no] <command>")
     fi
 
     # Extract "alias" & "cmd"
@@ -169,16 +184,14 @@ _add_alias() {
             _alias="${2}"
             _cmd="${@:3}"
         else
-            echo "$(basename -- ${0}): Warning: Wrong hostname: [${target_hostname}], not applying" >&2
-            return 1
+            return $(_warning "Wrong hostname: [${target_hostname}], not applying")
         fi
     else
         _cmd="${@:2}"
     fi
     if [[ -z "${_cmd}" ]]; then
         _custom_user_aliases_broken[${_alias}]="${_cmd}"
-        echo "$(basename -- ${0}): Error: alias [${_alias}] doesn't have a target. You need something to alias this word to" >&2
-        return 1
+        return $(_error "alias [${_alias}] doesn't have a target. You need something to alias this word to")
     fi
 
     # Handle alias collision
@@ -190,7 +203,7 @@ _add_alias() {
         if [[ ${_cmd} != ${_custom_user_aliases[${_alias}]} ]]; then
             _custom_user_aliases_broken[${_alias}]="${_cmd}"
         fi
-        echo -e "$(basename -- ${0}): Warning: alias [${_alias}] \t already exists as [${_already_exists}]" >&2
+        return $(_warning "alias [${_alias}] \t already exists as [${_already_exists}]")
     fi
 
 
@@ -204,13 +217,13 @@ _add_alias() {
             if [[ ${1:0:2} = "__" ]]; then
                 _host=${1:2:-2}
                 if [[ ${_host} == "${HOSTNAME}" ]]; then
-                    echo "$(basename -- ${0}): Error: location [${_location}] for alias [${_alias}] is broken and does not exist due to wrong host, expected host [${_host}]" >&2
+                    return $(_error "location [${_location}] for alias [${_alias}] is broken and does not exist due to wrong host, expected host [${_host}]")
                 else
                     # ignore, wrong host, not expected to exist
                     return 1
                 fi
             else
-                echo "$(basename -- ${0}): Error: location [${_location}] for alias [${_alias}] is broken and does not exist" >&2
+                return $(_error "location [${_location}] for alias [${_alias}] is broken and does not exist")
             fi
             _custom_user_aliases_broken[${_alias}]="${_cmd}"
             return 1
@@ -251,15 +264,13 @@ declare -A _custom_user_variables
 _add_variable() {
     local _variable _value _contents_of_variable
     if [[ $# -lt 2 ]]; then
-        echo "bad variable: $*"
-        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
+        return $(_error "bad variable: $*" "<variable> <value>")
     fi
     _variable="${1}"
     _value="${@:2}"
     eval _contents_of_variable="\$${_variable}"
     if [[ -n ${_contents_of_variable} ]]; then
-        echo -e "$(basename -- ${0}): Warning: variable [${_variable}] \t already exists as [${_contents_of_variable}]" >&2
-
+        return $(_warning "variable [${_variable}] \t already exists as [${_contents_of_variable}]")
     fi
     export "${_variable}=${_value}"
     _custom_user_variables["${_variable}"]=""
@@ -270,13 +281,12 @@ declare -A _custom_user_path_variables
 _append_variable_with_path_separator() {
     local _variable _value _contents_of_variable
     if [[ $# -ne 2 ]]; then
-        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
+        return $(_error "" "<variable> <value>")
     fi
     _variable="${1}"
     _value="${2}"
     if [[ ! -d ${_value} ]]; then
-        echo "$(basename ${0}): Error: location ${_value} doesn't exist and won't be appended to ${_variable}" >&2
-        return 1
+        return $(_error "location ${_value} doesn't exist and won't be appended to ${_variable}")
     fi
     eval _contents_of_variable="\$${_variable}"
     if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
@@ -296,13 +306,12 @@ _add_function _append_variable_with_path_separator
 _prepend_to_variable_with_path_separator() {
     local _variable _value _contents_of_variable
     if [[ $# -ne 2 ]]; then
-        echo "Usage: ${FUNCNAME[0]} VARIABLE VALUE" >&2 && return 1
+        return $(_error "" "<variable> <value>")
     fi
     _variable="${1}"
     _value="${2}"
     if [[ ! -d ${_value} ]]; then
-        echo "$(basename ${0}): Error: location ${_value} doesn't exist and won't be appended to ${_variable}" >&2
-        return 1
+        return $(_error "location ${_value} doesn't exist and won't be appended to ${_variable}")
     fi
     eval _contents_of_variable="\$${_variable}"
     if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
@@ -429,10 +438,10 @@ _add_function _clear_environment
 
 _rename_function() {
     if [[ $# -ne 2 ]]; then
-        echo "Usage: ${FUNCNAME[0]} ALIAS FUNCTION_NAME" >&2 && return 1
+        return $(_error "Requires 2 arguments" "<alias> <function_name>")
     fi
     if [[ "function" != $(type -t "$2") ]]; then
-        echo "$(basename -- ${0}): Error: ${2} not a valid function" >&2 && return 1
+        return $(_error "${2} not a valid function")
     fi
     # TODO: Confirm that this technique works cross-platform...
     source /dev/stdin <<EOF
@@ -1149,7 +1158,7 @@ fi
 # Kill Child Processes
 kcp() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} PID" >&2 && return 1
+        return $(_error "" "<pid>")
     fi
     echo "Killing children of: ${1}."
     local command="ps fe -o %p --no-headers --ppid ${1}"
@@ -1165,7 +1174,7 @@ _add_function kcp
 # Generate "Random Enough" Password
 genpasswd() {
     if [[ $# -gt 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} [LENGTH]" >&2 && return 1
+        return $(_error "" "[length]")
     fi
     local l=$1
     [ "$l" == "" ] && l=16
@@ -1177,7 +1186,7 @@ _rename_function gen "genpasswd"
 
 gen_num() {
     if [[ $# -gt 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} [LENGTH]" >&2 && return 1
+        return $(_error "" "[length]")
     fi
     local l=$1
     [ "$l" == "" ] && l=16
@@ -1188,7 +1197,7 @@ _add_function gen_num
 
 gen_hex() {
     if [[ $# -gt 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} [LENGTH]" >&2 && return 1
+        return $(_error "" "[length]")
     fi
     local l=$1
     [ "$l" == "" ] && l=16
@@ -1220,14 +1229,14 @@ longer() {
             line_length=80
             file=$1
         else
-            echo "Usage: ${FUNCNAME[0]} LINE_LENGTH FILE" >&2 && return 1
+            return $(_error "" "<line_length> <file>")
         fi
     else
         line_length=$1
         file=$2
     fi
     if [[ ! -f $file ]]; then
-        echo "$(basename -- ${0}): Error: $file is not a regular file" >&2 && return 1
+        return $(_error "$file is not a regular file")
     fi
     grep -nE "^.{$((line_length + 2))}" "$file" | cut -f1 -d: | xargs -I{} sh -c "echo -n "{}:" && sed -n {},{}p $file | grep --color=always -E ^.{$((line_length + 1))}"
 }
@@ -1236,7 +1245,7 @@ _add_function longer
 # Trailing Whitespace Remover
 remove_trailing_spaces() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} FILE|DIR" >&2 && return 1
+        return $(_error "" "<file|dir>")
     fi
     if [[ -d $1 ]]; then
         echo "doing it"
@@ -1247,7 +1256,7 @@ remove_trailing_spaces() {
         sed -i 's/[ \t]*$//' "$1"
         return
     fi
-    echo "$(basename -- ${0}): Error: $1 is not a regular file or directory" >&2 && return 1
+    return $(_error "$1 is not a regular file or directory")
 }
 _add_function remove_trailing_spaces
 
@@ -1283,10 +1292,10 @@ hooks() {
             realpath "${gitdir}/hooks/"
             ls -lh "${gitdir}/hooks/"
         else
-            echo "$(basename -- ${0}): Error: not inside working tree." >&2 && return 1
+            return $(_error "not inside working tree.")
         fi
     else
-        echo "$(basename -- ${0}): Error: cannot be in a bare repository." >&2 && return 1
+        return $(_error "cannot be in a bare repository.")
     fi
 }
 _add_function hooks
@@ -1298,8 +1307,7 @@ fi
 safely_call() {
     local temp_dir="${HOME}/tmp"
     if [[ ! -d $temp_dir ]]; then
-        echo "$(basename -- ${0}): Error: ${temp_dir} doesn't exist" >&2
-        return 1
+        return $(_error "${temp_dir} doesn't exist")
     fi
     $@
 }
@@ -1310,7 +1318,7 @@ create_temp_src_file() {
     _ext=$1
     _temp_dir="${HOME}/tmp"
     if [[ ! -f ${_temp_dir}/template.${_ext} ]]; then
-        echo "Error: template doesn't exist for ${_ext}" >& 2 && return 1
+        return $(_error "template doesn't exist for ${_ext}")
     fi
     _tmpfile="$(mktemp ${_temp_dir}/XXXXXXXXXX.${_ext})" || return 1;
     # These sed's are designed to be cross-platform
@@ -1326,8 +1334,7 @@ _add_function create_temp_src_file
 #        $ rmp [py|sh] # removes all temp source files for language
 tmp() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} SCRIPT_TEMPLATE_EXTENSION" >&2
-        return 1
+        return $(_error "" "<script_template_extension>")
     fi
     safely_call create_temp_src_file "${1}"
 }
@@ -1339,7 +1346,7 @@ remove_all_empty_temp_files() {
     dry_run=$2
     temp_dir="${HOME}/tmp"
     if [[ ! -f ${HOME}/tmp/template.${ext} ]]; then
-        echo "Error: template doesn't exist for ${ext}" >& 2 && return 1
+        return $(_error "template doesn't exist for ${ext}")
     fi
     for _file in $(\find "${temp_dir}" -name "*${ext}" -not -name "template*"); do
         if [[ ( "x$(\diff "${temp_dir}/template.${ext}" "${_file}")" = "x" ) ||
@@ -1422,9 +1429,12 @@ gpa() {
             fi
         done
     else
-        echo "$(basename -- ${0}): Error: You need to have the well-known ~/.git-completion file." >&2
-        echo "It is located at:" >&2
-        echo "  https://raw.githubusercontent.com/git/git/main/contrib/completion/git-completion.bash" >&2 && return 1
+        return $(_error <<ERROR_MSG
+You need to have the well-known ~/.git-completion file.
+It is located at:
+  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
+ERROR_MSG
+            )
     fi
 }
 _add_function gpa
@@ -1441,12 +1451,12 @@ _add_function gpfa
 
 create_shortcut() {
     if [[ $# -ne "1" ]]; then
-        echo "Usage: ${FUNCNAME[0]} NEW_ALIAS" >&2 && return 1
+        return $(_error "" "<new_alias>")
     fi
 
     is_alias=$(type -t "$1")
     if [[ "${is_alias}" = "alias" ]]; then
-        echo "$(basename -- ${0}): Error: $1 is already an alias." >&2 && return 1
+        return $(_error "$1 is already an alias.")
     fi
     echo "_add_alias __$(hostname)__ $1 \"cd ${PWD// /\\ }\" #generated by alias 'short'" >> ~/.machine
     source_file ~/.machine
@@ -1457,9 +1467,9 @@ _rename_function short "create_shortcut"
 
 body() {
     if [[ $# -ne 3 ]]; then
-        echo "Usage: ${FUNCNAME[0]} START FINISH FILE" >&2 && return 1
+        return $(_error "" "<start> <finish> <file>")
     elif [[ $3 != "-" && ! -f $3 ]]; then
-        echo "$(basename -- ${0}): Error: $3 is not a regular file." >&2 && return 1
+        return $(_error "$3 is not a regular file.")
     fi
     if [[ $3 = "-" ]]; then
         sed -n "${1},${2}p"
@@ -1471,9 +1481,9 @@ _add_function body
 
 line() {
     if [[ $# -ne 2 ]]; then
-        echo "Usage: ${FUNCNAME[0]} LINE_NUMBER_TO_ECHO FILE" >&2 && return 1
+        return $(_error "" "<line_number_to_echo> <file>")
     elif [[ ! -f $2 ]]; then
-        echo "$(basename -- ${0}): Error: $2 is not a regular file." >&2 && return 1
+        return $(_error "$2 is not a regular file.")
     fi
     sed -n "${1},${1}p" "${2}"
 }
@@ -1483,9 +1493,9 @@ case $OSTYPE in
 linux*|msys*)
     tabs() {
         if [[ $# -ne 1 ]]; then
-            echo "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
+            return $(_error "" "<file>")
         elif [[ ! -f $1 ]]; then
-            echo "$(basename -- ${0}): Error: $1 is not a regular file." >&2 && return 1
+            return $(_error "$1 is not a regular file.")
         fi
         diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}"
     }
@@ -1493,9 +1503,9 @@ linux*|msys*)
 
     numtabs() {
         if [[ $# -ne 1 ]]; then
-            echo "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
+            return $(_error "" "<file>")
         elif [[ ! -f $1 ]]; then
-            echo "$(basename -- ${0}): Error: $1 is not a regular file." >&2 && return 1
+            return $(_error "$1 is not a regular file.")
         fi
         diff --changed-group-format='%<' --unchanged-group-format='' <(expand -i --tabs=4 "${1}") "${1}" | wc -l
     }
@@ -1503,7 +1513,7 @@ linux*|msys*)
 
     untabify() {
         if [[ $# -eq 1 ]]; then
-            echo -e "Usage: ${FUNCNAME[0]} FILE" >&2 && return 1
+            return $(_error "<file>")
         fi
         echo "There are [$(numtabs ${1})] tabs in [${1}]"
         echo "Tabs -> 4 spaces in [${1}]..."
@@ -1536,9 +1546,9 @@ _add_function search_file
 # 3: File to search
 _search_file_wrapper() {
     if [[ $1 -lt 1 ]]; then
-        echo "Usage: ${FUNCNAME[1]} SEARCH_TERM" >&2 && return 1
+        return $(_error "" "<search_term>")
     elif [[ ! -f "${@: -1}" ]]; then
-        echo "$(basename -- ${0}): Error: ${@: -1} is not a regular file" >&2 && return 1
+        return $(_error "${@: -1} is not a regular file")
     fi
     search_file "${@}"
 }
@@ -1562,9 +1572,9 @@ _add_function seb
 _search_file_occur_wrapper() {
     echo -e "occurences of [${LIGHTCYAN}${2}${ENDCOLOR}] in [${LIGHTCYAN}${3}${ENDCOLOR}]:" >&2
     if [[ $1 -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[1]} SEARCH_TERM" >&2 && return 1
+        return $(_error "" "<search_term>")
     elif [[ ! -f "$3" ]]; then
-        echo "$(basename -- ${0}): Error: $3 is not a regular file" >&2 && return 1
+        return $(_error "$3 is not a regular file")
     fi
     search_file "$2" "$3" | wc -l
 }
@@ -1582,7 +1592,7 @@ _add_function sebl
 # Tell if something is a new alias
 al() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} ALIAS" >&2 && return 1
+        return $(_error "" "<alias>")
     fi
     local is_defined="$(type -t $1)"
     if [[ -n "${is_defined}" ]]; then
@@ -1606,7 +1616,7 @@ _add_function gentags
 # Similar to mkd() but for git-clone(1)
 gcl() {
     if [[ $# -lt 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} URL" >&2 && return 1
+        return $(_error "" "<url>")
     fi
     # echo "\$#: [$#] \$@: [$@] \${!#%.git}: ${!#%.git} basename: $(basename -- ${!#%.git})"
     git clone "$@"
@@ -1621,7 +1631,7 @@ _add_function gcl
 # Similar to mkd() but for unzip(1)
 unz() {
     if [[ $# -lt 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} URL" >&2 && return 1
+        return $(_error "" "<url>")
     fi
     unzip "$1" -d "${1%.zip}"
     cd "$(basename -- ${1%.zip})"
@@ -1630,7 +1640,7 @@ _add_function unz
 
 bk() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} PATH" >&2 && return 1
+        return $(_error "" "<path>")
     fi
     set -x
     cp -ipr "${1%/}" "${1%/}.bk"
@@ -1648,14 +1658,14 @@ rtrav() {
     elif [[ $# -eq 2 ]]; then
         test -e "${_dir}"/"${_file}" && echo "${_dir}" || { test "${_dir}" != / && rtrav "${_file}" "$(dirname ${_dir})";};
     else
-        echo "Usage: ${FUNCNAME[0]} NAME [PATH]" >&2 && return 1
+        return $(_error "" "<name> [path]")
     fi
 }
 _add_function rtrav
 
 wow() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} COMMAND" >&2 && return 1
+        return $(_error "" "<command>")
     fi
     \ls  "$(which "$1")"
 }
@@ -1663,7 +1673,7 @@ _add_function wow
 
 wowz() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} COMMAND" >&2 && return 1
+        return $(_error "" "<command>")
     fi
     ls -alh "$(which "$1")"
 }
@@ -1672,14 +1682,11 @@ _add_function wowz
 _git_branch_delete() {
     local _branch="${1}"
     if [[ $# -ne 1 ]]; then
-        echo "$(basename -- ${0}): Error: only one argument allowed" >&2
-        echo "Usage: ${FUNCNAME[0]} BRANCH" >&2
-        return 1
+        return $(_error "only one argument allowed" "<branch>")
     fi
     git rev-parse --verify --quiet "${_branch}" >/dev/null
     if [[ $? -ne 0 ]]; then
-        echo "$(basename -- ${0}): Error: branch ${_branch} doesn't exist" >&2
-        return 1
+        return $(_error "branch ${_branch} doesn't exist")
     fi
     read -p "Are you sure you want to delete branch [${_branch}]? [y/n]: " -n 1 -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -1700,19 +1707,15 @@ _git_pull_rebase() {
     local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
     local _remote_name="${1:-origin}"
     if [[ $# -gt 1 ]]; then
-        _error "only zero or one arguments allowed"
-        echo "Usage: ${FUNCNAME[0]} <remote_name>" >&2
-        return 1
+        return $(_error "only zero or one arguments allowed" "<remote_name>")
     fi
 
     if ! git rev-parse --verify --quiet "${_cur_branch}" >/dev/null; then
-        _error "branch [${_cur_branch}] doesn't exist"
-        return 1
+        return $(_error "branch [${_cur_branch}] doesn't exist")
     fi
 
     if ! git ls-remote --exit-code --quiet "${_remote_name}" "${_cur_branch}" >/dev/null 2>&1; then
-        _error "branch [${_cur_branch}] doesn't exist on remote [${_remote_name}]"
-        return 1
+        return $(_error "branch [${_cur_branch}] doesn't exist on remote [${_remote_name}]")
     fi
 
     set -x
@@ -1728,19 +1731,15 @@ _git_cherrypick_file() {
     local _branch="${1}"
     local _file="${2}"
     if [[ $# -ne 2 ]]; then
-        echo "$(basename -- ${0}): Error: only zero or one arguments allowed" >&2
-        echo "Usage: ${FUNCNAME[0]} <branch_name> <file_path>" >&2
-        return 1
+        return $(_error "only zero or one arguments allowed" "<branch_name> <file_path>")
     fi
 
     if ! git rev-parse --verify --quiet "${_branch}" >/dev/null; then
-        _error "branch ${_branch} doesn't exist"
-        return 1
+        return $(_error "branch ${_branch} doesn't exist")
     fi
 
     if [[ ! -f "${_file}" ]]; then
-        echo "Error: file ${_file} doesn't exist" >&2
-        return 1
+        return $(_error "file ${_file} doesn't exist")
     fi
 
     set -x
@@ -1754,19 +1753,15 @@ _git_log_unpushed_commits() {
     local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
     local _remote_name="${1:-origin}"
     if [[ $# -gt 1 ]]; then
-        _error "only zero or one arguments allowed"
-        echo "Usage: ${FUNCNAME[0]} <remote_name>" >&2
-        return 1
+        return $(_error "only zero or one arguments allowed" "<remote_name>")
     fi
 
     if ! git rev-parse --verify --quiet "${_cur_branch}" >/dev/null; then
-        _error "branch ${_cur_branch} doesn't exist"
-        return 1
+        return $(_error "branch ${_cur_branch} doesn't exist")
     fi
 
     if ! git ls-remote --exit-code --quiet "${_remote_name}" "${_cur_branch}" >/dev/null 2>&1; then
-        _error "branch [${_cur_branch}] doesn't exist on remote [${_remote_name}]"
-        return 1
+        return $(_error "branch [${_cur_branch}] doesn't exist on remote [${_remote_name}]")
     fi
 
     set -x
@@ -1781,14 +1776,10 @@ _git_log_ff() {
     local _first_branch="${1}"
     local _second_branch="${2}"
     if [[ $# -gt 2 || $# -lt 1 ]]; then
-        echo "$(basename -- ${0}): Error: incorrect number of arguments provided" >&2
-        echo "Usage: ${FUNCNAME[0]} BRANCH1 BRANCH2" >&2
-        return 1
+        return $(_error "incorrect number of arguments provided" "<branch1> <branch2>")
     fi
     if ! git rev-parse --verify --quiet "${_first_branch}" >/dev/null; then
-        _error "${_first_branch}"
-        echo "$(basename -- ${0}) Error: branch ${_first_branch} doesn't exist" >&2
-        return 1
+        return $(_error "${_first_branch} doesn't exist")
     fi
     if [[ $# -eq 1 ]]; then
         #git rev-parse --abbrev-ref HEAD
@@ -1796,8 +1787,7 @@ _git_log_ff() {
     fi
     git rev-parse --verify --quiet "${_second_branch}" >/dev/null
     if [[ $? -ne 0 ]]; then
-        echo "Error: branch ${_second_branch} doesn't exist" >&2
-        return 1
+        return $(_error "branch ${_second_branch} doesn't exist")
     fi
     set -x
     # git merge-base --is-ancestor ${_second_branch} ${_first_branch}
@@ -1877,8 +1867,7 @@ _rename_function hl header_locations
 
 _git_rebase_theirs() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} MAINLINE_BRANCH" >&2
-        return 1
+        return $(_error "" "<mainline_branch>")
     fi
     mainline_branch=${1}
 
@@ -1952,8 +1941,7 @@ _add_function whid
 
 color() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} [SEARCH_WORDS...]" >&2
-        return 1
+        return $(_error "" "[search_words...]")
     fi
     grep --color "^\|${@}"
 }
@@ -2028,8 +2016,7 @@ _add_function remove_starting_point
 # More traceable pkg mgmt
 _agi() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} PACKAGE" >&2
-        return 1
+        return $(_error "" "<package>")
     fi
     _prog=$1
     mkdir -p ~/.${HOSTNAME}.d
@@ -2040,8 +2027,7 @@ _add_function _agi
 
 opt() {
     if [[ $# -ne 2 ]]; then
-        echo "Usage: ${FUNCNAME[0]} CMD OPT" >&2
-        return 1
+        return $(_error "" "<cmd> <opt>")
     fi
     man -P cat "${1}" | ul | grep "\-${2}[ ,]"
 }
@@ -2053,7 +2039,7 @@ findn() {
     if [[ $# -eq 1 ]]; then
         _ext=$1
     elif [[ $3 -gt 1 ]]; then
-        echo "Usage: ${FUNCNAME[0]} EXTENSION" >&2
+        return $(_error "" "<extension>")
     fi
     for f in $(ls .); do
         echo "$f";
@@ -2139,11 +2125,9 @@ gitdiffhead() {
     local _pretty_print_file
     local _pretty_print_git_args
     if [[ $# -eq 0 ]]; then
-        echo "Usage: gitdiffhead <NUMBER_OF_COMMITS>" >&2
-        return 1
+        return $(_error "" "<number_of_commits>")
     elif [[ ! "${_num_commits}" -gt 0 ]]; then
-        echo "Error: num commits must be greater than 0" >&2
-        return 1
+        return $(_error "num commits must be greater than 0")
     fi
     for i in ${_args}; do
         if [ "${i}" == "--" ] || [ ${_is_file_delim_found} -eq 1 ]; then
@@ -2167,8 +2151,7 @@ _rename_function gdh gitdiffhead
 
 grbi() {
     if [[ $# -ne 1 ]]; then
-        echo "Usage: grbi <NUMBER_OF_COMMITS>" >&2
-        return 1
+        return $(_error "" "<number_of_commits>")
     fi
     local _num_commits=$1
     set -x
@@ -2182,9 +2165,7 @@ _add_function grbi
 # i.e. a logical AND operator
 fms() {
     if [[ $# -ne 2 ]]; then
-        echo "Error: requires 2 arguments"
-        echo "Usage: fms <SEARCH_TERM1> <SEARCH_TERM2> ..." >&2
-        return 1
+        return $(_error "requires 2 arguments" "<search_term1> <search_term2> ...")
     fi
     # TODO: Support N args
     grep -Iilrs --color=never "${1}" . | xargs -I{} grep -lIirs "${2}" {}
@@ -2204,6 +2185,25 @@ most_recent_file_exclude_hidden() {
 }
 _add_function most_recent_file_exclude_hidden
 
+_most_recently_modified_file() {
+    local _dirname="${1}"
+    local _mrmf;
+    if [[ $# -gt 0 && -d "${_dirname}" ]]; then
+        local latest_filename=$(find "${_dirname}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 2 2>/dev/null | head -n 1)
+        if [[ -n "${latest_filename}" ]]; then
+            if [[ "${_dirname}" == */ ]]; then
+                _mrmf="${_dirname}${latest_filename}"
+            else
+                _mrmf="${_dirname}/${latest_filename}"
+            fi
+        fi
+    else
+        _mrmf=$(\ls -t --color=never | head -n 1)
+    fi
+    echo "${_mrmf}"
+}
+_add_function _most_recently_modified_file
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -2220,20 +2220,33 @@ if [[ -f ~/.ssh/config ]]; then
 fi
 
 _complete_most_recently_modified_file() {
-    #echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
+    echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
     # Args:[cdc out cdc] C:[1] 1:[cdc] 2:[out]
-    if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
-        local latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1 2>/dev/null)
-        if [[ -n "${latest_filename}" ]]; then
-            if [[ "${2}" == */ ]]; then
-                COMPREPLY="${2}${latest_filename}"
-            else
-                COMPREPLY="${2}/${latest_filename}"
-            fi
+    local _mrmf;
+    if [[ "${COMP_CWORD}" -eq 1 ]]; then
+        if [[ -n "${2}" && (-f "${2}" || -d "${2}") ]]; then
+            _mrmf=$(_most_recently_modified_file "${2}")
+        elif [[ -z "${2}" ]]; then
+             _mrmf=$(_most_recently_modified_file)
+             #echo "not doing"
+        # else
+        #     _mrmf=$(compgen -w "${verbs[*]}" -- "${COMP_WORDS[COMP_CWORD]}")
         fi
-    elif [[ "${COMP_CWORD}" -eq 1 ]]; then
-        COMPREPLY=$(\ls -t --color=never | head -n 1)
+        #echo "result: ${_mrmf}"
+        COMPREPLY="${_mrmf}"
     fi
+    # if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
+    #     local latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 2 2>/dev/null | head -n 1)
+    #     if [[ -n "${latest_filename}" ]]; then
+    #         if [[ "${2}" == */ ]]; then
+    #             COMPREPLY="${2}${latest_filename}"
+    #         else
+    #             COMPREPLY="${2}/${latest_filename}"
+    #         fi
+    #     fi
+    # elif [[ "${COMP_CWORD}" -eq 1 ]]; then
+    #     COMPREPLY=$(\ls -t --color=never | head -n 1)
+    # fi
 }
 _add_function _complete_most_recently_modified_file
 complete -o default -F _complete_most_recently_modified_file tl l les dx unz \
