@@ -62,7 +62,7 @@ source_file() {
         #  #Issues_using_talkative_shell_profiles
         if [[ ((-n "${SSH_TTY}") || (-n "${DESKTOP_SESSION}")) && (-z $2) ]]; then
             # echo "TTY - [${SSH_TTY}], DESKTOP - [${DESKTOP_SESSION}]"
-            source "$1" && echo ".:Success! Sourced $1:."
+            source "$1" && echo -e ".:${GREEN}Success!${ENDCOLOR} Sourced $1:."
         else
             source "$1"
         fi
@@ -203,7 +203,7 @@ _add_alias() {
         if [[ ${_cmd} != ${_custom_user_aliases[${_alias}]} ]]; then
             _custom_user_aliases_broken[${_alias}]="${_cmd}"
         fi
-        return $(_warning "alias [${_alias}] \t already exists as [${_already_exists}]")
+        _warning "alias [${_alias}] \t already exists as [${_already_exists}]"
     fi
 
 
@@ -270,12 +270,94 @@ _add_variable() {
     _value="${@:2}"
     eval _contents_of_variable="\$${_variable}"
     if [[ -n ${_contents_of_variable} ]]; then
-        return $(_warning "variable [${_variable}] \t already exists as [${_contents_of_variable}]")
+        _warning "variable [${_variable}] \t already exists as [${_contents_of_variable}]"
     fi
     export "${_variable}=${_value}"
     _custom_user_variables["${_variable}"]=""
 }
 _add_function _add_variable
+
+case $OSTYPE in
+linux*|msys*)
+    # Bash Colors
+    # Modifiers
+    _add_variable PS_PRE "\["  # Needed for prompt string
+    _add_variable PS_POST "\]" # Needed for prompt string
+    _add_variable PRE "\e["
+    _add_variable DELIM ";"
+    _add_variable POST "m"
+    _add_variable ENDCOLOR "${PRE}0${POST}"
+
+    # Regular
+    _add_variable BLACK "${PRE}0${DELIM}30${POST}"
+    _add_variable BLUE "${PRE}0${DELIM}34${POST}"
+    _add_variable GREEN "${PRE}0${DELIM}32${POST}"
+    _add_variable CYAN "${PRE}0${DELIM}36${POST}"
+    _add_variable RED "${PRE}0${DELIM}31${POST}"
+    _add_variable PURPLE "${PRE}0${DELIM}35${POST}"
+    _add_variable BROWN "${PRE}0${DELIM}33${POST}"
+    _add_variable LIGHTGRAY "${PRE}0${DELIM}37${POST}"
+    _add_variable DARKGRAY "${PRE}1${DELIM}30${POST}"
+    _add_variable LIGHTBLUE "${PRE}1${DELIM}34${POST}"
+    _add_variable LIGHTGREEN "${PRE}1${DELIM}32${POST}"
+    _add_variable LIGHTCYAN "${PRE}1${DELIM}36${POST}"
+    _add_variable BOLDRED "${PRE}1${DELIM}31${POST}"
+    _add_variable LIGHTPURPLE "${PRE}1${DELIM}35${POST}"
+    _add_variable YELLOW "${PRE}1${DELIM}33${POST}"
+    _add_variable WHITE "${PRE}1${DELIM}37${POST}"
+;;
+darwin*)
+    # Bash Colors
+    # Modifiers
+    _add_variable PS_PRE "\["  # Needed for prompt string
+    _add_variable PS_POST "\]" # Needed for prompt string
+    _add_variable PRE "\033["
+    _add_variable REG "${PRE}0;"
+    _add_variable BOLD "${PRE}1;"
+    _add_variable UNDERLINE "${PRE}4;"
+    _add_variable POST "m"
+    _add_variable ENDCOLOR "${PRE}0${POST}"
+
+    # Regular
+    _add_variable BLACK "${REG}30${POST}"
+    _add_variable RED "${REG}31${POST}"
+    _add_variable GREEN "${REG}32${POST}"
+    _add_variable YELLOW "${REG}33${POST}"
+    _add_variable BLUE "${REG}34${POST}"
+    _add_variable PURPLE "${REG}35${POST}"
+    _add_variable CYAN "${REG}36${POST}"
+    _add_variable WHITE "${REG}37${POST}"
+
+    # High Intensity
+    _add_variable HBLACK "${REG}90${POST}"
+    _add_variable HRED "${REG}91${POST}"
+    _add_variable HGREEN "${REG}92${POST}"
+    _add_variable HYELLOW "${REG}93${POST}"
+    _add_variable HBLUE "${REG}94${POST}"
+    _add_variable HPURPLE "${REG}95${POST}"
+    _add_variable HCYAN "${REG}96${POST}"
+    _add_variable HWHITE "${REG}97${POST}"
+
+    # Background
+    _add_variable BBLACK "${PRE}40${POST}"
+    _add_variable BRED "${PRE}41${POST}"
+    _add_variable BGREEN "${PRE}42${POST}"
+    _add_variable BYELLOW "${PRE}43${POST}"
+    _add_variable BBLUE "${PRE}44${POST}"
+    _add_variable BPURPLE "${PRE}45${POST}"
+    _add_variable BCYAN "${PRE}46${POST}"
+    _add_variable BWHITE "${PRE}47${POST}"
+
+    # High Intensity Background
+    _add_variable HBBLACK "${REG}100${POST}"
+    _add_variable HBRED "${REG}101${POST}"
+    _add_variable HBGREEN "${REG}102${POST}"
+    _add_variable HBYELLOW "${REG}3103${POST}"
+    _add_variable HBBLUE "${REG}104${POST}"
+    _add_variable HBPURPLE "${REG}105${POST}"
+    _add_variable HBCYAN "${REG}106${POST}"
+    _add_variable HBWHITE "${REG}107${POST}"
+esac
 
 declare -A _custom_user_path_variables
 _append_variable_with_path_separator() {
@@ -345,6 +427,22 @@ check_all_aliases() {
     done
 }
 _add_function check_all_aliases
+
+_remove_all_of() {
+    local _counter=0
+    local _name="${1}"
+    local _objects="${@:2}"
+    echo "[${_name}]: ${_objects[@]}"
+    echo -n "unsetting all ${_name}..."
+    for _object in "${_objects[@]}"; do
+        echo "unset: ${_object}"
+        # unset $_object &> /dev/null || unset -f $_object
+        _counter=$((_counter+1))
+    done
+    unset _custom_user_functions
+    echo " done. (${_counter} ${_name} unset)"
+}
+_add_function _remove_all_of
 
 _remove_all_functions() {
     local _counter=0
@@ -426,12 +524,12 @@ _remove_path() {
 }
 
 _clear_environment() {
-    _remove_all_auto_alias_completion_functions
-    _remove_all_aliases
-    _remove_all_completion_functions
-    _remove_all_variables
+    _remove_all_of "auto alias completion functions" "${!_custom_user_auto_alias_completion_functions[@]}"
+    _remove_all_of "aliases" "${!_custom_user_aliases[@]}"
+    _remove_all_of "completion functions" "${!_custom_user_completion_functions[@]}"
+    _remove_all_of "variables" "${!_custom_user_variables[@]}"
     _remove_path
-    _remove_all_functions
+    _remove_all_of "functions" "${!_custom_user_functions[@]}"
 }
 _add_function _clear_environment
 # _add_alias _all "echo -e \"::Custom User Environment::\"\nFunctions: functions\nAliases: aliases\nCompletion Functions: completion_functions"
@@ -979,33 +1077,6 @@ _add_alias pb "una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 source_file ~/.git-prompt
 case $OSTYPE in
 linux*|msys*)
-    # Bash Colors
-    # Modifiers
-    _add_variable PS_PRE "\["  # Needed for prompt string
-    _add_variable PS_POST "\]" # Needed for prompt string
-    _add_variable PRE "\e["
-    _add_variable DELIM ";"
-    _add_variable POST "m"
-    _add_variable ENDCOLOR "${PRE}0${POST}"
-
-    # Regular
-    _add_variable BLACK "${PRE}0${DELIM}30${POST}"
-    _add_variable BLUE "${PRE}0${DELIM}34${POST}"
-    _add_variable GREEN "${PRE}0${DELIM}32${POST}"
-    _add_variable CYAN "${PRE}0${DELIM}36${POST}"
-    _add_variable RED "${PRE}0${DELIM}31${POST}"
-    _add_variable PURPLE "${PRE}0${DELIM}35${POST}"
-    _add_variable BROWN "${PRE}0${DELIM}33${POST}"
-    _add_variable LIGHTGRAY "${PRE}0${DELIM}37${POST}"
-    _add_variable DARKGRAY "${PRE}1${DELIM}30${POST}"
-    _add_variable LIGHTBLUE "${PRE}1${DELIM}34${POST}"
-    _add_variable LIGHTGREEN "${PRE}1${DELIM}32${POST}"
-    _add_variable LIGHTCYAN "${PRE}1${DELIM}36${POST}"
-    _add_variable BOLDRED "${PRE}1${DELIM}31${POST}"
-    _add_variable LIGHTPURPLE "${PRE}1${DELIM}35${POST}"
-    _add_variable YELLOW "${PRE}1${DELIM}33${POST}"
-    _add_variable WHITE "${PRE}1${DELIM}37${POST}"
-
     # Prompt String
     _add_variable STARTCOLOR "${CYAN}"
     # For colorizing your prompt, please use $PS_PRE and $PS_POST around the
@@ -1055,57 +1126,6 @@ linux*|msys*)
     _add_alias ps2 "_add_variable PS1 '${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
 ;;
 darwin*)
-    # Bash Colors
-    # Modifiers
-    _add_variable PS_PRE "\["  # Needed for prompt string
-    _add_variable PS_POST "\]" # Needed for prompt string
-    _add_variable PRE "\033["
-    _add_variable REG "${PRE}0;"
-    _add_variable BOLD "${PRE}1;"
-    _add_variable UNDERLINE "${PRE}4;"
-    _add_variable POST "m"
-    _add_variable ENDCOLOR "${PRE}0${POST}"
-
-    # Regular
-    _add_variable BLACK "${REG}30${POST}"
-    _add_variable RED "${REG}31${POST}"
-    _add_variable GREEN "${REG}32${POST}"
-    _add_variable YELLOW "${REG}33${POST}"
-    _add_variable BLUE "${REG}34${POST}"
-    _add_variable PURPLE "${REG}35${POST}"
-    _add_variable CYAN "${REG}36${POST}"
-    _add_variable WHITE "${REG}37${POST}"
-
-    # High Intensity
-    _add_variable HBLACK "${REG}90${POST}"
-    _add_variable HRED "${REG}91${POST}"
-    _add_variable HGREEN "${REG}92${POST}"
-    _add_variable HYELLOW "${REG}93${POST}"
-    _add_variable HBLUE "${REG}94${POST}"
-    _add_variable HPURPLE "${REG}95${POST}"
-    _add_variable HCYAN "${REG}96${POST}"
-    _add_variable HWHITE "${REG}97${POST}"
-
-    # Background
-    _add_variable BBLACK "${PRE}40${POST}"
-    _add_variable BRED "${PRE}41${POST}"
-    _add_variable BGREEN "${PRE}42${POST}"
-    _add_variable BYELLOW "${PRE}43${POST}"
-    _add_variable BBLUE "${PRE}44${POST}"
-    _add_variable BPURPLE "${PRE}45${POST}"
-    _add_variable BCYAN "${PRE}46${POST}"
-    _add_variable BWHITE "${PRE}47${POST}"
-
-    # High Intensity Backgorund
-    _add_variable HBBLACK "${REG}100${POST}"
-    _add_variable HBRED "${REG}101${POST}"
-    _add_variable HBGREEN "${REG}102${POST}"
-    _add_variable HBYELLOW "${REG}3103${POST}"
-    _add_variable HBBLUE "${REG}104${POST}"
-    _add_variable HBPURPLE "${REG}105${POST}"
-    _add_variable HBCYAN "${REG}106${POST}"
-    _add_variable HBWHITE "${REG}107${POST}"
-
     # Prompt String
     _add_variable STARTCOLOR "${GREEN}"
     # ~~See note above in the `Prompt String' section for Linux~~
@@ -2220,7 +2240,7 @@ if [[ -f ~/.ssh/config ]]; then
 fi
 
 _complete_most_recently_modified_file() {
-    echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
+    # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
     # Args:[cdc out cdc] C:[1] 1:[cdc] 2:[out]
     local _mrmf;
     if [[ "${COMP_CWORD}" -eq 1 ]]; then
