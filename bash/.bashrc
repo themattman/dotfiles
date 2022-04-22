@@ -191,7 +191,7 @@ _add_alias() {
     fi
     if [[ -z "${_cmd}" ]]; then
         _custom_user_aliases_broken[${_alias}]="${_cmd}"
-        return $(_error "alias [${_alias}] doesn't have a target. You need something to alias this word to")
+        return $(_error "alias [${CYAN}${_alias}${ENDCOLOR}] doesn't have a target. You need something to alias this word to")
     fi
 
     # Handle alias collision
@@ -203,7 +203,7 @@ _add_alias() {
         if [[ ${_cmd} != ${_custom_user_aliases[${_alias}]} ]]; then
             _custom_user_aliases_broken[${_alias}]="${_cmd}"
         fi
-        _warning "alias [${_alias}] \t already exists as [${_already_exists}]"
+        _warning "alias [${CYAN}${_alias}${ENDCOLOR}] \t already exists as [${LIGHTPURPLE}${_already_exists}${ENDCOLOR}]"
     fi
 
 
@@ -269,7 +269,7 @@ _add_variable() {
     _variable="${1}"
     _value="${@:2}"
     eval _contents_of_variable="\$${_variable}"
-    if [[ -n ${_contents_of_variable} ]]; then
+    if [[ (-n ${_contents_of_variable}) && ("${_variable}" != "PS1") ]]; then
         _warning "variable [${_variable}] \t already exists as [${_contents_of_variable}]"
     fi
     export "${_variable}=${_value}"
@@ -430,106 +430,53 @@ _add_function check_all_aliases
 
 _remove_all_of() {
     local _counter=0
-    local _name="${1}"
+    local _name="${1,,}"
+    local _name_lowercase="${_name,,}"
     local _objects="${@:2}"
-    echo "[${_name}]: ${_objects[@]}"
-    echo -n "unsetting all ${_name}..."
-    for _object in "${_objects[@]}"; do
-        echo "unset: ${_object}"
-        # unset $_object &> /dev/null || unset -f $_object
+    local _num_objects=$(($#-1))
+    echo -n "unsetting all ${_name} (${_num_objects} set)..."
+    for _object in ${_objects[@]}; do
+        #echo "unset: ${_object}"
+        if [[ "${_name}" = "aliases" ]]; then
+            unalias "${_object}"
+        elif [[ "${_name}" =~ "completion" ]]; then
+            complete -r $_object 2>/dev/null
+        elif [[ "${_name}" = "PATH variables" ]]; then
+            if [[ -n ${_object+x} ]]; then
+                # echo "  [${_custom_user_path_variables[${_var}]}]"
+                # Reset to original value
+                export ${_object}="${_custom_user_path_variables[${_var}]}"
+            fi
+        else
+            unset $_object &> /dev/null || unset -f $_object
+        fi
         _counter=$((_counter+1))
     done
-    unset _custom_user_functions
-    echo " done. (${_counter} ${_name} unset)"
+    eval "unset _custom_user_${_name_lowercase// /_}"
+    echo " done. (${_counter} unset)"
 }
 _add_function _remove_all_of
 
-_remove_all_functions() {
-    local _counter=0
-    echo -n "unsetting all custom user functions..."
-    for _func in "${!_custom_user_functions[@]}"; do
-        unset $_func &> /dev/null || unset -f $_func
-        _counter=$((_counter+1))
-    done
-    unset _custom_user_functions
-    echo " done. (${_counter} functions unset)"
-}
-_add_function _remove_all_functions
-
-_remove_all_aliases() {
-    local _counter=0
-    echo -n "unsetting all custom user aliases..."
-    for _alias in "${!_custom_user_aliases[@]}"; do
-        unalias "${_alias}"
-        _counter=$((_counter+1))
-    done
-    unset _custom_user_aliases
-    echo " done. (${_counter} aliases unset)"
-}
-_add_function _remove_all_aliases
-
-_remove_all_auto_alias_completion_functions() {
-    local _counter _alias
-    _counter=0
-    echo -n "unsetting all auto-detected alias completion functions..."
-    for _alias in "${!_custom_user_auto_alias_completion_functions[@]}"; do
-        complete -r $_alias 2>/dev/null
-        _counter=$((_counter+1))
-    done
-    unset _custom_user_auto_alias_completion_functions
-    echo " done. (${_counter} auto-detected alias completion functions unset)"
-}
-_add_function _remove_all_auto_alias_completion_functions
-
-_remove_all_completion_functions() {
-    local _counter=0
-    echo -n "unsetting all custom user completion functions..."
-    for _completion_func in "${!_custom_user_completion_functions[@]}"; do
-        complete -r $_completion_func 2>/dev/null
-        _counter=$((_counter+1))
-    done
-    unset _custom_user_completion_functions
-    echo " done. (${_counter} completion functions unset)"
-}
-_add_function _remove_all_completion_functions
-
-_remove_all_variables() {
-    local _counter=0
-    echo -n "unsetting all custom user variables..."
-    for _variable in "${!_custom_user_variables[@]}"; do
-        if [[ "PS1" != $_variable ]]; then
-            unset $_variable
-            _counter=$((_counter+1))
-        fi
-    done
-    unset _custom_user_variables
-    echo " done. (${_counter} variables unset)"
-}
-_add_function _remove_all_variables
-
 _remove_path() {
     local _counter=0
-    echo -n "unsetting all custom user paths..."
+    echo -n "unsetting all custom user paths (${#_custom_user_path_variables[@]} set)..."
     for _var in "${!_custom_user_path_variables[@]}"; do
         # echo "var: [${_var}] = "
-        if [[ -n ${_var+x} ]]; then
-            # echo "  [${_custom_user_path_variables[${_var}]}]"
-            # Reset to original value
-            export ${_var}="${_custom_user_path_variables[${_var}]}"
-        fi
         _counter=$((_counter+1))
     done
     unset _custom_user_path_variables
-    echo " done. (${_counter} paths unset)"
+    echo " done. (${_counter} unset)"
 }
 
 _clear_environment() {
+    echo -en "${LIGHTGRAY}"
     _remove_all_of "auto alias completion functions" "${!_custom_user_auto_alias_completion_functions[@]}"
     _remove_all_of "aliases" "${!_custom_user_aliases[@]}"
     _remove_all_of "completion functions" "${!_custom_user_completion_functions[@]}"
     _remove_all_of "variables" "${!_custom_user_variables[@]}"
-    _remove_path
+    _remove_all_of "PATH variables" "${!_custom_user_path_variables[@]}"
     _remove_all_of "functions" "${!_custom_user_functions[@]}"
+    echo -e "${YELLOW}${ENDCOLOR}[${CYAN}${FUNCNAME[0]}${ENDCOLOR}] done."
 }
 _add_function _clear_environment
 # _add_alias _all "echo -e \"::Custom User Environment::\"\nFunctions: functions\nAliases: aliases\nCompletion Functions: completion_functions"
@@ -940,7 +887,6 @@ _add_alias gcp "git cherry-pick"
 _add_alias gcpx "git cherry-pick -x"
 _add_alias gcpa "git cherry-pick --abort"
 _add_alias gcpc "git cherry-pick --continue"
-_add_alias gcf "git config --list" # List all inherited Git config values
 _add_alias gpo "git push origin"
 _add_alias gbr "git rev-parse --abbrev-ref HEAD" # Works on 1.7.x & 1.8.x
 _add_alias grf "git reflog" # List all commits current branch points to
@@ -998,13 +944,8 @@ _add_variable HISTFILESIZE 100000
 _add_alias r "fc -s"
 # Networking
 _add_alias getip "nslookup"
-_add_alias watch "watch -n 1 "
 # LESS
-_add_alias less "\less -iFXR" # I typically don't like aliasing program names
-_add_alias les "\less -iFXR +G" # +G goes to end of file
-if [[ -f /usr/share/source-highlight/src-hilite-lesspipe.sh ]]; then
-    _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
-fi
+_add_alias les "less +G" # +G goes to end of file
 # Node.js
 _add_alias n "node"
 _add_alias nd "node server"
@@ -1062,7 +1003,7 @@ _add_alias ee "\$EDITOR ${EMACS_INIT_FILE}"
 _add_alias eg "\$EDITOR ~/.gitconfig"
 _add_alias es "\$EDITOR ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
-_add_alias sb "ps2; _clear_environment; source ~/.bashrc"
+_add_alias sb "_clear_environment; PS1='$ '; source ~/.bashrc;"
 _add_alias exts "find . -type f | awk -F'/' '{print \$NF}' | awk -F'.' '{print \$NF}' | sort | uniq -c | sort -h"
 # This command should wipe out the previous environment and start over
 _add_alias sbb "ps2; _clear_environment; source ~/.bash_profile"
@@ -2096,29 +2037,39 @@ cpptype () {
     local _opt=$2
     local _dir=${3:-src}
     local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
-    echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}]"
+    if [[ ! -d ${_dir} ]]; then
+        return $(_error "directory [${_dir}] doesn't exist. Run from within a src tree.")
+    fi
+    echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}] in [${GREEN}${_dir}${ENDCOLOR}]"
     GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
 	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" ${_dir} \
 	    | grep --color=always ${_opt} "${_search_term}"
     if [[ $? -ne 0 ]]; then
-        cpptype ${@} --color=always build
-        if [[ $? -ne 0 ]]; then
-            cppdef ${@}
+        if [[ "${_dir}" != "build" ]]; then
+            cpptype "${_search_term}" "${_opt}" build
+            cppdef "${_search_term}" "${_opt}"
         fi
     fi
-    unset _search_term _grep_colors
 }
 _add_function cpptype
 
 cppdef () {
     local _opt=$2
     local _search_term=$1
+    local _dir=${3:-src}
     local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
-    echo -e "Searching for C++ #define [${CYAN}${_search_term}${ENDCOLOR}]"
+    if [[ ! -d ${_dir} ]]; then
+        return $(_error "directory [${_dir}] doesn't exist. Run from within a src tree.")
+    fi
+    echo -e "Searching for C++ #define [${CYAN}${_search_term}${ENDCOLOR}] in [${GREEN}${_dir}${ENDCOLOR}]"
     GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
-	       "^[[:space:]]*\(#define\)[[:space:]]*${_search_term}\([[:space:]]*(\|[[:space:]]*$\)" \
+	       "^[[:space:]]*\(#define\)[[:space:]]*${_search_term}\([[:space:]]*(\|[[:space:]]*$\)" ${_dir} \
 	| grep --color=always ${_opt} "${_search_term}"
-    unset _search_term _grep_colors
+    if [[ $? -ne 0 ]]; then
+        if [[ "${_dir}" != "build" ]]; then
+            cppdef "${_search_term}" "${_opt}" "build"
+        fi
+    fi
 }
 _add_function cppdef
 
@@ -2224,6 +2175,37 @@ _most_recently_modified_file() {
 }
 _add_function _most_recently_modified_file
 
+# TODO: For efficiency,
+#  Have functions like `cpptype` set an env variable that is first checked here.
+#  Falls back to re-running the command.
+open_file_from_prior_cmd() {
+    local _output=$(history -p !!)
+    if [[ ! -x $(which ansi2txt) ]]; then
+        return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+    fi
+
+    local _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+    local _file=$(echo "${_last_line}" | cut -d':' -f1)
+
+    if [[ ! -r "${_file}" ]]; then
+        return $(_error "file [${_file}] does not exist.")
+    fi
+
+    local _line_num=$(echo "${_last_line}" | cut -d':' -f2)
+
+    if [[ ("${_line_num}" -gt 0) && ("${_line_num}" -lt $(wc -l "${_file}" | cut -d' ' -f1)) ]]; then
+        echo -e "opening: [${_file}] @ [${GREEN}${_line_num}${ENDCOLOR}]"
+        _line_num_arg="+${_line_num} -N"
+    else
+        echo "opening: [${_file}]"
+    fi
+
+    set -x
+    less ${_line_num_arg} "${_file}"
+    { set +x; } &> /dev/null
+}
+_add_function open_file_from_prior_cmd
+_rename_function opf open_file_from_prior_cmd
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -2370,8 +2352,15 @@ esac
 _add_variable EDITOR_OPTS "-nw" # --no-init"
 _add_variable EDITOR "emacs ${EDITOR_OPTS}"
 _add_variable GIT_EDITOR "emacs ${EDITOR_OPTS}"
+_add_variable GIT_PAGER "less -iFXR"
 _add_variable MAN_PAGER "less -i"
-# _add_variable USER_EMAIL "${USER}@${HOSTNAME}"
+_add_variable LESS "-iFXR"
+_add_variable LESSEDIT "${EDITOR} ${EDITOR_OPTS}"
+if [[ -x $(which /usr/share/source-highlight/src-hilite-lesspipe.sh 2>/dev/null) ]]; then
+    _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
+else
+    _error "LESSOPEN not set. `brew/apt-get install source-highlight`"
+fi
 
 
 ## 9) Machine-Specific
@@ -2390,9 +2379,10 @@ darwin*)
 ;;
 esac
 
-
 seml() { _search_file_occur_wrapper $# "$1" ~/.machine; }
 _add_function seml
+
+# _add_variable USER_EMAIL "${USER}@${HOSTNAME}"
 
 
 ## 10) Cleanup

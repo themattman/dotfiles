@@ -3,6 +3,16 @@
 ;; After messing with package managers and dependencies, I want to have a simple
 ;; subset of my emacs config that makes my working env usable, with my most
 ;; useful keybindings and preferences.
+(defun open-scratch-buffer ()
+  "Create and switch to a temporary scratch buffer with a random
+     name."
+  (interactive)
+  (switch-to-buffer (make-temp-name "scratch-")))
+(defun create-scratch-buffer ()
+  "Create and switch to a temporary scratch buffer with a random
+     name."
+  (interactive)
+  (switch-to-buffer (make-temp-name "scratch-")))
 (defun generate-scratch-buffer ()
   "Create and switch to a temporary scratch buffer with a random
      name."
