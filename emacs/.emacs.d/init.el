@@ -136,6 +136,7 @@
       scroll-conservatively 10000       ;   /3631220
       scroll-preserve-screen-position 1);   /fix-to-get-smooth-scrolling-in-emacs
 
+(setq org-table-convert-region-max-lines 9999)
 
 
 ;; (setq package-check-signature nil)
