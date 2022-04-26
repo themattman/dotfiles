@@ -2922,6 +2922,42 @@ cmd+shift+f                                  # VSCode for mac, go to finder
 cmd+p                                        # VSCode for mac, pop everything search box
 echo "key:[1823rf2]" | tr 'a-z0-9' 'x'       # censor a string
 
+# 04/08/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+|-<tab>                                      # Emacs Org-Mode, Table-Mode
+|                                            # Any line beginning with this is part of
+                                             #  the table
+M-up/down                                    # Emacs Org-Mode, Table-Mode, move cur
+                                             #  row up/down
+M-right/left                                 # Emacs Org-Mode, Table-Mode, move cur
+                                             #  col right/left
+C-c -                                        # Insert row beneath cur line
+C-c <ENTER>                                  # Insert row beneath cur line, move pt
+C-c ^                                        # Sort rows in region
+
+#
+# 04/11/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+stat -x <dir/file>                           # Mac, display verbose dir/file time stats
+
+#
+# 04/18/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+http://www.catb.org/jargon/html/
+
+#
+# 04/21/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+vc-annotate                                  # Emacs, git blame
+
 #
 # 04/26/2022
 #

@@ -2133,6 +2133,17 @@ grbi() {
 }
 _add_function grbi
 
+totsv() {
+    if [[ -r "${1}" ]]; then
+        #echo "${1%.csv}.tsv"
+        set -x
+        sed -E 's/("([^"]*)")?,/\2\t/g' "${1}" > "${1%.csv}.tsv"
+        { set +x; } &> /dev/null
+        echo "  > ${1%.csv}.tsv"
+    fi
+}
+_add_function totsv
+
 # Find Multiple Strings in file
 # Returns files that contain all strings
 # i.e. a logical AND operator

@@ -127,6 +127,7 @@
 ;; (setq column-number-mode t)             ; Show column numbers
 ;; (global-linum-mode 1)                          ; Show line numbers
 ;; (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
+(setq org-table-convert-region-max-lines 9999)
 
 ;; (which-function-mode 1)                 ; Show the function you are in
 ;; (fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
