@@ -763,9 +763,9 @@ _add_alias ep "echo \$PATH"
 _add_alias epp "echo \$PYTHONPATH"
 #_add_alias el "echo \$LD_LIBRARY_PATH"
 # Emacs
-_add_alias e "\emacs ${EDITOR_OPTS}"
-_add_alias emasc "\emacs ${EDITOR_OPTS}"
-_add_alias emacs "\emacs ${EDITOR_OPTS}"
+_add_alias e "emacs ${EDITOR_OPTS}"
+_add_alias emasc "emacs ${EDITOR_OPTS}"
+_add_alias emacs "emacs ${EDITOR_OPTS}"
 # Repo
 _add_alias rf "repo forall -c"
 _add_alias rfs "repo forall -c 'pwd && git status -s -uno'"
@@ -1347,8 +1347,10 @@ g() {
     local _branch=$(git rev-parse --abbrev-ref HEAD)
     local _r
 
-    if [[ $# -gt 0 ]]; then
-        echo "[dry run]"
+    if [[ "dryrun" = ${1} ]]; then
+        echo -e "[${PURPLE}dry run${ENDCOLOR}]"
+    elif [[ $# -gt 0 ]]; then
+        return $(_error "too many arguments." "[dryrun]")
     fi
 
     if [[ ${_num_remotes} -eq 1 ]]; then

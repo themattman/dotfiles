@@ -269,6 +269,7 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
 (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
 (global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
+(global-set-key (kbd "C-c t"   ) 'delete-trailing-whitespace)
 (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
 (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
 (global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file
@@ -339,6 +340,15 @@ This command does not push text to `kill-ring'."
 ;; Tabs
 (setq-default indent-tabs-mode nil)     ; Use spaces not tabs
 (setq-default tab-width 4)
+(defvar is-mac (eq system-type 'darwin)
+    "Boolean that is true when the current system is detected to be Mac OS.")
+(defvar is-linux (or (eq system-type 'gnu/linux) (eq system-type 'linux))
+    "Boolean that is true when the current system is detected to be Linux.")
+(setq browse-url-generic-program
+    (cond
+        (is-mac "open")
+        (is-linux (executable-find "firefox"))
+ ))
 (setq tab-width 4)
 ;; Startup
 (setq inhibit-startup-echo-area-message (lambda () (user-login-name)))
@@ -403,6 +413,7 @@ This command does not push text to `kill-ring'."
 
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
+(set-cursor-color "#116149")            ; MongoDB Color
 ;; (tool-bar-mode -1)                      ; Disable toolbar
 (menu-bar-mode 0)
 ;; (setq require-final-newline t)          ; Newline at end of file

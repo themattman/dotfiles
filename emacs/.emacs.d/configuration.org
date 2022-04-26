@@ -378,72 +378,81 @@ This command does not push text to `kill-ring'."
 
 * Variables
 #+BEGIN_SRC emacs-lisp
-;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
-(setq compilation-scroll-output t)
-;; TAGS file
-;; (setq tags-file-name "path/to/TAGS")
-(setq tags-revert-without-query t)      ; Auto-update TAGS file if it changed on
-                                        ; disk
-; TODO see if bash pipe works with commands in emacs
-;(defvar tags-regen-cmd "etags -R 2>/dev/null")
-;; (defvar my-cmd "find . -maxdepth 1 | xargs -I{} echo 'hi' {}")
-;; (defun call-my-cmd()
-;;   (interactive)
-;;   (shell-command my-cmd)
-;;   )
-;; (global-set-key (kbd "C-x C-j") 'call-my-cmd)
-;; Tabs
-(setq-default indent-tabs-mode nil)     ; Use spaces not tabs
-(setq-default tab-width 4)
-(setq tab-width 4)
-;; Startup
-(setq inhibit-startup-echo-area-message (lambda () (user-login-name)))
-                                        ; Print "Welcome, USERNAME!" in the echo
-                                        ;  area on startup
-(setq initial-scratch-message nil)      ; When opening emacs without a file,
-                                        ;  suppress the dumb *scratch* message
-                                        ;  in the buffer
-;; Code
-(setq c-default-style                   ; Sane C bracket style
-      "bsd"                             ;  4 space tabs for all c-modes
-      c-basic-offset 4)
-(setq auto-save-default nil)            ; Stop creating those #autosave# files
-(setq make-backup-files nil)            ; Do not create tilde backup files
-(setq max-mini-window-height 1)         ; Don't let echo area grow
-                                        ;  This is useful for forcing
-                                        ;  'shell-command-on-region' output to
-                                        ;  be forced to a new buffer, and not
-                                        ;  wasted in the echo area
-;; Consider putting all these tilde files into a dir under home
-;;  that has a structure that mirrors the fs. If a tilde file
-;;  needs to get saved, save it (as its full path) to something
-;;  under home.
-;;
-;; Example:
-;; When saving
-;;   /user/mattman/somedir/another/dir/file.txt
-;; Save its tilde file to
-;;  ~/.tildes/user/mattman/somedir/another/dir/file.txt~
-(setq backup-directory "~/.tildes")
-(if (not (file-exists-p backup-directory))
-    (make-directory backup-directory t))
-(setq backup-directory-alist `(("." . ,backup-directory)))
-(setq make-backup-files t               ; backup of a file the first time it is saved
-      backup-by-copying t               ; don't clobber symlinks
-      version-control t                 ; version numbers for backup files
-      delete-old-versions t             ; delete excess backup files silently
-      delete-by-moving-to-trash t
-      kept-old-versions 5               ; oldest versions to keep when a new
-                                        ;  numbered backup is made (default: 2)
-      kept-new-versions 5               ; newest versions to keep when a new
-                                        ;  numbered backup is made (default: 2)
-      auto-save-default t               ; auto-save every buffer that visits a file
-      ;; auto-save-timeout 20              ; number of seconds idle time before auto-save
-      ;;                                   ; (default: 30)
-      auto-save-interval 200            ; number of keystrokes between auto-saves
-                                        ;  (default: 300)
-)
-(setq Buffer-menu-name-width 40)        ; Width of buffer name in *buffer-list*
+  ;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
+  (setq compilation-scroll-output t)
+  ;; TAGS file
+  ;; (setq tags-file-name "path/to/TAGS")
+  (setq tags-revert-without-query t)      ; Auto-update TAGS file if it changed on
+                                          ; disk
+  ; TODO see if bash pipe works with commands in emacs
+  ;(defvar tags-regen-cmd "etags -R 2>/dev/null")
+  ;; (defvar my-cmd "find . -maxdepth 1 | xargs -I{} echo 'hi' {}")
+  ;; (defun call-my-cmd()
+  ;;   (interactive)
+  ;;   (shell-command my-cmd)
+  ;;   )
+  ;; (global-set-key (kbd "C-x C-j") 'call-my-cmd)
+  ;; Tabs
+  (setq-default indent-tabs-mode nil)     ; Use spaces not tabs
+  (setq-default tab-width 4)
+  (defvar is-mac (eq system-type 'darwin)
+      "Boolean that is true when the current system is detected to be Mac OS.")
+  (defvar is-linux (or (eq system-type 'gnu/linux) (eq system-type 'linux))
+      "Boolean that is true when the current system is detected to be Linux.")
+  (setq browse-url-generic-program
+      (cond
+          (is-mac "open")
+          (is-linux (executable-find "firefox"))
+   ))
+  (setq tab-width 4)
+  ;; Startup
+  (setq inhibit-startup-echo-area-message (lambda () (user-login-name)))
+                                          ; Print "Welcome, USERNAME!" in the echo
+                                          ;  area on startup
+  (setq initial-scratch-message nil)      ; When opening emacs without a file,
+                                          ;  suppress the dumb *scratch* message
+                                          ;  in the buffer
+  ;; Code
+  (setq c-default-style                   ; Sane C bracket style
+        "bsd"                             ;  4 space tabs for all c-modes
+        c-basic-offset 4)
+  (setq auto-save-default nil)            ; Stop creating those #autosave# files
+  (setq make-backup-files nil)            ; Do not create tilde backup files
+  (setq max-mini-window-height 1)         ; Don't let echo area grow
+                                          ;  This is useful for forcing
+                                          ;  'shell-command-on-region' output to
+                                          ;  be forced to a new buffer, and not
+                                          ;  wasted in the echo area
+  ;; Consider putting all these tilde files into a dir under home
+  ;;  that has a structure that mirrors the fs. If a tilde file
+  ;;  needs to get saved, save it (as its full path) to something
+  ;;  under home.
+  ;;
+  ;; Example:
+  ;; When saving
+  ;;   /user/mattman/somedir/another/dir/file.txt
+  ;; Save its tilde file to
+  ;;  ~/.tildes/user/mattman/somedir/another/dir/file.txt~
+  (setq backup-directory "~/.tildes")
+  (if (not (file-exists-p backup-directory))
+      (make-directory backup-directory t))
+  (setq backup-directory-alist `(("." . ,backup-directory)))
+  (setq make-backup-files t               ; backup of a file the first time it is saved
+        backup-by-copying t               ; don't clobber symlinks
+        version-control t                 ; version numbers for backup files
+        delete-old-versions t             ; delete excess backup files silently
+        delete-by-moving-to-trash t
+        kept-old-versions 5               ; oldest versions to keep when a new
+                                          ;  numbered backup is made (default: 2)
+        kept-new-versions 5               ; newest versions to keep when a new
+                                          ;  numbered backup is made (default: 2)
+        auto-save-default t               ; auto-save every buffer that visits a file
+        ;; auto-save-timeout 20              ; number of seconds idle time before auto-save
+        ;;                                   ; (default: 30)
+        auto-save-interval 200            ; number of keystrokes between auto-saves
+                                          ;  (default: 300)
+  )
+  (setq Buffer-menu-name-width 40)        ; Width of buffer name in *buffer-list*
 #+END_SRC
 
 * Hooks
@@ -465,6 +474,7 @@ This command does not push text to `kill-ring'."
 #+BEGIN_SRC emacs-lisp
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
+(set-cursor-color "#116149")            ; MongoDB Color
 ;; (tool-bar-mode -1)                      ; Disable toolbar
 (menu-bar-mode 0)
 ;; (setq require-final-newline t)          ; Newline at end of file
