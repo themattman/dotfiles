@@ -2959,8 +2959,35 @@ Command                                      Comments
 vc-annotate                                  # Emacs, git blame
 
 #
-# 04/26/2022
+# 04/25/2022
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 dircolors --print-database > ~/.dircolors    # Modify Colors in terminal
+
+#
+# 04/26/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cmd-shift-p                                  # VSCode, open command panel (search for
+                                             #  commands or actions)
+cmd-b                                        # VSCode, toggle file browser
+
+#
+# 04/27/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+update-alternatives --get-selections         # Dump all configured alternatives
+
+#
+# 05/05/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+clang-check -ast-dump-filter="ClassName" -ast-print -p . src/header.h
+                                             # Print all functions of "ClassName" in file
+clang-check -ast-list -p . src/header.h | grep "ClassName"
+                                             # Print raw symbols of "ClassName" in file
+clang-check -ast-dump-filter="ClassName" -ast-dump -p . src/header.h

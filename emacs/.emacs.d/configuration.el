@@ -25,23 +25,28 @@
 (setq load-prefer-newer t)
 
 (use-package htmlize)
-  (use-package flyspell)
-  (use-package engine-mode)
-  (use-package magit)
-  (use-package yasnippet)
-  (use-package yaml-mode)
-  (use-package markdown-mode)
-  (use-package web-mode)
-  (use-package multi-term)
-  (use-package org-pomodoro)
+(use-package flyspell)
+(use-package engine-mode)
+;; (use-package magit)
+(use-package yasnippet)
+(use-package yaml-mode)
+(use-package markdown-mode)
+(use-package web-mode)
+(use-package multi-term)
+;; (use-package org-pomodoro)
 ;;  (use-package ivy-mode)
-  (use-package helpful)
-  (use-package expand-region) ;; C-= jumps to beginning of word at point
-  (use-package hi-lock)       ;; word highlighting
-  (use-package symbol-overlay)
-  ;;(use-package alert)
+(use-package helpful)
+(use-package expand-region) ;; C-= jumps to beginning of word at point
+(use-package hi-lock)       ;; word highlighting
+(use-package symbol-overlay)
+(use-package lsp-mode
+  :hook (
+        (c++-mode . lsp-deferred)
+	(lsp-mode . lsp-enable-which-key-integration))
+  :commands (lsp lsp-deferred))
+(use-package lsp-ui)
+;;(use-package alert)
 ;; https://github.com/BobVul/GrowlToToast
-  ;; (use-package )
 
 ; Package Manager
 (when (>= emacs-major-version 24)
@@ -252,6 +257,9 @@ This command does not push text to `kill-ring'."
   (if (string-match "[.]diary" buffer-file-name)
     (mrk/insert-diary-header)))
 
+(defun mrk/c++-mode-hook ()
+  (c-set-style "MongoDB-Style"))
+
 ;; <return> vs. <kp-enter> (keypad enter)
 (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
 (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
@@ -323,6 +331,85 @@ This command does not push text to `kill-ring'."
 ;  -slash-to-the-terminal#comment27461_24282
 ; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
 
+(c-add-style "MongoDB-Style"
+	       '("gnu"
+		 (c-basic-offset . 4)     ; Guessed value
+		 (c-offsets-alist
+		  (access-label . 0)      ; Guessed value
+		  (arglist-cont . 0)      ; Guessed value
+		  (arglist-intro . +)     ; Guessed value
+		  (block-close . 0)       ; Guessed value
+		  (brace-entry-open . 0)  ; Guessed value
+		  (brace-list-close . 0)  ; Guessed value
+		  (brace-list-entry . 0)  ; Guessed value
+		  (brace-list-intro . +)  ; Guessed value
+		  (case-label . +)        ; Guessed value
+		  (class-close . 0)       ; Guessed value
+		  (cpp-define-intro . +)  ; Guessed value
+		  (defun-block-intro . +) ; Guessed value
+		  (defun-close . 0)       ; Guessed value
+		  (else-clause . 0)       ; Guessed value
+		  (func-decl-cont . 0)    ; Guessed value
+		  (inclass . +)           ; Guessed value
+		  (inher-intro . +)       ; Guessed value
+		  (inline-close . 0)      ; Guessed value
+		  (innamespace . 0)       ; Guessed value
+		  (member-init-cont . 0)  ; Guessed value
+		  (member-init-intro . +) ; Guessed value
+		  (namespace-close . 0)   ; Guessed value
+		  (statement . 0)         ; Guessed value
+		  (statement-block-intro . +) ; Guessed value
+		  (statement-case-intro . +) ; Guessed value
+		  (statement-cont . +)       ; Guessed value
+		  (stream-op . 3)         ; Guessed value
+		  (substatement . +)      ; Guessed value
+		  (topmost-intro . 0)     ; Guessed value
+		  (topmost-intro-cont . 0) ; Guessed value
+		  (annotation-top-cont . 0)
+		  (annotation-var-cont . +)
+		  (arglist-close . c-lineup-close-paren)
+		  (arglist-cont-nonempty . c-lineup-arglist)
+		  (block-open . 0)
+		  (brace-list-open . +)
+		  (c . c-lineup-C-comments)
+		  (catch-clause . 0)
+		  (class-open . 0)
+		  (comment-intro . c-lineup-comment)
+		  (composition-close . 0)
+		  (composition-open . 0)
+		  (cpp-macro . -1000)
+		  (cpp-macro-cont . +)
+		  (defun-open . 0)
+		  (do-while-closure . 0)
+		  (extern-lang-close . 0)
+		  (extern-lang-open . 0)
+		  (friend . 0)
+		  (incomposition . +)
+		  (inexpr-class . +)
+		  (inexpr-statement . +)
+		  (inextern-lang . +)
+		  (inher-cont . c-lineup-multi-inher)
+		  (inlambda . 0)
+		  (inline-open . 0)
+		  (inmodule . +)
+		  (knr-argdecl . 0)
+		  (knr-argdecl-intro . 5)
+		  (label . 0)
+		  (lambda-intro-cont . +)
+		  (module-close . 0)
+		  (module-open . 0)
+		  (namespace-open . 0)
+		  (objc-method-args-cont . c-lineup-ObjC-method-args)
+		  (objc-method-call-cont c-lineup-ObjC-method-call-colons c-lineup-ObjC-method-call +)
+		  (objc-method-intro .
+				     [0])
+		  (statement-case-open . +)
+		  (string . -1000)
+		  (substatement-label . 0)
+		  (substatement-open . +)
+		  (template-args-cont c-lineup-template-args +))))
+
+(setq lsp-clangd-binary-path "/usr/bin/clangd")
 ;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
 (setq compilation-scroll-output t)
 ;; TAGS file
@@ -357,10 +444,6 @@ This command does not push text to `kill-ring'."
 (setq initial-scratch-message nil)      ; When opening emacs without a file,
                                         ;  suppress the dumb *scratch* message
                                         ;  in the buffer
-;; Code
-(setq c-default-style                   ; Sane C bracket style
-      "bsd"                             ;  4 space tabs for all c-modes
-      c-basic-offset 4)
 (setq auto-save-default nil)            ; Stop creating those #autosave# files
 (setq make-backup-files nil)            ; Do not create tilde backup files
 (setq max-mini-window-height 1)         ; Don't let echo area grow
@@ -410,6 +493,7 @@ This command does not push text to `kill-ring'."
 ;; (add-hook 'python-mode-hook 'flymake-mode-on)
 ;; Open the diary specially
 (add-hook 'find-file-hook 'mrk/load-diary-for-append)
+(add-hook 'c++-mode-hook 'mrk/c++-mode-hook)
 
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
