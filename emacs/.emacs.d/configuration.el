@@ -131,6 +131,9 @@
 (defun insert-timestamp ()
   (interactive)
   (insert (format-time-string "%m/%d/%Y")))
+(defun insert-time ()
+  (interactive)
+  (insert (format-time-string "%m/%d/%Y @ %I:%M:%S %p")))
 (defun insert-datestring ()
   (interactive)
   (insert "##############\n")
@@ -260,6 +263,16 @@ This command does not push text to `kill-ring'."
 (defun mrk/c++-mode-hook ()
   (c-set-style "MongoDB-Style"))
 
+(defun mrk/get-source-file ()
+  (interactive)
+  (find-file (concat (file-name-sans-extension buffer-file-name) ".cpp"))
+)
+
+(defun mrk/get-header-file ()
+  (interactive)
+  (find-file (concat (file-name-sans-extension buffer-file-name) ".h"))
+)
+
 ;; <return> vs. <kp-enter> (keypad enter)
 (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
 (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
@@ -277,12 +290,15 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
 (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
 (global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
+(global-set-key (kbd "C-c i i" ) 'insert-time               )
 (global-set-key (kbd "C-c t"   ) 'delete-trailing-whitespace)
 (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
 (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
 (global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file
 (global-set-key (kbd "C-x C-b" ) 'buffer-menu               ) ; Buffer-Menu shouldn't open
 (global-set-key (kbd "C-c C-c" ) 'fundamental-mode          ) ;  in another window
+(global-set-key (kbd "C-c h"   ) 'mrk/get-header-file       )
+(global-set-key (kbd "C-c s"   ) 'mrk/get-source-file       )
 (global-set-key (kbd "C-j"     ) 'scroll-down-command       )
 (global-set-key (kbd "C-x p"   ) 'navigate-backwards        ) ; Navigate Buffers Backwards
 ; bind them to emacs's default shortcut keys:

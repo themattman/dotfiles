@@ -762,10 +762,6 @@ _add_alias ec "echo"
 _add_alias ep "echo \$PATH"
 _add_alias epp "echo \$PYTHONPATH"
 #_add_alias el "echo \$LD_LIBRARY_PATH"
-# Emacs
-_add_alias e "emacs ${EDITOR_OPTS}"
-_add_alias emasc "emacs ${EDITOR_OPTS}"
-_add_alias emacs "emacs ${EDITOR_OPTS}"
 # Repo
 _add_alias rf "repo forall -c"
 _add_alias rfs "repo forall -c 'pwd && git status -s -uno'"
@@ -992,16 +988,16 @@ _add_alias gaid "./gradlew assemble installDebug"
 ## 4d) Common
 #_add_alias ed "\$EDITOR +\$((\$(wc -l ~/.diary | awk '{print \$1}')+1)) ~/.diary" # Programmer's Diary
 _add_alias dl "grep --color -o -E \"^# [0-9]{2}/[0-9]{2}/[0-9]{4}\" ~/.diary | tail -n 1 | cut -d' ' -f2-"
-_add_alias el "\$EDITOR +\$((\$(wc -l ~/.daily | awk '{print \$1}')+1)) ~/.daily" # Daily Journal
+_add_alias el "eval \$EDITOR +\$((\$(wc -l ~/.daily | awk '{print \$1}')+1)) ~/.daily" # Daily Journal
 _add_alias td "tail ~/.diary"
-_add_alias eb "\$EDITOR ~/.bashrc"
-_add_alias eeb "\$EDITOR ${EMACS_INIT_FILE} ~/.bashrc"
-_add_alias ebb "\$EDITOR ~/.bash_profile"
-_add_alias em "\$EDITOR ~/.machine"
+_add_alias eb "open_file ~/.bashrc"
+_add_alias eeb "open_file ${EMACS_INIT_FILE} ~/.bashrc"
+_add_alias ebb "open_file ~/.bash_profile"
+_add_alias em "open_file ~/.machine"
 _add_alias tm "tail ~/.machine"
-_add_alias ee "\$EDITOR ${EMACS_INIT_FILE}"
-_add_alias eg "\$EDITOR ~/.gitconfig"
-_add_alias es "\$EDITOR ~/.ssh/config"
+_add_alias ee "open_file ${EMACS_INIT_FILE}"
+_add_alias eg "open_file ~/.gitconfig"
+_add_alias es "open_file ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
 _add_alias sb "_clear_environment; PS1='$ '; source ~/.bashrc;"
 _add_alias exts "find . -type f | awk -F'/' '{print \$NF}' | awk -F'.' '{print \$NF}' | sort | uniq -c | sort -h"
@@ -1051,7 +1047,7 @@ linux*|msys*)
     else
         if [[ -z $SSH_CONNECTION ]]; then
             if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${ENDCOLOR}[$([[ \$? = 0 ]] && : || echo -e "${RED}")\${?:0:1}${ENDCOLOR}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             else
                 _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             fi
@@ -1285,7 +1281,7 @@ create_temp_src_file() {
     # These sed's are designed to be cross-platform
     sed -e "s/^# Created:$/& $(date)\n\# Dir:     ${PWD//\//\\/}/" "${temp_dir}/template.${_ext}" \
         | sed -e "s/^# Author:$/&  $USER/" > "${_tmpfile}"
-    ${EDITOR} +$(($(wc -l "${_temp_dir}/template.${_ext}" | awk '{print $1}')+2)) "${_tmpfile}"
+    eval ${EDITOR} +$(($(wc -l "${_temp_dir}/template.${_ext}" | awk '{print $1}')+2)) "${_tmpfile}"
 }
 _add_function create_temp_src_file
 
@@ -1668,22 +1664,25 @@ _rename_function gbd _git_branch_delete
 
 _git_pull_rebase() {
     local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
-    local _remote_name="${1:-origin}"
+    local _remote_name="origin"
+    local _branch_name="master"
     if [[ $# -gt 1 ]]; then
         return $(_error "only zero or one arguments allowed" "<remote_name>")
+    elif [[ $# -eq 1 ]]; then
+        _branch_name="${_cur_branch}"
     fi
 
-    if ! git rev-parse --verify --quiet "${_cur_branch}" >/dev/null; then
-        return $(_error "branch [${_cur_branch}] doesn't exist")
+    if ! git rev-parse --verify --quiet "${_branch_name}" >/dev/null; then
+        return $(_error "branch [${_branch_name}] doesn't exist")
     fi
 
-    if ! git ls-remote --exit-code --quiet "${_remote_name}" "${_cur_branch}" >/dev/null 2>&1; then
-        return $(_error "branch [${_cur_branch}] doesn't exist on remote [${_remote_name}]")
+    if ! git ls-remote --exit-code --quiet "${_remote_name}" "${_branch_name}" >/dev/null 2>&1; then
+        return $(_error "branch [${_branch_name}] doesn't exist on remote [${_remote_name}]")
     fi
 
     set -x
     git fetch "${_remote_name}"
-    git pull --rebase "${_remote_name}" "${_cur_branch}"
+    git pull --rebase "${_remote_name}" "${_branch_name}"
     { set +x; } 2>/dev/null
 }
 _add_function _git_pull_rebase
@@ -1902,6 +1901,16 @@ whid() {
 }
 _add_function whid
 
+# TODO
+git_checkout_previous_branch() {
+    local _previous_branch;
+    local _previous_branches=$(for k in $(git branch | perl -pe 's/^..(.*?)( ->.*)?$/\1/'); do echo -e $(git show --pretty=format:"%Cgreen%ci %Cblue%cr%Creset " $k -- | head -n 1)\\\t$k; done | sort -r | head | cut -d' ' -f7- | awk -F' ' '{print $1}' | head -n 3 | tail -n 2)
+    echo "0: ${_previous_branches[0]}"
+    echo "1: ${_previous_branches[1]}"
+}
+_add_function git_checkout_previous_branch
+_rename_function gcpb git_checkout_previous_branch
+
 color() {
     if [[ $# -ne 1 ]]; then
         return $(_error "" "[search_words...]")
@@ -1926,7 +1935,7 @@ ed() {
         printf "%0.s-" {1..90}  >> ~/.diary
         echo >> ~/.diary
     fi
-    $EDITOR +$(($(wc -l ~/.diary | awk '{print $1}')+1)) ~/.diary
+    eval $EDITOR +$(($(wc -l ~/.diary | awk '{print $1}')+1)) ~/.diary
 }
 _add_function ed
 
@@ -2019,7 +2028,7 @@ mrf() {
     local _n=${1:-3}
     case $OSTYPE in
         linux*|msys*)
-            find . -type f -exec stat -c '%X %n' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | while read t f; do d=$(date -d @$t "+%b %d %T %Y"); echo "$d -- $f"; done
+            find . -type f -exec stat -c '%Y %n' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | while read t f; do d=$(date -d @$t "+%b %d %T %Y"); echo "$d -- $f"; done
             ;;
         darwin*)
             find . -type f -exec stat -f '%Dm %N' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | xargs -I{} stat -f '%Sm %N' {}
@@ -2191,7 +2200,7 @@ _add_function _most_recently_modified_file
 # TODO: For efficiency,
 #  Have functions like `cpptype` set an env variable that is first checked here.
 #  Falls back to re-running the command.
-open_file_from_prior_cmd() {
+open_file_from_prior_cmd_in_less() {
     local _output=$(history -p !!)
     if [[ ! -x $(which ansi2txt) ]]; then
         return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
@@ -2214,11 +2223,80 @@ open_file_from_prior_cmd() {
     fi
 
     set -x
-    less ${_line_num_arg} "${_file}"
+    eval less ${_line_num_arg} "${_file}"
     { set +x; } &> /dev/null
 }
-_add_function open_file_from_prior_cmd
-_rename_function opf open_file_from_prior_cmd
+_add_function open_file_from_prior_cmd_in_less
+_rename_function opf open_file_from_prior_cmd_in_less
+
+open_file_from_prior_cmd_in_editor() {
+    local _output=$(history -p !!)
+    if [[ ! -x $(which ansi2txt) ]]; then
+        return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+    fi
+
+    local _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+    local _file=$(echo "${_last_line}" | cut -d':' -f1)
+
+    if [[ ! -r "${_file}" ]]; then
+        return $(_error "file [${_file}] does not exist.")
+    fi
+
+    local _unadjusted_line_num=$(echo "${_last_line}" | cut -d':' -f2)
+    # Account for terminal height so line number appears at top of editor
+    _line_num=$((_unadjusted_line_num+$(tput lines)-8))
+
+    if [[ ("${_line_num}" -gt 0) && ("${_line_num}" -lt $(wc -l "${_file}" | cut -d' ' -f1)) ]]; then
+        echo -e "opening: [${_file}] @ [${GREEN}${_line_num}${ENDCOLOR}]"
+        _line_num_arg="+${_line_num}"
+    else
+        echo "opening: [${_file}]"
+    fi
+
+    set -x
+    eval ${EDITOR} ${_line_num_arg} "${_file}" # ${_unadjusted_line_num}
+    { set +x; } &> /dev/null
+}
+_add_function open_file_from_prior_cmd_in_editor
+_rename_function opfe open_file_from_prior_cmd_in_editor
+
+open_file() {
+    # echo "=> [${1@Q}]"
+    # echo "=> [${1@E}]"
+    # echo "=> [${1@P}]"
+    # echo "=> [${1@A}]"
+    # echo "=> [${1@a}]"
+    local _linux_path="${1//\\//}"
+    echo "Opening [${1}] as: [${_linux_path}]"
+    if [[ ! -f ${_linux_path} ]]; then
+        echo "[${_linux_path}] doesn't exist" >&2
+        read -p "Are you sure? " -n 1 -r
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            return $(_error "[${_linux_path}] doesn't exist")
+        fi
+    fi
+    eval emacs ${EDITOR_OPTS} ${_linux_path}
+}
+_add_function open_file
+_rename_function e open_file
+
+# num commits since head
+sincehead() {
+    local _delimiter=${_delimiter_arg:-SERVER}
+    local _commit=$(git log --format="format:%s|%H" | grep "^${_delimiter}-[0-9]\+" | head -n 1 | rev | cut -d'|' -f1 | rev)
+    echo -e "${LIGHTPURPLE}commit${ENDCOLOR}: [${CYAN}${_commit}${ENDCOLOR}]\n"
+    git rev-list --ancestry-path --date=local --pretty=format:"%h - %Cgreen%cd%Creset - %s" ${_commit}^..HEAD | grep -v "^commit "
+    local _num_commits=$(git rev-list --ancestry-path ${_commit}^..HEAD | wc -l)
+    echo -e "${GREEN}${_num_commits}${ENDCOLOR} commits."
+    read -p "See diff? [y/n]: " -n 1 -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        gitdiffhead ${_num_commits}
+    else
+        echo
+    fi
+}
+_add_function sincehead
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -2364,11 +2442,11 @@ xterm*|rxvt*)
 esac
 _add_variable EDITOR_OPTS "-nw" # --no-init"
 _add_variable EDITOR "emacs ${EDITOR_OPTS}"
-_add_variable GIT_EDITOR "emacs ${EDITOR_OPTS}"
+_add_variable GIT_EDITOR "${EDITOR}"
 _add_variable GIT_PAGER "less -iFXR"
 _add_variable MAN_PAGER "less -i"
 _add_variable LESS "-iFXR"
-_add_variable LESSEDIT "${EDITOR} ${EDITOR_OPTS}"
+_add_variable LESSEDIT "${EDITOR}"
 if [[ -x $(which /usr/share/source-highlight/src-hilite-lesspipe.sh 2>/dev/null) ]]; then
     _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
 else

@@ -2991,3 +2991,60 @@ clang-check -ast-dump-filter="ClassName" -ast-print -p . src/header.h
 clang-check -ast-list -p . src/header.h | grep "ClassName"
                                              # Print raw symbols of "ClassName" in file
 clang-check -ast-dump-filter="ClassName" -ast-dump -p . src/header.h
+
+#
+# 05/11/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+M-$                                          # Emacs, check spelling of current word
+C-h b                                        # Emacs, what does the current mode do
+
+#
+# 05/20/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+TODO: Add an env variable that cpptype and similar commands pipe into so you can reference
+ $PRIFILE or something in nxt command
+
+#
+# 05/31/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cppfilt                                      # Rust implementation of cpp demangler
+
+#
+# 06/03/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+install-all                                  # everything
+install-core                                 # mongod, mongos
+install-devcore                              # mongo, mongod, mongos
+install-mongod                               # mongod
+install-mongos                               # mongos
+install-mongo                                # mongo
+
+#
+# 06/10/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+head -c -1 <file>                            # Remove final byte (i.e. newline) from file
+
+#
+# 06/23/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+gcfu | tr '[:upper:]' '[:lower:]' | sed 's/ /./g' # TODO: Git checkout completion
+
+#
+# 06/27/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+man terminfo                                 # Less, colors
+man termcap                                  # Less, colors
