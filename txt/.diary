@@ -2973,12 +2973,16 @@ Command                                      Comments
 cmd-shift-p                                  # VSCode, open command panel (search for
                                              #  commands or actions)
 cmd-b                                        # VSCode, toggle file browser
+sudo add-apt-repository ppa:kelleyk/emacs
+sudo apt-get install emacs27                 # Get latest stable emacs on Ubuntu 18.04
 
 #
 # 04/27/2022
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
+security find-generic-password -s '' -w | sudo -k -S -p '' ls
+                                             # Run sudo without pw prompt
 update-alternatives --get-selections         # Dump all configured alternatives
 
 #
@@ -3001,12 +3005,26 @@ M-$                                          # Emacs, check spelling of current 
 C-h b                                        # Emacs, what does the current mode do
 
 #
+# 05/09/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+pkgutil --pkg-info=com.apple.pkg.CLTools_Executables # Xcode cmd line tools, version info
+
+#
 # 05/20/2022
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 TODO: Add an env variable that cpptype and similar commands pipe into so you can reference
  $PRIFILE or something in nxt command
+
+#
+# 05/23/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+C-c C-x M                                    # Org-mode, insert TODO on next line
 
 #
 # 05/31/2022
@@ -3028,10 +3046,22 @@ install-mongos                               # mongos
 install-mongo                                # mongo
 
 #
+# 06/09/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cua-selection-mode                           # Emacs, advanced rectangle commands
+cua-set-rectangle-mark (M-n for numbering)   # Emacs, insert numbers to region
+artist-mode                                  # Emacs, draw lines
+C-c C-a p RET                                # Emacs, draw line in artist-mode
+git blame -L<line>,+10 <file>                # No need to specify end line number
+
+#
 # 06/10/2022
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
+TODO: emacs function to wrap current text with #include ""
 head -c -1 <file>                            # Remove final byte (i.e. newline) from file
 
 #

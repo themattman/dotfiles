@@ -747,10 +747,11 @@ linux*)
     # Ctrl-Alt-l also locks screen in Ubuntu or use this alias
     _add_alias afk "gnome-screensaver-command -l"
 ;;
-darwin*)
-    # Ctrl-Shift- (<Power Button> or <Eject Button>) locks screen in OSX
-    _add_alias afk ""
-;;
+# darwin*)
+#     # Ctrl-Shift- (<Power Button> or <Eject Button>) locks screen in OSX
+#     # Ctrl-Cmd-q locks screen in OSX
+#     _add_alias afk ""
+# ;;
 esac
 
 ## 4c) Short program aliases
@@ -820,7 +821,7 @@ fi
 
 _add_alias rbranches "for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
 _add_alias branches  "for k in \$(git branch | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r | head -n 30"
-_add_alias redate "git commit --amend --date=\"\$(date)\""
+_add_alias redate_head "_CUR_DATE=\$(date); git commit --amend --no-verify -C HEAD --date=\"\${_CUR_DATE}\"; unset _CUR_DATE;"
 _add_alias gf "git fetch"
 _add_alias gp "git push"
 _add_alias gb "git branch"
@@ -1688,6 +1689,19 @@ _git_pull_rebase() {
 _add_function _git_pull_rebase
 _rename_function gpr _git_pull_rebase
 
+_git_blame_file() {
+    local _line_num="${1}"
+    local _file="${2}"
+    if [[ $# -ne 2 ]]; then
+        return $(_error "requires 2 arguments" "<line_num> <file>")
+    fi
+    set -x
+    git blame -L${_line_num},+10 -- ${_file}
+    { set +x; } 2>/dev/null
+}
+_add_function _git_blame_file
+_rename_function gbf _git_blame_file
+
 _git_cherrypick_file() {
     local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
     local _branch="${1}"
@@ -2450,7 +2464,7 @@ _add_variable LESSEDIT "${EDITOR}"
 if [[ -x $(which /usr/share/source-highlight/src-hilite-lesspipe.sh 2>/dev/null) ]]; then
     _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
 else
-    _error "LESSOPEN not set. `brew/apt-get install source-highlight`"
+    _error "LESSOPEN not set. 'brew/apt-get install source-highlight'"
 fi
 
 
@@ -2467,6 +2481,7 @@ darwin*)
     _add_alias vpnd "scutil --nc stop \"${VPN_NAME}\""
     _add_alias vpns "scutil --nc status '${VPN_NAME}'"
     _add_alias vpnl "scutil --nc list"
+    _add_alias vpnr "vpnd; sleep 5; vpnc;"
 ;;
 esac
 
