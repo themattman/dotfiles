@@ -813,6 +813,7 @@ if [[ -f ~/.git-completion ]]; then
     __git_complete gshn _git_show && _add_completion_function gshn
     __git_complete gshs _git_show && _add_completion_function gshs
     __git_complete gshhs _git_show && _add_completion_function gshhs
+    __git_complete gshhss _git_show && _add_completion_function gshhss
     __git_complete gshhn _git_show && _add_completion_function gshhn
     __git_complete gbd _git_branch && _add_completion_function gbd
     __git_complete gmm _git_merge && _add_completion_function gmm
@@ -890,6 +891,7 @@ _add_alias grf "git reflog" # List all commits current branch points to
 _add_alias gsh "git show"
 _add_alias gshh "git show HEAD"
 _add_alias gshhs "git show HEAD --stat"
+_add_alias gshhss "git show HEAD --stat --stat-name-width=$(tput cols)" # Ensure filenames don't get chopped off
 _add_alias gshhn "git show HEAD --name-only"
 _add_alias gshn "git show --name-only"
 _add_alias gshs "git show --stat"
@@ -1741,7 +1743,7 @@ _git_log_unpushed_commits() {
     fi
 
     set -x
-    git log ${_remote_name}/${_cur_branch}..HEAD
+    eval git log ${_remote_name}/${_cur_branch}..HEAD
     { set +x; } 2>/dev/null
 }
 _add_function _git_log_unpushed_commits
@@ -2134,13 +2136,13 @@ gitdiffhead() {
         fi
     done
     if [[ "${#_git_args[@]}" -gt 0 ]]; then
-    _pretty_print_git_args="[${PURPLE}${_git_args[*]}${ENDCOLOR}]"
+        _pretty_print_git_args=" [${PURPLE}${_git_args[*]}${ENDCOLOR}]"
     fi
     if [[ "${#_file[@]}" -gt 0 ]]; then
         _pretty_print_file="[${PURPLE}${_file[*]}${ENDCOLOR}]"
     fi
-    echo -e "git diff ${_pretty_print_git_args} HEAD~[${PURPLE}${_num_commits}${ENDCOLOR}]..HEAD ${_pretty_print_file}"
-    git diff ${_git_args[*]} HEAD~${_num_commits}..HEAD ${_file[*]}
+    echo -e "git diff${_pretty_print_git_args} HEAD~${PURPLE}${_num_commits}${ENDCOLOR}..HEAD ${_pretty_print_file}"
+    eval git diff ${_git_args[*]} HEAD~${_num_commits}..HEAD ${_file[*]}
 }
 _add_function gitdiffhead
 _rename_function gdh gitdiffhead
@@ -2151,7 +2153,7 @@ grbi() {
     fi
     local _num_commits=$1
     set -x
-    git rebase -i HEAD~${_num_commits}
+    eval git rebase -i HEAD~${_num_commits}
     { set +x; } &>/dev/null
 }
 _add_function grbi
@@ -2182,13 +2184,13 @@ _add_function fms
 most_recent_file() {
     # Alternative: \ls -t --color=never | head -n 1
     local _path=${1:-.}
-    find ${_path} -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | grep -v ' \.$' | sort -n | tail -n 1 | cut -d' ' -f2-
+    eval find ${_path} -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | grep -v ' \.$' | sort -n | tail -n 1 | cut -d' ' -f2-
 }
 _add_function most_recent_file
 
 most_recent_file_exclude_hidden() {
     local _path=${1:-.}
-    find ${_path} -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | grep -v ' \.' | sort -n | tail -n 1
+    eval find ${_path} -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | grep -v ' \.' | sort -n | tail -n 1
 }
 _add_function most_recent_file_exclude_hidden
 
@@ -2280,7 +2282,10 @@ open_file() {
     # echo "=> [${1@P}]"
     # echo "=> [${1@A}]"
     # echo "=> [${1@a}]"
-    local _linux_path="${1//\\//}"
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 arguments" "<file>")
+    fi
+   local _linux_path="${1//\\//}"
     echo "Opening [${1}] as: [${_linux_path}]"
     if [[ ! -f ${_linux_path} ]]; then
         echo "[${_linux_path}] doesn't exist" >&2
@@ -2296,20 +2301,27 @@ _rename_function e open_file
 
 # num commits since head
 sincehead() {
-    local _delimiter=${_delimiter_arg:-SERVER}
+    local _delimiter=${1:-SERVER}
     local _commit=$(git log --format="format:%s|%H" | grep "^${_delimiter}-[0-9]\+" | head -n 1 | rev | cut -d'|' -f1 | rev)
-    echo -e "${LIGHTPURPLE}commit${ENDCOLOR}: [${CYAN}${_commit}${ENDCOLOR}]\n"
+    echo -e "${LIGHTPURPLE}first commit off parent${ENDCOLOR}: [${CYAN}${_commit}${ENDCOLOR}]\n"
     git rev-list --ancestry-path --date=local --pretty=format:"%h - %Cgreen%cd%Creset - %s" ${_commit}^..HEAD | grep -v "^commit "
     local _num_commits=$(git rev-list --ancestry-path ${_commit}^..HEAD | wc -l)
     echo -e "${GREEN}${_num_commits}${ENDCOLOR} commits."
     read -p "See diff? [y/n]: " -n 1 -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        gitdiffhead ${_num_commits}
-    else
         echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        eval gitdiffhead "${_num_commits}"
     fi
 }
 _add_function sincehead
+
+sha8() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 arguments" "<file>")
+    fi
+    echo $1 | head -c 8 && echo
+}
+_add_function sha8
 
 
 ## 7) Bash Completion

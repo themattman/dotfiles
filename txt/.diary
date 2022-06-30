@@ -3078,3 +3078,14 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 man terminfo                                 # Less, colors
 man termcap                                  # Less, colors
+
+#
+# 06/29/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git branch --contains <SHA>                  # Git, which branches contain commit
+git branch -a --contains <SHA>               # All branches incl remote contain commit
+git show --stat-name-width=<count>           # Git, increase width used for filenames
+git show HEAD -- */*/*.js                    $ Git, show all JS files in commit
+git checkout --  */*/*.js                    $ Git, discard all JS file changes
