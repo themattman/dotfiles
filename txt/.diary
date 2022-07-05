@@ -3089,3 +3089,10 @@ git branch -a --contains <SHA>               # All branches incl remote contain 
 git show --stat-name-width=<count>           # Git, increase width used for filenames
 git show HEAD -- */*/*.js                    $ Git, show all JS files in commit
 git checkout --  */*/*.js                    $ Git, discard all JS file changes
+
+#
+# 07/03/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+xterm-mouse-mode                            # Emacs, allow mouse use in buffers

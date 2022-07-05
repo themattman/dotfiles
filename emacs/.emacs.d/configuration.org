@@ -326,6 +326,12 @@ This command does not push text to `kill-ring'."
 * Keybindings
 #+BEGIN_SRC emacs-lisp
   ;; <return> vs. <kp-enter> (keypad enter)
+  ; swap windows
+  (global-set-key (kbd "C-c l"    ) 'windmove-swap-states-left )
+  (global-set-key (kbd "C-c r"    ) 'windmove-swap-states-right)
+  (global-set-key (kbd "C-c u"    ) 'windmove-swap-states-up   )
+  (global-set-key (kbd "C-c d"    ) 'windmove-swap-states-down )
+
   (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
   (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
   (global-set-key (kbd "<f9>"    ) 'symbol-overlay-put        )
@@ -337,7 +343,7 @@ This command does not push text to `kill-ring'."
   (global-set-key (kbd "C-c a"   ) 'org-agenda                )
   (global-set-key (kbd "C-c z"   ) 'show-file-name            )
   (global-set-key (kbd "C-c C-j" ) 'regenerate-tags-file      )
-  (global-set-key (kbd "C-c d"   ) 'open-diary-file           )
+  ;;(global-set-key (kbd "C-c d"   ) 'open-diary-file           )
   (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
   (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
   (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
@@ -599,11 +605,11 @@ This command does not push text to `kill-ring'."
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
-  (use-package moody
-    :config
-    (setq x-underline-at-descent-line t)
-    (moody-replace-mode-line-buffer-identification)
-    (moody-replace-vc-mode))
+  ;; (use-package moody
+  ;;   :config
+  ;;   (setq x-underline-at-descent-line t)
+  ;;   (moody-replace-mode-line-buffer-identification)
+  ;;   (moody-replace-vc-mode))
 #+END_SRC
 
 * Behavior
