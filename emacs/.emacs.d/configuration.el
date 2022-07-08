@@ -39,6 +39,8 @@
 (use-package expand-region) ;; C-= jumps to beginning of word at point
 (use-package hi-lock)       ;; word highlighting
 (use-package symbol-overlay)
+(use-package clang-format)
+(use-package auto-complete-clang)
 (use-package lsp-mode
   :hook (
         (c++-mode . lsp-deferred)
@@ -274,6 +276,14 @@ This command does not push text to `kill-ring'."
 )
 
 ;; <return> vs. <kp-enter> (keypad enter)
+; swap windows
+(global-set-key (kbd "C-c l"    ) 'windmove-swap-states-left )
+(global-set-key (kbd "C-c r"    ) 'windmove-swap-states-right)
+(global-set-key (kbd "C-c u"    ) 'windmove-swap-states-up   )
+(global-set-key (kbd "C-c d"    ) 'windmove-swap-states-down )
+
+(global-set-key (kbd "C-c m"    ) 'xterm-mouse-mode          )
+
 (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
 (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
 (global-set-key (kbd "<f9>"    ) 'symbol-overlay-put        )
@@ -285,7 +295,7 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-c a"   ) 'org-agenda                )
 (global-set-key (kbd "C-c z"   ) 'show-file-name            )
 (global-set-key (kbd "C-c C-j" ) 'regenerate-tags-file      )
-(global-set-key (kbd "C-c d"   ) 'open-diary-file           )
+;;(global-set-key (kbd "C-c d"   ) 'open-diary-file           )
 (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
 (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
 (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
@@ -425,7 +435,9 @@ This command does not push text to `kill-ring'."
 		  (substatement-open . +)
 		  (template-args-cont c-lineup-template-args +))))
 
+(setq shell-command-switch "-ic")
 (setq lsp-clangd-binary-path "/usr/bin/clangd")
+;;(setq lsp-clients-clangd-args "--header-insertion=iwyu")
 ;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
 (setq compilation-scroll-output t)
 ;; TAGS file
@@ -500,6 +512,14 @@ This command does not push text to `kill-ring'."
 
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
+(add-hook 'c-mode-common-hook
+          (function (lambda ()
+          (add-hook 'before-save-hook
+          'clang-format-buffer))))
+(add-hook 'c-mode-common-hook
+          (function (lambda ()
+          (add-hook 'before-save-hook
+          'delete-trailing-whitespace))))
 ;; (add-hook 'before-save-hook 'delete-trailing-whitespace)
 ;; (add-hook 'before-save-hook 'py-autopep8-before-save)
 ;; (add-hook 'before-save-hook 'py-autopep8-before-save)
@@ -533,11 +553,11 @@ This command does not push text to `kill-ring'."
   (add-hook 'prog-mode-hook 'turn-on-diff-hl-mode)
   (add-hook 'vc-dir-mode-hook 'turn-on-diff-hl-mode))
 
-(use-package moody
-  :config
-  (setq x-underline-at-descent-line t)
-  (moody-replace-mode-line-buffer-identification)
-  (moody-replace-vc-mode))
+;; (use-package moody
+;;   :config
+;;   (setq x-underline-at-descent-line t)
+;;   (moody-replace-mode-line-buffer-identification)
+;;   (moody-replace-vc-mode))
 
 (setq browse-url-browser-function 'w3m-browse-url)
 (autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)

@@ -3,8 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  12/23/2021
-# Configuration: MACHINE_NAME # TODO a script should update this
+# Last updated:  07/08/2022
 #
 # To refresh bash environment with changes to this file:
 #  $ source ~/.bashrc
@@ -18,7 +17,6 @@
 #   * Platforms:
 #     * Mac OS X 10.11, 12.3
 #     * Ubuntu 12.04/14.04/18.04
-# * TODOs exist for areas of code smell or customizable fields
 #
 #
 # Table of Contents:
@@ -1004,6 +1002,7 @@ _add_alias es "open_file ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
 _add_alias sb "_clear_environment; PS1='$ '; source ~/.bashrc;"
 _add_alias exts "find . -type f | awk -F'/' '{print \$NF}' | awk -F'.' '{print \$NF}' | sort | uniq -c | sort -h"
+_add_alias rb "rm ~/.emacs.d/configuration.el"
 # This command should wipe out the previous environment and start over
 _add_alias sbb "ps2; _clear_environment; source ~/.bash_profile"
 # Clear all custom aliases, useful when they get in the way
@@ -2323,6 +2322,11 @@ sha8() {
 }
 _add_function sha8
 
+includes() {
+    echo "" | ${MYCOMPILER:-g++} -v -x c++ -E -
+}
+_add_function includes
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -2463,7 +2467,8 @@ xterm*|rxvt*)
     # Store *all* bash history in ~/.logs
     _add_variable PROMPT_COMMAND 'if [ "$(id -u)" -ne 0 ]; then echo "$(date "+%Y-%m-%d.%H:%M:%S") $(pwd) $(history 1)" >> ~/.logs/bash-history-$(date "+%Y-%m-%d").log; fi; echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
 ;;
-*)
+dumb*) # Emacs
+    _add_variable TERM xterm-256color
 ;;
 esac
 _add_variable EDITOR_OPTS "-nw" # --no-init"

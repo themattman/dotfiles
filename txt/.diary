@@ -3095,4 +3095,54 @@ git checkout --  */*/*.js                    $ Git, discard all JS file changes
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
-xterm-mouse-mode                            # Emacs, allow mouse use in buffers
+xterm-mouse-mode                             # Emacs, allow mouse use within buffers
+
+#
+# 07/06/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+C-h k                                        # Emacs, helpful key - more info than you
+                                             #  ever need about a key combo
+C-h v                                        # Emacs, helpful variable - info on an elisp
+                                             #  variable
+C-h c                                        # Emacs, describe-key-briefly - only in
+                                             #  minibuffer, doesn't open window
+C-h r                                        # Emacs, info-emacs-manual, top-level help
+M-x shortdoc-display-group                   # Emacs 28, cheat sheet
+.cache                                       # clangd, stores its config here in prj root
+(lsp-workspace-root)                         # Emacs/lsp, reports root of project
+(lsp-workspace-folders-add ...)              # Emacs/lsp, add more dirs to project
+                                             #  caution: (haven't used)
+
+#
+# 07/07/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+sudo timedatectl set-timezone America/Los_Angeles # Set timezone
+M-r                                          # Emacs, jump cursor to middle/top/bottom
+M-l/M-c/M-u                                  # Emacs, lowercase/cap/uppercase prev word
+
+#
+# 07/08/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+                                             # Configure clangd w/Emacs
+https://github.com/clangd/clangd/releases/   #  1. Download latest clangd from binaries
+                                             #  2. Unzip & install with update-a12s
+sudo update-alternatives --install /usr/bin/clangd clangd /usr/local/bin/clangd-14 100
+(use-package lsp-mode                        #  3. Use package in Emacs
+  :hook (
+        (c++-mode . lsp-deferred)
+	(lsp-mode . lsp-enable-which-key-integration))
+  :commands (lsp lsp-deferred))
+(use-package lsp-ui)
+                                             #  4. Configure exe location
+(setq lsp-clangd-binary-path "/usr/bin/clangd")
+                                             #  5. Customize clangd args
+(setq lsp-clients-clangd-args "--header-insertion=iwyu")
+                                             #  6. Add a .clangd for system headers
+
+ansi-term                                    # Emacs, shell with colors
