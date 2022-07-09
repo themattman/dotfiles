@@ -437,7 +437,9 @@ This command does not push text to `kill-ring'."
 
 (setq shell-command-switch "-ic")
 (setq lsp-clangd-binary-path "/usr/bin/clangd")
-;;(setq lsp-clients-clangd-args "--header-insertion=iwyu")
+;;(setq lsp-clients-clangd-executable "/usr/bin/clangd")
+(setq lsp-clients-clangd-args
+  '("--header-insertion=iwyu" "--log=verbose" "--clang-tidy"))
 ;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
 (setq compilation-scroll-output t)
 ;; TAGS file
@@ -618,6 +620,18 @@ This command does not push text to `kill-ring'."
 ;; (bind-key* "C-i" 'some-function)
 ;; Autocomplete
 (ac-config-default)
+;; from: https://github.com/brianjcj/auto-complete-clang
+(defun mrk/ac-cc-mode-setup ()
+  (setq ac-sources (append '(ac-source-clang ac-source-yasnippet) ac-sources)))
+(add-hook 'c-mode-common-hook 'mrk/ac-cc-mode-setup)
+(setq ac-clang-flags
+      (mapcar (lambda (item)(concat "-I" item))
+              (split-string
+               "
+ /usr/local/include
+ /usr/include
+"
+               )))
 ;; (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
 ; there used to be an extra slash between .d//ac-dict
 (setq whitespace-style '(trailing

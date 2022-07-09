@@ -1604,7 +1604,7 @@ bk() {
         return $(_error "" "<path>")
     fi
     set -x
-    cp -ipr "${1%/}" "${1%/}.bk"
+    \cp -ipr "${1%/}" "${1%/}.bk"
     { set +x; } 2>/dev/null
 }
 _add_function bk
@@ -2020,7 +2020,7 @@ opt() {
 }
 _add_function opt
 
-# Find 
+# Find
 findn() {
     local _ext="py"
     if [[ $# -eq 1 ]]; then
