@@ -3146,3 +3146,62 @@ sudo update-alternatives --install /usr/bin/clangd clangd /usr/local/bin/clangd-
                                              #  6. Add a .clangd for system headers
 
 ansi-term                                    # Emacs, shell with colors
+
+#
+# 07/11/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cat <(echo "{") <(grep -o "\"Result\".*$" raii_test.log | cut -d',' -f2-) | jq
+                                             # MongoDB, Parse failed C++ unit test logs
+
+#
+# 07/13/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+clang-tidy <file> --export-fixes=fixes.yaml  # Run clang-tidy
+grep cppcoreguidelines fixes.yaml | cut -d':' -f2- | tr -s ' ' | cut -d' ' -f2- | sus
+                                             # Frequency of error types in clang-tidy
+
+#
+# 07/18/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+mkvirtualenv <envname>                       # Useful wrapper around python venv mgmt
+lsvirtualenv
+
+#
+# 07/21/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+diff -y --suppress-common-lines <f1> <f2> | wc -l # Diff, number of lines different
+iwyu_tool.py -v -p . <file.cpp> -- --no_fwd_decls --max_line_length 120 &> fixes
+fix_includes.py -p $(pwd) --nocomments <file.cpp> < fixes
+
+#
+# 08/19/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+./mytestcmd > $(nf testfile)                 # My bash function, nf (next_file) that
+                                             #  returns next "testfileX" for output
+
+#
+# 08/29/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git remote set-url --push origin no-pushing  # Git, Make <origin> remote fetch-only
+
+#
+# 09/08/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+tail -F <file>                              # --follow --retry, if file doesn't exist,
+                                            #  quietly retries until it does exist
+thread apply all bt 5                       # gdb, print top 5 stack traces of all threads
+                                            #  easy to search and use to find right thread
