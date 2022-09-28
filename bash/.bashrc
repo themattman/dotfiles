@@ -870,6 +870,7 @@ _add_alias gsu "git status -s --ignored" # Show ignored files
 _add_alias gs "git status -s -uno"       # Don't show untracked files
 _add_alias gsm "git status -s -uno | grep '^ M'"
 _add_alias gd "git diff"
+_add_alias gdn "git diff --name-only"
 _add_alias gds "git diff --staged"
 _add_alias gdss "git diff --stat"
 _add_alias gdsss "git diff --staged --stat"
@@ -2272,19 +2273,22 @@ open_file_from_prior_cmd_in_editor() {
         return $(_error "file [${_file}] does not exist.")
     fi
 
-    local _unadjusted_line_num=$(echo "${_last_line}" | cut -d':' -f2)
-    # Account for terminal height so line number appears at top of editor
-    _line_num=$((_unadjusted_line_num+$(tput lines)-8))
+    local _unadjusted_line_num=$(echo "${_last_line}" | cut -d':' -f2 -s)
+    local _line_num_arg
+    if [[ -n $_unadjusted_line_num ]]; then
+        # Account for terminal height so line number appears at top of editor
+        _line_num=$((_unadjusted_line_num+$(tput lines)-8))
 
-    if [[ ("${_line_num}" -gt 0) && ("${_line_num}" -lt $(wc -l "${_file}" | cut -d' ' -f1)) ]]; then
-        echo -e "opening: [${_file}] @ [${GREEN}${_line_num}${ENDCOLOR}]"
-        _line_num_arg="+${_line_num}"
+        if [[ ("${_line_num}" -gt 0) && ("${_line_num}" -lt $(wc -l "${_file}" | cut -d' ' -f1)) ]]; then
+            echo -e "opening: [${_file}] @ [${GREEN}${_line_num}${ENDCOLOR}]"
+            _line_num_arg="+${_line_num}"
+        fi
     else
         echo "opening: [${_file}]"
     fi
 
     set -x
-    eval ${EDITOR} ${_line_num_arg} "${_file}" # ${_unadjusted_line_num}
+    eval ${EDITOR} ${_line_num_arg} "${_file}"
     { set +x; } &> /dev/null
 }
 _add_function open_file_from_prior_cmd_in_editor
@@ -2328,6 +2332,7 @@ sincehead() {
     fi
 }
 _add_function sincehead
+_rename_function sincehead si
 
 sha8() {
     if [[ $# -ne 1 ]]; then

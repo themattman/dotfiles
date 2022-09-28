@@ -3205,3 +3205,11 @@ tail -F <file>                              # --follow --retry, if file doesn't 
                                             #  quietly retries until it does exist
 thread apply all bt 5                       # gdb, print top 5 stack traces of all threads
                                             #  easy to search and use to find right thread
+
+#
+# 09/28/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git checkout @{-1}                          # Alias for `git checkout -`, other numbers
+                                            #  can be provided too
