@@ -2566,6 +2566,9 @@ case "$TERM" in
 xterm*|rxvt*)
     #_add_variable PROMPT_COMMAND 'echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
     # Store *all* bash history in ~/.logs
+    if [[ ! -d ~/.logs ]]; then
+        mkdir ~/.logs
+    fi
     _add_variable PROMPT_COMMAND 'if [ "$(id -u)" -ne 0 ]; then echo "$(date "+%Y-%m-%d.%H:%M:%S") $(pwd) $(history 1)" >> ~/.logs/bash-history-$(date "+%Y-%m-%d").log; fi; echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
 ;;
 dumb*) # Emacs

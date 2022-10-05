@@ -3213,3 +3213,10 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 git checkout @{-1}                          # Alias for `git checkout -`, other numbers
                                             #  can be provided too
+
+#
+# 10/04/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+stow --dotfiles                              # For naming dotfiles like dot-bashrc
