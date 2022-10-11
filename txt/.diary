@@ -3114,6 +3114,9 @@ M-x shortdoc-display-group                   # Emacs 28, cheat sheet
 (lsp-workspace-root)                         # Emacs/lsp, reports root of project
 (lsp-workspace-folders-add ...)              # Emacs/lsp, add more dirs to project
                                              #  caution: (haven't used)
+delete-selection-mode                        # Emacs, minor-mode, behavior you expect in
+                                             #  text editor, overwrite selection/region
+./,                                          # JIRA, opens command window on an issue
 
 #
 # 07/07/2022
@@ -3123,6 +3126,7 @@ Command                                      Comments
 sudo timedatectl set-timezone America/Los_Angeles # Set timezone
 M-r                                          # Emacs, jump cursor to middle/top/bottom
 M-l/M-c/M-u                                  # Emacs, lowercase/cap/uppercase prev word
+git commit --allow-empty -m "Empty Commit"   # Git, make an empty commit
 
 #
 # 07/08/2022
@@ -3154,6 +3158,10 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 cat <(echo "{") <(grep -o "\"Result\".*$" raii_test.log | cut -d',' -f2-) | jq
                                              # MongoDB, Parse failed C++ unit test logs
+iconv -t UTF8 cellar.csv > cellar_utf8.csv   # Import csv's into mongo
+mongoimport --uri "mongodb://importer:password@localhost:27017" \
+ --db="wine" --file=cellar_utf8.csv --type=csv --headerline
+mlaunch init --single --dir ~/data/db/wine0
 
 #
 # 07/13/2022
@@ -3201,18 +3209,19 @@ git remote set-url --push origin no-pushing  # Git, Make <origin> remote fetch-o
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
-tail -F <file>                              # --follow --retry, if file doesn't exist,
-                                            #  quietly retries until it does exist
-thread apply all bt 5                       # gdb, print top 5 stack traces of all threads
-                                            #  easy to search and use to find right thread
+tail -F <file>                               # --follow --retry, if file doesn't exist,
+                                             #  quietly retries until it does exist
+thread apply all bt 5                        # gdb, print top 5 stack traces of all
+                                             #  threads. Makes it easy to search and find
+                                             #  right thread
 
 #
 # 09/28/2022
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
-git checkout @{-1}                          # Alias for `git checkout -`, other numbers
-                                            #  can be provided too
+git checkout @{-1}                           # Alias for `git checkout -`, other numbers
+                                             #  can be provided too
 
 #
 # 10/04/2022

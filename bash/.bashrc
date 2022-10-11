@@ -163,11 +163,12 @@ _add_alias() {
     # TODO: Check for "$" in aliased cmd, and print the evaluated value as well as variable name
     #
     # ~~Interface~~
-    # [__HOSTNAME__]: (optional) ignore machine configs not for current machine
-    #          ALIAS: name of alias
-    #           [no]: (optional) the string "no" here indicates to NOT prepend the alias with the
-    #                  pretty-printed echo. This is for aliases intended to take stdin piped to it
-    #        COMMAND: the command to map to the alias
+    # [__HOSTNAME__|f]: (optional) ignore machine configs not for current machine,
+    #                   or force 'cd' aliases if path doesn't exist
+    #            ALIAS: name of alias
+    #             [no]: (optional) the string "no" here indicates to NOT prepend the alias with the
+    #                    pretty-printed echo. This is for aliases intended to take stdin piped to it
+    #          COMMAND: the command to map to the alias
     if [[ $# -lt 2 ]]; then
         return $(_error "bad alias: $*" "[__hostname__] <alias> [no] <command>")
     fi
@@ -182,11 +183,15 @@ _add_alias() {
             _alias="${2}"
             _cmd="${@:3}"
         else
-            return $(_warning "Wrong hostname: [${target_hostname}], not applying")
+            return $(_warning "Wrong hostname: [${CYAN}${target_hostname}${ENDCOLOR}], not applying")
         fi
+    elif [[ ${1} = "f" && $# -gt 2 ]]; then
+        _alias="${2}"
+        _cmd="${@:3}"
     else
         _cmd="${@:2}"
     fi
+
     if [[ -z "${_cmd}" ]]; then
         _custom_user_aliases_broken[${_alias}]="${_cmd}"
         return $(_error "alias [${CYAN}${_alias}${ENDCOLOR}] doesn't have a target. You need something to alias this word to")
@@ -201,18 +206,21 @@ _add_alias() {
         if [[ ${_cmd} != ${_custom_user_aliases[${_alias}]} ]]; then
             _custom_user_aliases_broken[${_alias}]="${_cmd}"
         fi
-        _warning "alias [${CYAN}${_alias}${ENDCOLOR}] \t already exists as [${LIGHTPURPLE}${_already_exists}${ENDCOLOR}]"
+        _warning "alias [${CYAN}${_alias}${ENDCOLOR}] \t already exists as [${PURPLE}${_already_exists}${ENDCOLOR}]"
     fi
 
 
     # Wrap "cmd" with pretty-printing
     #
-    # 3 classes of aliases:
+    # 4 classes of aliases:
     # 1: CD commands with a location to be checked
     if [[ ${_cmd% *} = "cd" ]]; then
         _location="${_cmd#* }"
         if [[ ${_cmd} != "cd" && ! -d ${_location} && ${_location:0:1} != "$" && ${_location:0:1} != "." ]]; then
-            if [[ ${1:0:2} = "__" ]]; then
+            if [[ ${1} = "f" ]]; then
+                # f == --force (typically reserved for relative path aliases)
+                _warning "forcing broken cd! => [${CYAN}${_alias}${ENDCOLOR}] to [${PURPLE}${_cmd}${ENDCOLOR}]"
+            elif [[ ${1:0:2} = "__" ]]; then
                 _host=${1:2:-2}
                 if [[ ${_host} == "${HOSTNAME}" ]]; then
                     return $(_error "location [${_location}] for alias [${_alias}] is broken and does not exist due to wrong host, expected host [${_host}]")
@@ -233,8 +241,13 @@ _add_alias() {
     elif [[ ${2} = "no" ]]; then
         _full_cmd="${@:3}"
 
+    # # 3: Echo's that need special escaping
+    # elif [[ ${_cmd% *} = "echo" ]]; then #&& ${3:0:1} = '"' ]]; then
+    #     echo "HEYYYYYYYYYYYYYYOOOOOOOOOOOOOOOOOOOOOO [${_cmd}]"
+    #     _escaped_parens=${_cmd//\"/\\\"} # global substitution - escaping double quotes (" to \")
+    #     _full_cmd="echo -e \"alias [\${PURPLE}${_alias}\${ENDCOLOR}] to [\${PURPLE}${_cmd//$/\\$}\${ENDCOLOR}]\"; ${_cmd}"
 
-    # 3: All other aliases that should be wrapped with a pretty-print describing the alias
+    # 4: All other aliases that should be wrapped with a pretty-print describing the alias
     #     so the user doesn't get confused by the non-standard behavior of the shell (executing an alias)
     else
         _full_cmd="echo -e \"alias [\${PURPLE}${_alias}\${ENDCOLOR}] to [\${PURPLE}${_cmd//$/\\$}\${ENDCOLOR}]\"; ${_cmd}"
@@ -648,7 +661,7 @@ linux*|msys*)
     _add_alias wa "watch -n 1"
 
     # System Info
-    _add_alias cores "cat /proc/cpuinfo | grep -c processor"
+    _add_alias cores "grep -c ^processor /proc/cpuinfo"
     _add_alias os "lsb_release -d | cut -d: -f 2 | sed 's/^\s*//'" # Linux Distro
 
     # Tabs -> spaces
@@ -948,8 +961,8 @@ _add_alias freq "cut -f1 -d" " "$HISTFILE" | sort | uniq -c | sort -nr | head -n
 # Give history timestamps
 _add_variable HISTTIMEFORMAT "[%F %T] "
 # Johannes Gutenberg's Bible
-_add_variable HISTSIZE 100000
-_add_variable HISTFILESIZE 100000
+_add_variable HISTSIZE 500000
+_add_variable HISTFILESIZE 500000
  # Easily re-execute the last history command
 _add_alias r "fc -s"
 # Networking
@@ -1260,8 +1273,8 @@ _add_function cd
 
 # Git Hook Checker
 hooks() {
-    if [[ $(git rev-parse --is-bare-repository) == "false" ]]; then
-        if [[ $(git rev-parse --is-inside-work-tree) == "true" ]]; then
+    if [[ $(git rev-parse --is-bare-repository 2>/dev/null) == "false" ]]; then
+        if [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) == "true" ]]; then
             local gitdir=$(git rev-parse --git-dir)
             realpath "${gitdir}/hooks/"
             ls -lh "${gitdir}/hooks/"
@@ -2318,6 +2331,15 @@ _add_function open_file
 _rename_function open_file e
 
 # num commits since head
+num_commits_since_head() {
+    if [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) != "true" ]]; then
+            return $(_error "not inside working tree.")
+    fi
+    local _base_branch=${1:-master}
+    git rev-list --count ${_base_branch}.. #$(git rev-parse --abbrev-ref HEAD)
+}
+_add_function num_commits_since_head
+
 sincehead() {
     local _delimiter=${1:-SERVER}
     local _commit=$(git log --format="format:%s|%H" | grep "^${_delimiter}-[0-9]\+" | head -n 1 | rev | cut -d'|' -f1 | rev)
@@ -2602,7 +2624,7 @@ darwin*)
     _add_alias vpnd "scutil --nc stop \"${VPN_NAME}\""
     _add_alias vpns "scutil --nc status '${VPN_NAME}'"
     _add_alias vpnl "scutil --nc list"
-    _add_alias vpnr "vpnd; sleep 5; vpnc;"
+    _add_alias vpnr "vpnd; sleep 3; vpnc;"
 ;;
 esac
 
