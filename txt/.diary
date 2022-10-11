@@ -3229,3 +3229,21 @@ git checkout @{-1}                           # Alias for `git checkout -`, other
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 stow --dotfiles                              # For naming dotfiles like dot-bashrc
+man 3 glob                                   # Shell globbing behavior
+globstar                                     # Off by default, allows ** in globs like **/
+nullglob                                     # Off by default, replaces a failed glob with
+                                             #  literally nothing: $ ls ./myfile.* -> $ ls
+failglob                                     # Off by default, returns a fail code
+
+#
+# 10/10/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+( exit 8 )                                   # Like false(1) but can return any exit code
+                                             #  in the range 0-9
+true / :                                     # Bash, no-op, return success (0)
+! : / false                                  # Bash, no-op, return failure (1)
+getconf LONG_BIT                             # Returns CPU bits (32 or 64)
+uname -m                                     # Similar to above but with arch characters
+

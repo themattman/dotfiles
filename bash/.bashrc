@@ -884,6 +884,7 @@ _add_alias gs "git status -s -uno"       # Don't show untracked files
 _add_alias gsm "git status -s -uno | grep '^ M'"
 _add_alias gd "git diff"
 _add_alias gdn "git diff --name-only"
+_add_alias gdns "git diff --name-only --staged"
 _add_alias gds "git diff --staged"
 _add_alias gdss "git diff --stat"
 _add_alias gdsss "git diff --staged --stat"

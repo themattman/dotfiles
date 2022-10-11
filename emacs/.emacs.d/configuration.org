@@ -688,6 +688,7 @@ This command does not push text to `kill-ring'."
 
 * Package Customizations
 #+BEGIN_SRC emacs-lisp
+  (setq clang-format-style "file")
   ;; Bind-key
   ;; (bind-key* "C-i" 'some-function)
   ;; Autocomplete

@@ -616,6 +616,7 @@ This command does not push text to `kill-ring'."
 (add-to-list 'load-path "~/.emacs.d/elpa")
 ;; (add-to-list 'load-path "~/.emacs.d/") ; Not needed in Emacs 24.x
 
+(setq clang-format-style "file")
 ;; Bind-key
 ;; (bind-key* "C-i" 'some-function)
 ;; Autocomplete
