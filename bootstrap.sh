@@ -11,7 +11,7 @@ if [[ $? -ne 0 ]]; then
     echo "Error: package stow doesn't exist" >&2
     sudo apt-get -y install stow
     if [[ $? -ne 0 ]]; then
-        echo "Please run: sudo apt-get install stow" >&2 && exit 1
+        echo "Please run: sudo apt-get install stow OR sudo apt-get update" >&2 && exit 1
     fi
 fi
 
@@ -25,8 +25,13 @@ for pkg in $(ls .); do
             set -x
             stow --adopt $pkg
             { set +x; } &>/dev/null
-            git diff
-            git reset --hard
+            for existing_pkg in $(git diff --name-only -- $pkg); do
+                set -x
+                mv ${existing_pkg} ${existing_pkg}.bk
+                { set +x; } &>/dev/null
+            done
+            git reset --hard -- $pkg
+            stow $pkg
         fi
     fi
 done
