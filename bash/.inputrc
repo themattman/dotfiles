@@ -43,7 +43,7 @@ Control-o: "> output.$(date +${DATE_FORMAT})"
 "\C-x\C-l": " | \\less"
 
 # Re-read Bashrc
-"\C-x\C-b": "sb\r"
+"\C-x\C-b": "sbb\r"
 #"\C-x\C-m": backword-word # downcase-word
 
 # Prepend find to command

@@ -2699,6 +2699,27 @@ ar tv libmyarchive.a                    # Lists all files in archive with modes
                                         #  and all other file info
 ar crv
 
+# 09/07/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+perf/perf-stat/perf-report              # Linux-tools for perf tracking
+cpupower                                # I think perf-tools? Godbolt used
+g++ -0s empty.cpp -o <file.o>
+objdump --no-show-raw-insn -dC <file.o> # Don't look at bytecodes
+readelf -a <file.o>                     # Dump everything in the executable
+sudo perf record <exe cmd str>          # Records data to ./perf.data
+sudo perf report                        # Reads and displays perf data, can tab
+                                        #  thru hottest instructions
+locale -a                               # Print all supported locales
+locale                                  # Print all locale data set in shell
+LC_NUMERIC=C locale -c LC_NUMERIC       # Print the numeric formats for 'C'
+LC_NUMERIC=en_US.UTF-8 locale -c LC_NUMERIC
+                                        #  en_us.UTF-8 has a comma thousands sep
+                                        #  whereas C does not
+LC_NUMERIC=en_US.UTF-8 sudo perf stat -B -o perf.stat_15sum ./15sum
+                                        # Get thousands seperators in perf track
+
 #
 # 11/13/2020
 #
@@ -2714,6 +2735,87 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 git diff --staged --ignore-cr-at-eol emacs   # Ignores ^M from win/linux diffs
 dos2unix filename                            # Git bash, remove DOS endings, ^M, in-place
+
+#
+# 12/26/2020
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+C-M-backspace                           # Emacs, highlight cur c++ function
+                                        #  Repeat: expand region by 1 function
+https://stackoverflow.com/users/640243/davidn
+                                        # David Neiss on StackOverflow
+<build>/CMakeFiles/<target>.dir         # CMake, linker command file
+
+#
+# 01/21/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+package-menu-filter                     # emacs, in package-list-packages this
+                                        #  filters the list down to packages that
+                                        #  match the search string
+f                                       # emacs, in package-list-packages
+                                        #  activates package-menu-filter
+h                                       # emacs, in package-list-packages lists
+                                        #  help message with commands that can
+                                        #  be run
+https://www.gnu.org/software/emacs/manual/html_node/emacs/Package-Menu.html
+i                                       # emacs, in package-list-packages marks
+                                        #  for install
+x                                       # emacs, in package-list-packages execs
+                                        #  all installs
+https://stackoverflow.com/questions/4659549/maintain-git-repo-inside-another-git-repo
+
+#
+# 04/26/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+$(npm bin)/http-server                  # Run node server for
+/home/diego/sw/homeauto/data_vis_pi/nodeserver
+
+#
+# 07/10/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+-z "${return_type##*vector<vector*}"    # platform-independent(?) check existence
+-z "${var_name##*STRING*}"           #  of substring STRING (i.e. contains())
+
+#
+# 07/12/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+${path^}                                # Uppercase first letter
+${path^^}                               # Uppercase entire variable
+${path,}                                # Lowercase first letter
+${path,,}                               # Lowercase entire variable
+
+#
+# 07/18/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+tail -n +2                              # Print all except *first* line
+
+#
+# 08/26/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+check-parens                            # Emacs, figures out where missing parens
+                                        #  is. Also bisect init file to find
+                                        #  errors if something like this is
+                                        #  causing a "eof during parsing" error
+
+#
+# 10/03/2021
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+echo {-300..0..1} | tr ' ' ','          # Generate CSV sequence of numbers
 
 #
 # 11/23/2021
@@ -3236,6 +3338,13 @@ nullglob                                     # Off by default, replaces a failed
 failglob                                     # Off by default, returns a fail code
 
 #
+# 10/09/2022
+#
+Command                                 Comments
+---------------------------------------------------------------------------------
+man intro                               # Intro to the shell and its basics!
+
+#
 # 10/10/2022
 #
 Command                                      Comments
@@ -3246,4 +3355,3 @@ true / :                                     # Bash, no-op, return success (0)
 ! : / false                                  # Bash, no-op, return failure (1)
 getconf LONG_BIT                             # Returns CPU bits (32 or 64)
 uname -m                                     # Similar to above but with arch characters
-
