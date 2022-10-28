@@ -3367,6 +3367,13 @@ https://manpages.ubuntu.com/manpages/bionic/man5/systemd.unit.5.html
 https://manpages.ubuntu.com/manpages/bionic/man5/systemd.service.5.html
 
 #
+# 10/19/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+mlaunch init --binarypath build/install/bin --replicaset --port 29090 --dir /data/db
+
+#
 # 10/21/2022
 #
 Command                                      Comments

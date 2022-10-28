@@ -413,10 +413,10 @@ _prepend_to_variable_with_path_separator() {
         if [[ -z "${_contents_of_variable+x}" ]]; then
             export "${_variable}=${_value}"
         else
-            export "${_variable}=:${_value}:${_contents_of_variable}"
+            export "${_variable}=${_value}:${_contents_of_variable}"
         fi
     else
-        export "${_variable}=:${_value}:${_contents_of_variable}"
+        export "${_variable}=${_value}:${_contents_of_variable}"
     fi
 }
 _add_function _prepend_to_variable_with_path_separator
@@ -487,6 +487,7 @@ _clear_environment() {
     _remove_all_of "variables" "${!_custom_user_variables[@]}"
     _remove_all_of "PATH variables" "${!_custom_user_path_variables[@]}"
     _remove_all_of "functions" "${!_custom_user_functions[@]}"
+    PS1=${PS1_prev:-"$ "}
     echo -e "${YELLOW}${ENDCOLOR}[${CYAN}${FUNCNAME[0]}${ENDCOLOR}] done."
 }
 _add_function _clear_environment
@@ -1029,7 +1030,7 @@ _add_alias ee "open_file ${EMACS_INIT_FILE}"
 _add_alias eg "open_file ~/.gitconfig"
 _add_alias es "open_file ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
-_add_alias sb "_clear_environment; PS1='$ '; source ~/.bashrc;"
+_add_alias sb "_clear_environment; source ~/.bashrc;"
 _add_alias exts "find . -type f | awk -F'/' '{print \$NF}' | awk -F'.' '{print \$NF}' | sort | uniq -c | sort -h"
 _add_alias rb "rm ~/.emacs.d/configuration.el"
 # This command should wipe out the previous environment and start over
@@ -1043,6 +1044,7 @@ _add_alias pb "una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 
 ## 5) Prompt String
 source_file ~/.git-prompt
+_add_variable PS1_prev "$PS1"
 case $OSTYPE in
 linux*|msys*)
     # Prompt String
@@ -2307,6 +2309,47 @@ open_file_from_prior_cmd_in_editor() {
 }
 _add_function open_file_from_prior_cmd_in_editor
 _rename_function open_file_from_prior_cmd_in_editor opfe
+
+open_file_from_prior_cmd_around() {
+    local _output=$(history -p !!)
+    if [[ ! -x $(which ansi2txt) ]]; then
+        return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+    fi
+
+    local _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+    local _file=$(echo "${_last_line}" | cut -d':' -f1)
+
+    if [[ ! -r "${_file}" ]]; then
+        return $(_error "file [${_file}] does not exist.")
+    fi
+
+    local _unadjusted_line_num=$(echo "${_last_line}" | cut -d':' -f2 -s)
+    local _line_num_arg
+    if [[ -n $_unadjusted_line_num ]]; then
+        # Account for terminal height so line number appears at top of editor
+        _line_num=$((_unadjusted_line_num+$(tput lines)-8))
+
+        if [[ ("${_line_num}" -gt 0) && ("${_line_num}" -lt $(wc -l "${_file}" | cut -d' ' -f1)) ]]; then
+            echo -e "opening: [${_file}] @ [${GREEN}${_line_num}${ENDCOLOR}]"
+            _line_num_arg="+${_line_num}"
+        fi
+    else
+        echo "opening: [${_file}]"
+    fi
+
+    local _context_before=5
+    local _context_after=${1:-20}
+    local _begin=$((_unadjusted_line_num-_context_before))
+    if [[ ! ($_begin -ge 0) ]]; then
+        _begin=0
+    fi
+    local _end=$((_unadjusted_line_num+_context_after))
+    set -x
+    sed -n "${_begin},${_end}p" ${_file}
+    { set +x; } &> /dev/null
+}
+_add_function open_file_from_prior_cmd_around
+_rename_function open_file_from_prior_cmd_around opfa
 
 open_file() {
     # echo "=> [${1@Q}]"
