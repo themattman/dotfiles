@@ -3355,3 +3355,23 @@ true / :                                     # Bash, no-op, return success (0)
 ! : / false                                  # Bash, no-op, return failure (1)
 getconf LONG_BIT                             # Returns CPU bits (32 or 64)
 uname -m                                     # Similar to above but with arch characters
+
+#
+# 10/14/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+systemctl get-default                        # Display current running level
+systemctl start/stop/restart <n>.service     # Operate on a systemd service
+https://manpages.ubuntu.com/manpages/bionic/man5/systemd.unit.5.html
+https://manpages.ubuntu.com/manpages/bionic/man5/systemd.service.5.html
+
+#
+# 10/21/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+tput rmam                                    # Bash, enter truncate lines mode
+tput smam                                    # Bash, end truncate lines mode
+less -S                                      # Truncate lines, can also type -S in an
+                                             #  active session to toggle behavior.

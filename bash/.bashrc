@@ -1003,7 +1003,7 @@ _add_alias pyk "pkill -9 python"
 # TAR
 _add_alias tarv "tar tvf"  # View an archive
 _add_alias tarc "tar caf"  # Compress an archive
-_add_alias untar "tar xvf" # Uncompress an archive
+_add_alias untar "tar xvf" # Uncompress an archive, gzip -d
 # Vim
 _add_alias vmi "vim"
 _add_alias mvi "vim"
@@ -2450,6 +2450,32 @@ next_file() {
 }
 _add_function next_file
 _rename_function next_file nf
+
+head-and-tail() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "<filename>")
+    fi
+    local _file=$1
+    local _cols=$(tput cols)
+    tput rmam
+    head $_file
+    for a in $(seq ${_cols}); do echo -n '-'; done && echo
+    tail $_file
+    tput smam
+}
+_add_function head-and-tail
+_rename_function head-and-tail hat
+
+# Dive one layer deeper than `func`, usually for renames
+ffunc() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "<filename>")
+    fi
+    local _funcname=$1
+    local _nested_funcname=$(declare -f $_funcname | head -n 3 | tail -n 1 | tr -s ' ' | cut -d' ' -f2)
+    declare -f $_nested_funcname
+}
+_add_function ffunc
 
 
 ## 7) Bash Completion
