@@ -3382,3 +3382,48 @@ tput rmam                                    # Bash, enter truncate lines mode
 tput smam                                    # Bash, end truncate lines mode
 less -S                                      # Truncate lines, can also type -S in an
                                              #  active session to toggle behavior.
+
+#
+# 10/28/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+info functions <symbol_name>                # gdb, search for symbols
+
+#
+# 10/30/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+tar --gname root --uname root <>             # For stripping current user/group in tarball
+github.com/charmbracelet/vhs                 # Record terminal, 2 different programs
+https://asciinema.org/                       # Record terminal, 2 different programs
+
+#
+# 10/31/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+lldb -p <pid>
+image lookup -r -s <func>                    # lldb, lookup symbol (gdb's info function <>)
+br s -f <file> -l <line>                     # lldb, set bp at line
+br s -n <func>                               # lldb, set bp on func
+lldb -s <script>                             # run multiple commands in script
+br l                                         # lldb, list breakpoints
+command source <file>                        # lldb, run commands from file/script
+TODO: what is a comment/no-op cmd? Would like to comment lldb scripts
+br dis <number>                              # lldb, disable individual breakpoints
+br dis *                                     # lldb, disable multiple breakpoints
+fr v                                         # lldb, frame view arguments and local vars
+                                             #  for current frame. (info args & locals)
+fr v -a                                      # lldb, same as above, no args (just locals)
+
+#
+# 11/01/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+print()                                      # Legacy mongo
+printjson()                                  # Legacy mongo
+ps -axo pid,command | grep <exe> | grep -v grep | cut -d' ' -f1 # Find pid of process
+info sharedlibrary                           # gdb, print all loaded shared libs

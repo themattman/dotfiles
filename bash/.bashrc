@@ -230,9 +230,9 @@ _add_alias() {
                 fi
             else
                 return $(_error "location [${_location}] for alias [${_alias}] is broken and does not exist")
+                _custom_user_aliases_broken[${_alias}]="${_cmd}"
+                return 1
             fi
-            _custom_user_aliases_broken[${_alias}]="${_cmd}"
-            return 1
         fi
         _full_cmd="echo -e \"alias [\${PURPLE}${_alias}\${ENDCOLOR}] cd [\${PURPLE}${_cmd#* }\${ENDCOLOR}]\"; ${_cmd}"
 
@@ -483,6 +483,7 @@ _clear_environment() {
     echo -en "${LIGHTGRAY}"
     _remove_all_of "auto alias completion functions" "${!_custom_user_auto_alias_completion_functions[@]}"
     _remove_all_of "aliases" "${!_custom_user_aliases[@]}"
+    _remove_all_of "aliases_broken" "${!_custom_user_aliases_broken[@]}"
     _remove_all_of "completion functions" "${!_custom_user_completion_functions[@]}"
     _remove_all_of "variables" "${!_custom_user_variables[@]}"
     _remove_all_of "PATH variables" "${!_custom_user_path_variables[@]}"
@@ -2092,7 +2093,7 @@ _add_function mrf
 cpptype () {
     local _search_term=$1
     local _opt=$2
-    local _dir=${3:-src}
+    local _dir=${3:-src/mongo}
     local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
     if [[ ! -d ${_dir} ]]; then
         return $(_error "directory [${_dir}] doesn't exist. Run from within a src tree.")
@@ -2113,7 +2114,7 @@ _add_function cpptype
 cppdef () {
     local _opt=$2
     local _search_term=$1
-    local _dir=${3:-src}
+    local _dir=${3:-src/mongo}
     local _grep_colors="ms=:mc=:sl=:cx=:fn=35:ln=32:bn=32:se=36" # Turn off the red for matches, but leave the file and line number coloring on
     if [[ ! -d ${_dir} ]]; then
         return $(_error "directory [${_dir}] doesn't exist. Run from within a src tree.")
@@ -2249,11 +2250,18 @@ _rename_function _most_recently_modified_file mrmf
 #  Falls back to re-running the command.
 open_file_from_prior_cmd_in_less() {
     local _output=$(history -p !!)
-    if [[ ! -x $(which ansi2txt) ]]; then
-        return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
-    fi
+    local _last_line=""
+    case $OSTYPE in
+        linux*|msys*)
+            if [[ ! -x $(which ansi2txt) ]]; then
+                return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+            fi
+            _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+            ;;
+        darwin*)
+            _last_line=$(eval "${_output}" | tail -n 1)
+    esac
 
-    local _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
     local _file=$(echo "${_last_line}" | cut -d':' -f1)
 
     if [[ ! -r "${_file}" ]]; then
@@ -2278,11 +2286,18 @@ _rename_function open_file_from_prior_cmd_in_less opf
 
 open_file_from_prior_cmd_in_editor() {
     local _output=$(history -p !!)
-    if [[ ! -x $(which ansi2txt) ]]; then
-        return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
-    fi
+    local _last_line=""
+    case $OSTYPE in
+        linux*|msys*)
+            if [[ ! -x $(which ansi2txt) ]]; then
+                return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+            fi
+            _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+            ;;
+        darwin*)
+            _last_line=$(eval "${_output}" | tail -n 1)
+    esac
 
-    local _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
     local _file=$(echo "${_last_line}" | cut -d':' -f1)
 
     if [[ ! -r "${_file}" ]]; then
