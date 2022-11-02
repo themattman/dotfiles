@@ -3427,3 +3427,29 @@ print()                                      # Legacy mongo
 printjson()                                  # Legacy mongo
 ps -axo pid,command | grep <exe> | grep -v grep | cut -d' ' -f1 # Find pid of process
 info sharedlibrary                           # gdb, print all loaded shared libs
+
+#
+# 11/02/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+kill -18 <pid>                               # Bash, SIGTSTP signal is tied to ctrl-z
+                                             #  and job control. Sending this to an active
+                                             #  process will stop it and keep it within
+                                             #  the job control queue.
+tput smcup/rmcup                             # Linux, save/restore screen state
+                                             #  this is how commands like `less` etc
+                                             #  return the command history and screen to
+                                             #  the user after opening a file.
+                                             #  I have been searching for this behavior
+                                             #  for quite some time. Certainly have been
+                                             #  pondering it for a few years. Here are
+                                             #  some resources:
+                                             #  - https://stackoverflow.com/questions/
+                                             #     11023929/using-the-alternate-screen
+                                             #     -in-a-bash-script
+                                             #  - https://invisible-island.net/xterm
+                                             #     /xterm.faq.html#xterm_tite
+                                             #  - https://stackoverflow.com/questions
+                                             #     /33929816/save-and-restore-terminal
+                                             #     -content

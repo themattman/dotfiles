@@ -2535,6 +2535,39 @@ ffunc() {
 }
 _add_function ffunc
 
+# Iterates through each file, opening each one in `more`
+# Usage:
+#  $ find . -name '*.txt' | each
+each() {
+    declare -a _files=${1:-$(</dev/stdin)};
+    # read _files
+    if [[ $# -eq 0 && ${#_files[@]} -eq 0 ]]; then
+        return $(_error "requires at least 1 argument" "<filename>")
+    fi
+    # echo "  @: [${@}]"
+    # local _files=${@}
+    # if [[ $1 = "alias [" ]]; then
+    #     _files=${@:2}
+    # fi
+    # echo "@:2: [${@:2}]"
+    clear
+    tput smcup
+    for f in ${_files[@]}; do
+        if [[ -f $f ]]; then
+            echo "file [$f]"
+            sleep 1
+            # \less -cR +F $f
+            more -c $f
+            local _wait_pid=$!
+            wait -f $_wait_pid
+        else
+            echo "File [$f] does not exist. Skipping."
+        fi
+    done
+    tput rmcup
+}
+_add_function each
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
