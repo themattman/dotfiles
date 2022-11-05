@@ -2781,7 +2781,7 @@ $(npm bin)/http-server                  # Run node server for
 Command                                 Comments
 ---------------------------------------------------------------------------------
 -z "${return_type##*vector<vector*}"    # platform-independent(?) check existence
--z "${var_name##*STRING*}"           #  of substring STRING (i.e. contains())
+-z "${var_name##*STRING*}"              #  of substring STRING (i.e. contains())
 
 #
 # 07/12/2021
@@ -2895,8 +2895,7 @@ help set
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
-reptyr                                       # Move active terminal session to GNU
-                                             #  Screen
+reptyr                                       # Move active terminal session to GNU Screen
 
 # 12/29/2021
 #
@@ -3378,8 +3377,8 @@ mlaunch init --binarypath build/install/bin --replicaset --port 29090 --dir /dat
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
-tput rmam                                    # Bash, enter truncate lines mode
-tput smam                                    # Bash, end truncate lines mode
+tput rmam                                    # Bash, enter truncate lines mode/nowrap
+tput smam                                    # Bash, end truncate lines mode/wrap
 less -S                                      # Truncate lines, can also type -S in an
                                              #  active session to toggle behavior.
 
@@ -3408,7 +3407,8 @@ lldb -p <pid>
 image lookup -r -s <func>                    # lldb, lookup symbol (gdb's info function <>)
 br s -f <file> -l <line>                     # lldb, set bp at line
 br s -n <func>                               # lldb, set bp on func
-lldb -s <script>                             # run multiple commands in script
+lldb -s <script>                             # lldb, run multiple commands in script
+gdb -x <script>                              # gdb, commands in script
 br l                                         # lldb, list breakpoints
 command source <file>                        # lldb, run commands from file/script
 TODO: what is a comment/no-op cmd? Would like to comment lldb scripts
@@ -3453,3 +3453,14 @@ tput smcup/rmcup                             # Linux, save/restore screen state
                                              #  - https://stackoverflow.com/questions
                                              #     /33929816/save-and-restore-terminal
                                              #     -content
+set auto-solib-add 0                         # gdbinit, speed up load time by not loading
+                                             #  the world
+sharedlibrary lib<name>.so                   # gdb, load sharedlib to enable setting bp's
+
+#
+# 11/03/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+numfmt --from=si 10M                         # convert human-readable to bytes
+numfmt --to=si 3498                          # convert bytes to human-readable

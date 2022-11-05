@@ -201,6 +201,9 @@ Always compile packages, and use the newest version available.
   (interactive)
   (find-file "~/.diary")
   (goto-char (point-max)))
+(defun open-bashrc-file ()
+  (interactive)
+  (find-file "~/.bashrc"))
 (defun show-file-name ()
   "Show the full path file name in the minibuffer."
   (interactive)
@@ -353,6 +356,7 @@ This command does not push text to `kill-ring'."
   (global-set-key (kbd "C-c z"   ) 'show-file-name            )
   (global-set-key (kbd "C-c C-j" ) 'regenerate-tags-file      )
   ;;(global-set-key (kbd "C-c d"   ) 'open-diary-file           )
+  (global-set-key (kbd "C-c b"   ) 'open-bashrc-file          )
   (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
   (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
   (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
@@ -581,6 +585,10 @@ This command does not push text to `kill-ring'."
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 (add-hook 'c-mode-common-hook
+          (function (lambda ()
+          (add-hook 'before-save-hook
+          'clang-format-buffer))))
+(add-hook 'js-mode-hook
           (function (lambda ()
           (add-hook 'before-save-hook
           'clang-format-buffer))))
