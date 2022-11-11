@@ -2352,7 +2352,7 @@ open_file_from_prior_cmd_around() {
         echo "opening: [${_file}]"
     fi
 
-    local _context_before=5
+    local _context_before=20
     local _context_after=${1:-20}
     local _begin=$((_unadjusted_line_num-_context_before))
     if [[ ! ($_begin -ge 0) ]]; then
@@ -2404,6 +2404,8 @@ sincehead() {
     local _commit=$(git log --format="format:%s|%H" | grep "^${_delimiter}-[0-9]\+" | head -n 1 | rev | cut -d'|' -f1 | rev)
     echo -e "${LIGHTPURPLE}first commit off parent${ENDCOLOR}: [${CYAN}${_commit}${ENDCOLOR}]\n"
     git rev-list --ancestry-path --date=local --pretty=format:"%h - %Cgreen%cd%Creset - %s" ${_commit}^..HEAD | grep -v "^commit "
+    echo
+    git diff --stat ${_commit}^..HEAD | grep -v "^commit "
     local _num_commits=$(git rev-list --ancestry-path ${_commit}^..HEAD | wc -l)
     echo -e "${GREEN}${_num_commits}${ENDCOLOR} commits."
     read -p "See diff? [y/n]: " -n 1 -r

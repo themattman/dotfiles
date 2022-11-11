@@ -29,6 +29,7 @@
 (use-package engine-mode)
 ;; (use-package magit)
 (use-package yasnippet)
+(use-package cmake-mode)
 (use-package yaml-mode)
 (use-package markdown-mode)
 (use-package web-mode)
@@ -151,6 +152,9 @@
   (interactive)
   (find-file "~/.diary")
   (goto-char (point-max)))
+(defun open-bashrc-file ()
+  (interactive)
+  (find-file "~/.bashrc"))
 (defun show-file-name ()
   "Show the full path file name in the minibuffer."
   (interactive)
@@ -275,6 +279,21 @@ This command does not push text to `kill-ring'."
   (find-file (concat (file-name-sans-extension buffer-file-name) ".h"))
 )
 
+(defun mrk/wrap-with-header ()
+  (interactive)
+  (beginning-of-line 1)
+  (insert "#include ")
+  (if (y-or-n-p "<Angled Brackets>? Y/n")
+    (progn
+      (insert "<")
+      (end-of-line 1)
+      (insert ">"))
+    (progn
+      (insert "\"")
+      (end-of-line 1)
+      (insert "\"")))
+)
+
 ;; <return> vs. <kp-enter> (keypad enter)
 ; swap windows
 (global-set-key (kbd "C-c l"    ) 'windmove-swap-states-left )
@@ -282,7 +301,12 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-c u"    ) 'windmove-swap-states-up   )
 (global-set-key (kbd "C-c d"    ) 'windmove-swap-states-down )
 
+(global-set-key (kbd "C-c C-h"  ) 'mrk/wrap-header-include   )
 (global-set-key (kbd "C-c m"    ) 'xterm-mouse-mode          )
+
+;; Scroll view with mouse?
+(global-set-key (kbd "<M-up>") (lambda () (interactive) (scroll-up 1)))
+(global-set-key (kbd "<M-down>") (lambda () (interactive) (scroll-down 1)))
 
 (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
 (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
@@ -296,6 +320,7 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-c z"   ) 'show-file-name            )
 (global-set-key (kbd "C-c C-j" ) 'regenerate-tags-file      )
 ;;(global-set-key (kbd "C-c d"   ) 'open-diary-file           )
+(global-set-key (kbd "C-c b"   ) 'open-bashrc-file          )
 (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
 (global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
 (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
@@ -358,7 +383,7 @@ This command does not push text to `kill-ring'."
 ; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
 
 (c-add-style "MongoDB-Style"
-	       '("gnu"
+	   '("gnu"
 		 (c-basic-offset . 4)     ; Guessed value
 		 (c-offsets-alist
 		  (access-label . 0)      ; Guessed value
@@ -515,6 +540,10 @@ This command does not push text to `kill-ring'."
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 (add-hook 'c-mode-common-hook
+          (function (lambda ()
+          (add-hook 'before-save-hook
+          'clang-format-buffer))))
+(add-hook 'js-mode-hook
           (function (lambda ()
           (add-hook 'before-save-hook
           'clang-format-buffer))))

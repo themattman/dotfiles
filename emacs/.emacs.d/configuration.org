@@ -327,6 +327,21 @@ This command does not push text to `kill-ring'."
   (interactive)
   (find-file (concat (file-name-sans-extension buffer-file-name) ".h"))
 )
+
+(defun mrk/wrap-with-header ()
+  (interactive)
+  (beginning-of-line 1)
+  (insert "#include ")
+  (if (y-or-n-p "<Angled Brackets>? Y/n")
+    (progn
+      (insert "<")
+      (end-of-line 1)
+      (insert ">"))
+    (progn
+      (insert "\"")
+      (end-of-line 1)
+      (insert "\"")))
+)
 #+END_SRC
 
 * Keybindings
@@ -338,6 +353,7 @@ This command does not push text to `kill-ring'."
   (global-set-key (kbd "C-c u"    ) 'windmove-swap-states-up   )
   (global-set-key (kbd "C-c d"    ) 'windmove-swap-states-down )
 
+  (global-set-key (kbd "C-c C-h"  ) 'mrk/wrap-header-include   )
   (global-set-key (kbd "C-c m"    ) 'xterm-mouse-mode          )
 
   ;; Scroll view with mouse?

@@ -3464,3 +3464,29 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 numfmt --from=si 10M                         # convert human-readable to bytes
 numfmt --to=si 3498                          # convert bytes to human-readable
+
+#
+# 11/06/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+ssh-copy-id user@remote                      # SSH, add public key to remote server to
+                                             #  enable passwordless authentication
+
+#
+# 11/08/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+show args
+set args --flag true -filter false           # gdb, set args for the next "run" invocation
+info terminal
+info proc                                    # gdb, some envs, will show pid, cwd, etc of
+                                             #  the inferior
+set print thread-events 1                    # gdb, turn on thread event printing (default)
+whatis <var>                                 # gdb, print type of var/expression
+catch load <libname-regex>                   # gdb, break on shared lib load, when empty,
+                                             #  breaks on all shared lib loads
+LD_DEBUG ldd <filename>                      # Insert paths to test loading shared libs
+LD_DEBUG=help cat                            # Print LD_DEBUG available values
+plt
