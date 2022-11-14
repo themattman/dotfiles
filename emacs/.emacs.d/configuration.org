@@ -328,7 +328,7 @@ This command does not push text to `kill-ring'."
   (find-file (concat (file-name-sans-extension buffer-file-name) ".h"))
 )
 
-(defun mrk/wrap-with-header ()
+(defun mrk/wrap-header-include ()
   (interactive)
   (beginning-of-line 1)
   (insert "#include ")

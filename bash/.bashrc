@@ -396,7 +396,7 @@ _append_variable_with_path_separator() {
 }
 _add_function _append_variable_with_path_separator
 
-_prepend_to_variable_with_path_separator() {
+_prepend_variable_with_path_separator() {
     local _variable _value _contents_of_variable
     if [[ $# -ne 2 ]]; then
         return $(_error "" "<variable> <value>")
@@ -419,7 +419,7 @@ _prepend_to_variable_with_path_separator() {
         export "${_variable}=${_value}:${_contents_of_variable}"
     fi
 }
-_add_function _prepend_to_variable_with_path_separator
+_add_function _prepend_variable_with_path_separator
 
 _add_alias functions "echo \${!_custom_user_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
 _add_alias auto_added_alias_completion_functions "echo \${!_custom_user_auto_alias_completion_functions[@]} | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's/ $//' && echo"
@@ -2088,8 +2088,6 @@ _add_function mrf
 # Cpp Greps
 #
 # TODO: retry searches with case-insensitive searches if no match found
-# TODO: Handle this:
-# class MONGO_WARN_UNUSED_RESULT_CLASS Status {
 cpptype () {
     local _search_term=$1
     local _opt=$2
@@ -2100,7 +2098,7 @@ cpptype () {
     fi
     echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}] in [${GREEN}${_dir}${ENDCOLOR}]"
     GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
-	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]*${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" ${_dir} \
+	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]\+\([0-9a-zA-Z()_]\+[[:space:]]\+\)\?${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" ${_dir} \
 	    | grep --color=always ${_opt} "${_search_term}"
     if [[ $? -ne 0 ]]; then
         if [[ "${_dir}" != "build" ]]; then
