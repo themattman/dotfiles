@@ -1521,18 +1521,18 @@ linux*|msys*)
 esac
 
 search_file() {
-    echo -en "searching for [${LIGHTCYAN}${2}${ENDCOLOR}]"
+    echo -en "searching for [${CYAN}${2}${ENDCOLOR}]"
     if [[ $# -gt 3 ]]; then
         _search_term="($2"
         for i in ${@:3:$(($#-3))}; do
-            echo -en " and [${LIGHTCYAN}${i}${ENDCOLOR}]"
+            echo -en " and [${CYAN}${i}${ENDCOLOR}]"
             _search_term="${_search_term}|${i}"
         done
         _search_term="${_search_term})"
     else
         _search_term=$2
     fi
-    echo -e " in [${LIGHTCYAN}${@: -1}${ENDCOLOR}]" >&2
+    echo -e " in [${CYAN}${@: -1}${ENDCOLOR}]" >&2
     \grep --color=always -inE "${_search_term}" "${@: -1}";
 }
 _add_function search_file
@@ -1566,7 +1566,7 @@ _add_function seb
 # 2: First arg to calling script (search term)
 # 3: File to search
 _search_file_occur_wrapper() {
-    echo -e "occurences of [${LIGHTCYAN}${2}${ENDCOLOR}] in [${LIGHTCYAN}${3}${ENDCOLOR}]:" >&2
+    echo -e "occurences of [${CYAN}${2}${ENDCOLOR}] in [${CYAN}${3}${ENDCOLOR}]:" >&2
     if [[ $1 -ne 1 ]]; then
         return $(_error "" "<search_term>")
     elif [[ ! -f "$3" ]]; then
@@ -2414,7 +2414,7 @@ _add_function num_commits_since_head
 sincehead() {
     local _delimiter=${1:-SERVER}
     local _commit=$(git log --format="format:%s|%H" | grep "^${_delimiter}-[0-9]\+" | head -n 1 | rev | cut -d'|' -f1 | rev)
-    echo -e "${LIGHTPURPLE}first commit off parent${ENDCOLOR}: [${CYAN}${_commit}${ENDCOLOR}]\n"
+    echo -e "${PURPLE}first commit off parent${ENDCOLOR}: [${CYAN}${_commit}${ENDCOLOR}]\n"
     git rev-list --ancestry-path --date=local --pretty=format:"%h - %Cgreen%cd%Creset - %s" ${_commit}^..HEAD | grep -v "^commit "
     echo
     git diff --stat ${_commit}^..HEAD | grep -v "^commit "
@@ -2772,7 +2772,7 @@ unset DATE_FORMAT
 
 ## 11) SSH
 if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
-   echo -e "${LIGHTPURPLE}ssh-agent already running${ENDCOLOR}"
+   echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
 else
     if [[ -f ~/.ssh/id_rsa ]]; then
         if [[ ! -d ~/.keychain ]]; then
