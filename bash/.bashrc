@@ -1569,7 +1569,7 @@ _search_file_occur_wrapper() {
     echo -e "occurences of [${CYAN}${2}${ENDCOLOR}] in [${CYAN}${3}${ENDCOLOR}]:" >&2
     if [[ $1 -ne 1 ]]; then
         return $(_error "" "<search_term>")
-    elif [[ ! -f "$3" ]]; then
+    elif [[ ! (-f "$3" || -L "$3") ]]; then
         return $(_error "$3 is not a regular file")
     fi
     search_file "$2" "$3" | wc -l
@@ -2339,11 +2339,19 @@ _rename_function open_file_from_prior_cmd_in_editor opfe
 
 open_file_from_prior_cmd_around() {
     local _output=$(history -p !!)
-    if [[ ! -x $(which ansi2txt) ]]; then
-        return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
-    fi
+    local _last_line=""
+    case $OSTYPE in
+    linux*|msys*)
+        if [[ ! -x $(which ansi2txt) ]]; then
+            return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+        fi
+        _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+    ;;
+    darwin*)
+        _last_line=$(eval "${_output}" | tail -n 1)
+    ;;
+    esac
 
-    local _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
     local _file=$(echo "${_last_line}" | cut -d':' -f1)
 
     if [[ ! -r "${_file}" ]]; then
@@ -2418,7 +2426,7 @@ sincehead() {
     git rev-list --ancestry-path --date=local --pretty=format:"%h - %Cgreen%cd%Creset - %s" ${_commit}^..HEAD | grep -v "^commit "
     echo
     git diff --stat ${_commit}^..HEAD | grep -v "^commit "
-    local _num_commits=$(git rev-list --ancestry-path ${_commit}^..HEAD | wc -l)
+    local _num_commits=$(git rev-list --ancestry-path ${_commit}^..HEAD | wc -l | awk -F' ' '{print $1}')
     echo -e "${GREEN}${_num_commits}${ENDCOLOR} commits."
     read -p "See diff? [y/n]: " -n 1 -r
         echo
@@ -2508,7 +2516,15 @@ next_file() {
     local _filename=$1
     # find highest number given filename base
     local _counter=0
-    local _file_list_count=$(ls ${_filename}* 2>/dev/null | grep "${_filename}[0-9]\+$" | wc -l)
+    local _file_list_count
+    case $OSTYPE in
+    linux*|msys*)
+        _file_list_count=$(ls ${_filename}* 2>/dev/null | grep "${_filename}[0-9]\+$" | wc -l)
+    ;;
+    darwin*)
+        _file_list_count=$(ls ${_filename}* 2>/dev/null | grep "${_filename}[0-9]\+$" | wc -l | awk -F' ' '{print $1}')
+    ;;
+    esac
     #echo "cnt: ${_file_list_count}"
     if [[ "${_file_list_count}" -gt 0 ]]; then
         ls "${_filename}*" 2>/dev/null | while read file; do
@@ -2739,7 +2755,9 @@ _add_variable LESSEDIT "${EDITOR}"
 if [[ -x $(which /usr/share/source-highlight/src-hilite-lesspipe.sh 2>/dev/null) ]]; then
     _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
 else
-    _error "LESSOPEN not set. 'brew/apt-get install source-highlight'"
+    if [[ $OSTYPE = "linux*" ]]; then
+        _error "LESSOPEN not set. 'brew/apt-get install source-highlight'"
+    fi
 fi
 
 
@@ -2752,11 +2770,11 @@ sem() { _search_file_wrapper $# "${@}" ~/.machine; }
 _add_function sem
 case $OSTYPE in
 darwin*)
-    _add_alias vpnc "scutil --nc start \"${VPN_NAME}\" --user ${USER} --password \$(security find-generic-password -s ${VPN_KEYCHAIN_NAME} -w) --secret \$(security find-generic-password -s ${VPN_KEYCHAIN_NAME}.SS -w)"
-    _add_alias vpnd "scutil --nc stop \"${VPN_NAME}\""
+    _add_alias vpnc "scutil --nc start '${VPN_NAME}' --user ${USER} --password \$(security find-generic-password -s ${VPN_KEYCHAIN_NAME} -w) --secret \$(security find-generic-password -s ${VPN_KEYCHAIN_NAME}.SS -w)"
+    _add_alias vpnd "scutil --nc stop '${VPN_NAME}'"
     _add_alias vpns "scutil --nc status '${VPN_NAME}'"
     _add_alias vpnl "scutil --nc list"
-    _add_alias vpnr "vpnd; sleep 3; vpnc;"
+    _add_alias vpnr "vpnd; sleep 2; vpnc;"
 ;;
 esac
 
