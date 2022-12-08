@@ -368,6 +368,7 @@ darwin*)
     _add_variable HBPURPLE "${REG}105${POST}"
     _add_variable HBCYAN "${REG}106${POST}"
     _add_variable HBWHITE "${REG}107${POST}"
+;;
 esac
 
 declare -A _custom_user_path_variables
@@ -1516,6 +1517,7 @@ linux*|msys*)
         \mv -i "${tmpfilename}" "${1}"
     }
     _add_function untabify
+;;
 esac
 
 search_file() {
@@ -2075,12 +2077,12 @@ _add_function findn
 mrf() {
     local _n=${1:-3}
     case $OSTYPE in
-        linux*|msys*)
-            find . -type f -exec stat -c '%Y %n' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | while read t f; do d=$(date -d @$t "+%b %d %T %Y"); echo "$d -- $f"; done
-            ;;
-        darwin*)
-            find . -type f -exec stat -f '%Dm %N' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | xargs -I{} stat -f '%Sm %N' {}
-            ;;
+    linux*|msys*)
+        find . -type f -exec stat -c '%Y %n' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | while read t f; do d=$(date -d @$t "+%b %d %T %Y"); echo "$d -- $f"; done
+    ;;
+    darwin*)
+        find . -type f -exec stat -f '%Dm %N' {} \; | sort -nr | awk -v var="${_n}" 'NR==1,NR==var {print $0}' | xargs -I{} stat -f '%Sm %N' {}
+    ;;
     esac
 }
 _add_function mrf
@@ -2251,14 +2253,15 @@ open_file_from_prior_cmd_in_less() {
     local _output=$(history -p !!)
     local _last_line=""
     case $OSTYPE in
-        linux*|msys*)
-            if [[ ! -x $(which ansi2txt) ]]; then
-                return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
-            fi
-            _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
-            ;;
-        darwin*)
-            _last_line=$(eval "${_output}" | tail -n 1)
+    linux*|msys*)
+        if [[ ! -x $(which ansi2txt) ]]; then
+            return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+        fi
+        _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+    ;;
+    darwin*)
+        _last_line=$(eval "${_output}" | tail -n 1)
+    ;;
     esac
 
     local _file=$(echo "${_last_line}" | cut -d':' -f1)
@@ -2287,14 +2290,15 @@ open_file_from_prior_cmd_in_editor() {
     local _output=$(history -p !!)
     local _last_line=""
     case $OSTYPE in
-        linux*|msys*)
-            if [[ ! -x $(which ansi2txt) ]]; then
-                return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
-            fi
-            _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
-            ;;
-        darwin*)
-            _last_line=$(eval "${_output}" | tail -n 1)
+    linux*|msys*)
+        if [[ ! -x $(which ansi2txt) ]]; then
+            return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+        fi
+        _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+    ;;
+    darwin*)
+        _last_line=$(eval "${_output}" | tail -n 1)
+    ;;
     esac
 
     local _file=$(echo "${_last_line}" | cut -d':' -f1)
