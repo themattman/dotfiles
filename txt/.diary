@@ -3489,4 +3489,23 @@ catch load <libname-regex>                   # gdb, break on shared lib load, wh
                                              #  breaks on all shared lib loads
 LD_DEBUG ldd <filename>                      # Insert paths to test loading shared libs
 LD_DEBUG=help cat                            # Print LD_DEBUG available values
-plt
+plt                                          # Definition = procedure definition table
+
+#
+# 11/15/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+show values                                  # gdb, value history variables
+                                             #  shows all prior expressions in session
+checkpoint                                   # gdb, initiate checkpoint where you want to
+                                             #  return to
+info checkpoints                             # gdb, list checkpoints
+restart <checkpoint-id>                      # Returns to execution at checkpoint
+
+#
+# 12/02/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+awk -v n=5 '1; NR % n == 0 {print ""}'       # Awk, insert blank line every N lines
