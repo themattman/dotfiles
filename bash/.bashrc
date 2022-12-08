@@ -571,7 +571,7 @@ _append_variable_with_path_separator PATH /usr/local/sbin
 _append_variable_with_path_separator PATH /usr/sbin
 _append_variable_with_path_separator PATH /sbin
 
-EMACS_INIT_FILE="~/.emacs.d/configuration.org" #"~/.emacs"
+_add_variable EMACS_INIT_FILE "~/.emacs.d/configuration.org"
 
 # Make sure IFS is set correctly
 unset IFS
@@ -603,7 +603,7 @@ if [[ ! -x $(which tree 2>/dev/null) ]]; then
     # TODO exclude .git tree
 fi
 # Readlink replacement (for non-Ubuntu)
-PYTHON_VERSION=$(python -c 'import sys; print(sys.version_info[0])')
+_add_variable PYTHON_VERSION $(python -c 'import sys; print(sys.version_info[0])')
 case $PYTHON_VERSION in
 2*)
     _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
@@ -693,7 +693,7 @@ darwin*)
 esac
 
 ## 4b) Basic bash aliases
-DATE_FORMAT="+%Y_%m_%d__%H_%M_%S"
+_add_variable DATE_FORMAT "+%Y_%m_%d__%H_%M_%S"
 _add_alias rem "remove_trailing_spaces"
 _add_alias find "find -L"
 #_add_alias ! "sudo !!" # This is a terrible alias and breaks a lot of stuff
@@ -1290,7 +1290,8 @@ hooks() {
     fi
 }
 _add_function hooks
-HOOK_SRC="\$(git config --get init.templatedir)"
+
+_add_variable HOOK_SRC "\$(git config --get init.templatedir)"
 if [[ -n "${HOOK_SRC}" ]]; then
     _add_alias hook "cp -rp \${HOOK_SRC}/hooks \$(findgit)/hooks"
 fi
@@ -2299,7 +2300,16 @@ open_file_from_prior_cmd_in_editor() {
     local _file=$(echo "${_last_line}" | cut -d':' -f1)
 
     if [[ ! -r "${_file}" ]]; then
-        return $(_error "file [${_file}] does not exist.")
+        # Try to remove git status -s markings
+        local _status_removed=$(echo "${_file}" | ansi2txt | tr -s ' ' | cut -d' ' -f2)
+        # Unstaged changes have a leading space that needs special handling
+        if [[ $_status_removed = "M" || $_status_removed = "A" || $_status_removed = "R" || $_status_removed = "D" || $_status_removed = "C" || $_status_removed = "U" ]]; then
+            _status_removed=$(echo "${_file}" | tr -s ' ' | cut -d' ' -f3)
+        fi
+        _file=$_status_removed
+        if [[ ! -r "${_file}" ]]; then
+            return $(_error "file [${_file}] does not exist.")
+        fi
     fi
 
     local _unadjusted_line_num=$(echo "${_last_line}" | cut -d':' -f2 -s)
