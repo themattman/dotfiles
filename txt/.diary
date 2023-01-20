@@ -3509,3 +3509,12 @@ restart <checkpoint-id>                      # Returns to execution at checkpoin
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 awk -v n=5 '1; NR % n == 0 {print ""}'       # Awk, insert blank line every N lines
+
+#
+# 12/20/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+jq -r 'map(select(.file | test("src/mongo/db/storage")))' compile_commands.json
+                                             # jq, filter array into smaller array by some
+                                             #  test. In this case trim the compile db.

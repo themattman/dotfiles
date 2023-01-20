@@ -2101,12 +2101,18 @@ cpptype () {
     fi
     echo -e "Searching for C++ type [${CYAN}${_search_term}${ENDCOLOR}] in [${GREEN}${_dir}${ENDCOLOR}]"
     GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
-	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]\+\([0-9a-zA-Z()_]\+[[:space:]]\+\)\?${_search_term}\([[:space:]]*{\|[[:space:]]*$\|[[:space:]]*:\)" ${_dir} \
+	       "^[[:space:]]*\(namespace\|typedef\|class\|enum\|struct\|enum class\)[[:space:]]\+\([][0-9a-zA-Z()_]\+[[:space:]]\+\)\?${_search_term}\([[:space:]]\+{\|[[:space:]]*$\|[[:space:]]\+\([a-z]\+[[:space:]]\+\)\:\)" ${_dir} \
 	    | grep --color=always ${_opt} "${_search_term}"
     if [[ $? -ne 0 ]]; then
-        if [[ "${_dir}" != "build" ]]; then
-            cpptype "${_search_term}" "${_opt}" build
-            cppdef "${_search_term}" "${_opt}"
+        # Try "using" statements
+        GREP_COLORS="${_grep_colors}" grep -Inrs --color=always ${_opt} \
+	               "^[[:space:]]*\(using\)[[:space:]]\+\([0-9a-zA-Z()_]\+[[:space:]]\+\)\?${_search_term}[[:space:]]*=" ${_dir} \
+	        | grep --color=always ${_opt} "${_search_term}"
+        if [[ $? -ne 0 ]]; then
+            if [[ "${_dir}" != "build" ]]; then
+                cpptype "${_search_term}" "${_opt}" "build/${NBD}"
+                cppdef "${_search_term}" "${_opt}"
+            fi
         fi
     fi
 }
@@ -2126,7 +2132,7 @@ cppdef () {
 	| grep --color=always ${_opt} "${_search_term}"
     if [[ $? -ne 0 ]]; then
         if [[ "${_dir}" != "build" ]]; then
-            cppdef "${_search_term}" "${_opt}" "build"
+            cppdef "${_search_term}" "${_opt}" "build/${NBD}"
         fi
     fi
 }
@@ -2597,6 +2603,16 @@ each() {
     tput rmcup
 }
 _add_function each
+
+_git_backup_branch() {
+    local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
+    set -x
+    git checkout -b "${_cur_branch}.bk"
+    { set +x; } &>/dev/null
+    git checkout -
+}
+_add_function _git_backup_branch
+_rename_function _git_backup_branch gbb
 
 
 ## 7) Bash Completion
