@@ -3518,3 +3518,92 @@ Command                                      Comments
 jq -r 'map(select(.file | test("src/mongo/db/storage")))' compile_commands.json
                                              # jq, filter array into smaller array by some
                                              #  test. In this case trim the compile db.
+
+#
+# 01/25/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+-I/opt/compiler-explorer/libs/boost_1_64_0  # CompilerExplorer, get access to boost
+                                            #  https://github.com/compiler-explorer
+                                            #   /compiler-explorer/issues/490
+
+#
+# 02/03/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+db.adminCommand({getParameter: 1, featureCompatibilityVersion: 1}) # mdb, get fcv
+db.adminCommand({setFeatureCompatibilityVersion: "6.0"}) # mdb, set fcv
+"Election succeeded, assuming primary role"  # mdb, election log line
+
+#
+# 02/09/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+ninja -f repro.ninja -j200 build/install/bin/db_repl_test \
+      && ./build/install/bin/db_repl_test --suite "OplogEntryTest" &> $(nf oplogtest)
+                                             # mdb, compile and run a unit test
+
+#
+# 03/08/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cut -d, -f2 --complement my.csv > new.csv    # Remove column from CSV file
+
+#
+# 03/14/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+db.getMongo().getDBNames().forEach(function(v, i){print(v+'\n\t'+db.getSiblingDB(v).getCollectionNames().join('\n\t'))})
+                                             # mongo, show all colls in all dbs (pretty)
+db.getMongo().getDBNames().forEach(function(v, i){print(v+'.'+db.getSiblingDB(v).getCollectionNames().join('\n'+v+'.'))})
+                                             # mongo, show all colls in all dbs (dotted ns)
+db.getMongo().getDBNames().forEach(function(x) {if (['admin', 'config', 'local'].indexOf(x) < 0) { db.getSiblingDB(x).dropDatabase();}})
+                                             # mongo, drop all user dbs
+
+#
+# 03/15/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+ls -ld */                                    # ls, list dirs only
+
+#
+# 03/17/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+body 3492 3492 db_catalog_test.out | jq '.attr.bt.backtrace[].s' | tr -d '"' | cppfilt
+                                             # mdb, stacktrace from unit test crashes
+sed -n '/.*invariantFailed.*/,$p' <file>     # print everything including match and after
+
+#
+# 03/21/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+fuser -k 8080/tcp                            # Kill process listening to port 8080
+fuser -k $(seq -s'/tcp ' 32030 32033)/tcp    # Kill processes on range of contiguous ports
+
+#
+# 03/23/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git rev-parse --abbrev-ref @{-1}             # git, print branch `git checkout -` will use
+git rev-parse --abbrev-ref @{-2}             # git, print prior prior checked out branch
+git reflog | grep -i "checkout: moving" \    # git, last 10 branches, numbered
+ | cut -d' ' -f6 | head | nl                 #  number lines of output
+git checkout @{-1}                           # synonymous with `git checkout -`
+
+#
+# 03/28/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+funcu _git_branch_delete \
+ | source-highlight -s bash -f esc256        # Highlight bash in the terminal

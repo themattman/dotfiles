@@ -600,6 +600,8 @@ This command does not push text to `kill-ring'."
 (setq auto-mode-alist (cons '("\\.proto$" . java-mode) auto-mode-alist))
 ;; JavaScript major mode for .json files
 (setq auto-mode-alist (cons '("\\.json$" . js-mode) auto-mode-alist))
+;; Set dotfiles mode to shell-script
+(setq auto-mode-alist (cons '(".machine" . shell-script-mode) auto-mode-alist))
 ;; Linters
 ;; https://raw.githubusercontent.com/illusori/emacs-flymake/master/flymake.el
 ;; Customize Flycheck

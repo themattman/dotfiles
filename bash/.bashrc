@@ -651,6 +651,7 @@ linux*|msys*)
     _add_alias sal "ls -F --color -alth"
     _add_alias sla "ls -F --color -alth"
     _add_alias lg "ls -F --color -alth --group-directories-first"
+    _add_alias ll "ls --color -ldh */" # Only list dirs
 
     # Disk Usage
     _add_alias dush "du -sh ./* | sort -h"
@@ -705,6 +706,7 @@ _add_alias ln "ln -i"        # Warn when overwriting
 _add_alias d "diff --color -U 0"
 _add_alias dr "diff --color -r"
 _add_alias dy "diff --color -y -W 180"
+_add_alias dyf "diff --color -y -W 180 --suppress-common-lines"
 _add_alias dw "diff -U 0 -w --color" # Ignore whitespace differences
 _add_alias dff "diff --changed-group-format='%<' --unchanged-group-format=''"
 _add_alias s "source"
@@ -899,6 +901,7 @@ _add_alias gdc "echo 'Staged files:' && git diff --name-only --cached"
 _add_alias gdscrb "git describe"
 _add_alias gl "git log"
 _add_alias gls "git log --stat"
+_add_alias glsp "git log --pretty=fuller --stat"
 _add_alias glsn "git log --stat -n 3"
 _add_alias glo "git log --oneline"
 _add_alias gll "git log --graph --pretty=oneline --abbrev-commit"
@@ -906,6 +909,9 @@ _add_alias gg "git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Cre
 _add_alias ggs "gg --stat"
 _add_alias gsl "git shortlog -sn"            # All authors in this branch's history
 _add_alias gnew "git log HEAD@{1}..HEAD@{0}" # Show commits since last pull
+_add_alias gpb "git rev-parse --abbrev-ref @{-1}"
+_add_alias gpbp "git reflog | grep -i \"checkout: moving\" | cut -d' ' -f6 | head | nl"
+_add_alias gpbpe "git reflog | grep -i 'checkout: moving' | cut -d' ' -f6 | head -n 30 | nl"
 _add_alias gc "git checkout"
 _add_alias gch "git checkout -- ."
 _add_alias gcp "git cherry-pick"
@@ -2435,7 +2441,7 @@ sincehead() {
     local _num_commits=$(git rev-list --ancestry-path ${_commit}^..HEAD | wc -l | awk -F' ' '{print $1}')
     echo -e "${GREEN}${_num_commits}${ENDCOLOR} commits."
     read -p "See diff? [y/n]: " -n 1 -r
-        echo
+    echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         eval gitdiffhead "${_num_commits}"
     fi
@@ -2614,6 +2620,21 @@ _git_backup_branch() {
 _add_function _git_backup_branch
 _rename_function _git_backup_branch gbb
 
+_git_checkout_prior_branch() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "<number>")
+    fi
+    local _prior_branch_number=$1
+    echo -e -n "Checkout [${GREEN}$(git rev-parse --abbrev-ref @{-${_prior_branch_number}})${ENDCOLOR}]"
+    read -p "? [y/n]: " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        git checkout "@{-${_prior_branch_number}}"
+    fi
+}
+_add_function _git_checkout_prior_branch
+_rename_function _git_checkout_prior_branch gcpb
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -2741,6 +2762,7 @@ complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completi
 complete -f bk && _add_completion_function bk
 complete -W "\$(complete -p | rev | cut -d' ' -f1 | rev)" comp && _add_completion_function comp
 complete -F _command wow wowz && _add_completion_function wow wowz
+complete -F _man man # therefore the m alias will pick this up
 
 _add_alias cdc "cd"
 complete -F _complete_most_recently_modified_file cdc && _add_completion_function
@@ -2768,8 +2790,16 @@ _add_variable GIT_PAGER "less -iFXR"
 _add_variable MAN_PAGER "less -i"
 _add_variable LESS "-iFXR"
 _add_variable LESSEDIT "${EDITOR}"
-if [[ -x $(which /usr/share/source-highlight/src-hilite-lesspipe.sh 2>/dev/null) ]]; then
-    _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
+if [[ -x $(which source-highlight 2>/dev/null) ]]; then
+    # _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
+    colors=$(tput colors)
+    if [[ "${colors}" -eq 256  ]]; then
+        NB="256"
+    else
+        NB=""
+    fi
+    _add_variable LESSOPEN "| source-highlight --outlang-def=esc${NB}.outlang --style-file=esc${NB}.style -i %s"
+    # _add_variable LESSOPEN "| /usr/bin/source-highlight-esc.sh %s"
 else
     if [[ $OSTYPE = "linux*" ]]; then
         _error "LESSOPEN not set. 'brew/apt-get install source-highlight'"
