@@ -607,9 +607,11 @@ fi
 _add_variable PYTHON_VERSION $(python -c 'import sys; print(sys.version_info[0])')
 case $PYTHON_VERSION in
 2*)
+    _add_alias pys "python -m SimpleHTTPServer"
     _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
 ;;
 3*)
+    _add_alias pys "python -m http.server"
     _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
 ;;
 esac
@@ -1007,7 +1009,6 @@ _add_alias dwp "pwd"
 _add_alias ppwd "echo \${HOSTNAME}:\$(pwd)"
 # Python
 _add_alias py "python"
-_add_alias pys "python -m SimpleHTTPServer"
 _add_alias pyk "pkill -9 python"
 # TAR
 _add_alias tarv "tar tvf"  # View an archive
