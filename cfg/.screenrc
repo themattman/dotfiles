@@ -6,3 +6,4 @@
 defflow off # Handle CTRL-S properly
 vbell off   # Turn visual bell off
 # vbell_msg "bell: window ~%"  # Message for visual bell
+escape ^Xa

@@ -3098,19 +3098,19 @@ clang-check -ast-list -p . src/header.h | grep "ClassName"
 clang-check -ast-dump-filter="ClassName" -ast-dump -p . src/header.h
 
 #
+# 05/09/2022
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+pkgutil --pkg-info=com.apple.pkg.CLTools_Executables # Xcode cmd line tools, version info
+
+#
 # 05/11/2022
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 M-$                                          # Emacs, check spelling of current word
 C-h b                                        # Emacs, what does the current mode do
-
-#
-# 05/09/2022
-#
-Command                                      Comments
-------------------------------------------------------------------------------------------
-pkgutil --pkg-info=com.apple.pkg.CLTools_Executables # Xcode cmd line tools, version info
 
 #
 # 05/20/2022
@@ -3622,6 +3622,13 @@ git reflog | grep -i "checkout: moving" \    # git, last 10 branches, numbered
 git checkout @{-1}                           # synonymous with `git checkout -`
 
 #
+# 03/24/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+nginx -s reload                              # nginx, pickup config changes
+
+#
 # 03/28/2023
 #
 Command                                      Comments
@@ -3630,8 +3637,61 @@ funcu _git_branch_delete \
  | source-highlight -s bash -f esc256        # Highlight bash in the terminal
 
 #
-# 03/24/2023
+# 04/11/2023
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
-nginx -s reload                              # nginx, pickup config changes
+WT has no notion of if a collection is replicated, only logged/not logged
+
+#
+# 04/30/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+paste -d' ' <(cut -d' ' -f1-7 <file>) <(cut -d' ' -f8 <file> | xargs -I% date -d"@%") <(cut -d' ' -f9- <file>)
+                                             # Convert unix time to datetime in one column
+
+#
+# 05/04/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+nl -b a                                      # Number all lines (including blanks)
+nl -v <num>                                  # Begin number on line <num>
+
+#
+# 05/15/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+echo $((base#number))                        # Convert hex to dec
+echo $((16#1A))
+
+#
+# 05/26/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+C-x C-q C-x C-s C-x C-q                      # Emacs, Don't run save hooks
+                                             #  read-only-mode, save, read-only-mode off
+
+#
+# 06/07/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+addr2line -e <exec> symbol+2A                # Get file and line of symbol
+
+#
+# 06/09/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git format-patch -1 <SHA>                    # Git, create patch from commit
+
+#
+# 06/14/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git checkout <old_commit> -- <file>          # Git, undoes all changes in file since SHA

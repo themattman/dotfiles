@@ -865,6 +865,7 @@ _add_alias gau "git add -u"
 _add_alias gaf "git add -f"
 _add_alias gco "git commit"
 _add_alias gcon "git commit --no-verify"
+_add_alias gauth "git commit --no-verify --amend -C HEAD --reset-author"
 _add_alias gm "git commit -m"
 _add_alias gca "git commit --amend"
 _add_alias gmn "git commit --no-verify -m"
@@ -958,7 +959,7 @@ _add_alias gre "grep -iInrs --color=always"   # case-insensitive
 _add_alias lgre "grep -iIlnrs --color=always" # case-insensitive
 _add_alias grel "grep -iIlnrs --color=always" # case-insensitive
 _add_alias hgre "grep -hiIrs --color=always"  # case-insensitive
-_add_alias gree "grep -Inrs --color=always"
+_add_alias gree "grep -HInrs --color=always"
 # _add_alias greb "grep -Inrs --color=always --exclude-dir=build --exclude-dir=${BLOATED_DIR}"
 # _add_alias lgreb "grep -Ilnrs --color=always --exclude-dir=build --exclude-dir=${BLOATED_DIR}"
 _add_alias lgree "grep -Ilnrs --color=always"
@@ -1481,6 +1482,20 @@ body() {
 }
 _add_function body
 
+bodyn() {
+    if [[ $# -ne 3 ]]; then
+        return $(_error "" "<start> <finish> <file>")
+    elif [[ $3 != "-" && ! -f $3 ]]; then
+        return $(_error "$3 is not a regular file.")
+    fi
+    if [[ $3 = "-" ]]; then
+        sed -n "${1},${2}p" | nl -v ${1}
+    else
+        sed -n "${1},${2}p" "${3}" | nl -v ${1}
+    fi
+}
+_add_function bodyn
+
 line() {
     if [[ $# -ne 2 ]]; then
         return $(_error "" "<line_number_to_echo> <file>")
@@ -1684,6 +1699,7 @@ _add_function wowz
 
 _git_branch_delete() {
     local _branch="${1}"
+    local _remote_url=$(git remote get-url origin)
     if [[ $# -ne 1 ]]; then
         return $(_error "only one argument allowed" "<branch>")
     fi
@@ -1691,17 +1707,36 @@ _git_branch_delete() {
     if [[ $? -ne 0 ]]; then
         return $(_error "branch ${_branch} doesn't exist")
     fi
-    read -p "Are you sure you want to delete branch [${_branch}]? [y/n]: " -n 1 -r
+    echo -ne "Are you sure you want to delete branch [${CYAN}${_branch}${ENDCOLOR}] from [${YELLOW}local${ENDCOLOR}]? "
+    read -p "[y/n]: " -n 1 -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo -en "\nDeleting branch [${_branch}] from local and remote..."
+        echo -en "\nDeleting branch [${GREEN}${_branch}${ENDCOLOR}] from [${YELLOW}local${ENDCOLOR}]..."
+        echo
         set -x
         git branch -d "${_branch}" || git branch -D "${_branch}"
-        git push origin ":${_branch}"
         { set +x; } 2>/dev/null
         echo " Done!"
+
+        echo -ne "Are you sure you want to delete branch [${CYAN}${_branch}${ENDCOLOR}] from [${YELLOW}remote${ENDCOLOR}]? "
+        read -p "[y/n]: " -n 1 -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo -en "\nDeleting branch [${GREEN}${_branch}${ENDCOLOR}] from [${YELLOW}remote${ENDCOLOR}]..."
+            git ls-remote --quiet --exit-code --heads ${_remote_url} ${_branch} >/dev/null
+            if [[ $? -eq 0 ]]; then
+                set -x
+                git push origin ":${_branch}"
+                { set +x; } 2>/dev/null
+                echo " Done!"
+            else
+                echo -e "\nBranch didn't exist on remote [${PURPLE}${_remote_url}${ENDCOLOR}]"
+            fi
+        else
+            echo " Exiting."
+        fi
     else
-        echo -e "\nExiting."
+        echo " Exiting."
     fi
+
 }
 _add_function _git_branch_delete
 _rename_function _git_branch_delete gbd
@@ -2160,6 +2195,9 @@ enterMacPassword() {
 _add_function enterMacPassword
 
 gitdiffhead() {
+    : <<DOCSTRING
+Diffs N commits against head.
+DOCSTRING
     local _num_commits=$1
     local _args=${@:2}
     local _file
@@ -2240,24 +2278,37 @@ most_recent_file_exclude_hidden() {
 _add_function most_recent_file_exclude_hidden
 
 _most_recently_modified_file() {
-    local _dirname="${1}"
+    local _dirname="${1:-.}"
     local _mrmf;
-    if [[ $# -gt 0 && -d "${_dirname}" ]]; then
-        local latest_filename=$(find "${_dirname}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 2 2>/dev/null | head -n 1)
-        if [[ -n "${latest_filename}" ]]; then
-            if [[ "${_dirname}" == */ ]]; then
-                _mrmf="${_dirname}${latest_filename}"
-            else
-                _mrmf="${_dirname}/${latest_filename}"
-            fi
+    local latest_filename=$(\find "${_dirname}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 1) #2 2>/dev/null | head -n 1)
+    if [[ -n "${latest_filename}" ]]; then
+        if [[ "${_dirname}" == */ ]]; then
+            _mrmf="${_dirname}${latest_filename}"
+        else
+            _mrmf="${_dirname}/${latest_filename}"
         fi
-    else
-        _mrmf=$(\ls -t --color=never | head -n 1)
     fi
     echo "${_mrmf}"
 }
 _add_function _most_recently_modified_file
 _rename_function _most_recently_modified_file mrmf
+
+_most_recently_modified_text_file() {
+    local _dirname="${1:-.}"
+    local _mrmtf;
+    # local latest_filename=$(find "${_dirname}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | xargs -I% grep -HIFl '' % 2>/dev/null | tail -n 2 2>/dev/null | head -n 1)
+    local latest_filename=$(\find "${_dirname}" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | grep -v "\.core" | tail -n 1) #2 2>/dev/null | head -n 1)
+    if [[ -n "${latest_filename}" ]]; then
+        if [[ "${_dirname}" == */ ]]; then
+            _mrmtf="${_dirname}${latest_filename}"
+        else
+            _mrmtf="${_dirname}/${latest_filename}"
+        fi
+    fi
+    echo "${_mrmtf}"
+}
+_add_function _most_recently_modified_text_file
+_rename_function _most_recently_modified_text_file mrmtf
 
 # TODO: For efficiency,
 #  Have functions like `cpptype` set an env variable that is first checked here.
@@ -2600,9 +2651,15 @@ each() {
             echo "file [$f]"
             sleep 1
             # \less -cR +F $f
-            more -c $f
-            local _wait_pid=$!
-            wait -f $_wait_pid
+            if [[ $OSTYPE =~ darwin* ]]; then
+                more -c $f
+                local _wait_pid=$!
+                wait -f $_wait_pid
+            else
+                less $f
+                local _wait_pid=$!
+                wait -n $_wait_pid
+            fi
         else
             echo "File [$f] does not exist. Skipping."
         fi
@@ -2635,6 +2692,43 @@ _git_checkout_prior_branch() {
 }
 _add_function _git_checkout_prior_branch
 _rename_function _git_checkout_prior_branch gcpb
+
+lint-diary() {
+    local _dates=$(grep "^# [0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\}" ~/.diary | cut -d' ' -f2-)
+    diff -q <(echo "${_dates}") <(echo "${_dates}" | sort -t'/' -k3,3 -k1,1 -k2,2) 2>/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}error:${ENDCOLOR} .diary dates not lined up" >&2
+        diff -y --color <(echo "${_dates}") <(echo "${_dates}" | sort -t'/' -k3,3 -k1,1 -k2,2)
+        # TODO: auto-fix
+    else
+        echo -e "${GREEN}diary sorted!${ENDCOLOR}"
+    fi
+}
+_add_function lint-diary
+
+# list last few touched files
+lt() {
+    las -r ${1:-.} | tail
+}
+_add_function lt
+
+
+# is-jira-ticket() {
+# }
+
+# jira-cli-open() {
+#     if [[ $# -ne 1 ]]; then
+#         return $(_error "requires 1 argument" "<JIRA-ID>")
+#     fi
+#     local _jira_id=$1
+#     jira-cli issue view SERVER-${_jira_id}
+# }
+# _add_function jira-cli-open
+# _rename_function jira-cli-open jo
+
+# jira-cli-branch-open() {
+#     local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
+# }
 
 
 ## 7) Bash Completion
@@ -2681,8 +2775,22 @@ _complete_most_recently_modified_file() {
     # fi
 }
 _add_function _complete_most_recently_modified_file
-complete -o default -F _complete_most_recently_modified_file tl l les dx unz \
-    && _add_completion_function tl l les dx unz
+complete -o default -F _complete_most_recently_modified_file tl l dx unz \
+    && _add_completion_function tl l dx unz
+
+_complete_most_recently_modified_text_file() {
+    local _mrmtf;
+    if [[ "${COMP_CWORD}" -eq 1 ]]; then
+        if [[ -n "${2}" && (-f "${2}" || -d "${2}") ]]; then
+            _mrmtf=$(_most_recently_modified_text_file "${2}")
+        elif [[ -z "${2}" ]]; then
+             _mrmtf=$(_most_recently_modified_text_file)
+        fi
+        COMPREPLY="${_mrmtf}"
+    fi
+}
+complete -o default -F _complete_most_recently_modified_text_file les
+_add_completion_function les
 
 # Add bash auto-completion to `screen -r` alias
 _complete_scr() {
@@ -2850,3 +2958,69 @@ else
         . ~/.keychain/`uname -n`-sh
     fi
 fi
+
+
+
+tg() {
+    # Attach to specified tmux session
+    #* 1. If the session does not exist, create it.
+    ## 2. If no session name specified, prompt to choose from existing ones.
+
+    # A simple/naive replacement of this "bloated" function:
+    # tmux -2 attach -t "$session_name" || tmux -2 new -s "$session_name"
+
+    if ! command -v tmux >/dev/null; then
+        echo "Warn: tmux could not be found, not starting any tmux session"
+        return
+    fi
+
+    local usage="tg [-d] [session_name]"
+    local detach_others=""
+
+    while getopts "d" opt; do
+        case $opt in
+            d) detach_others="-d";;
+            ?) echo "$usage" >&2;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
+    local session_name="$1"
+
+    if [ -n "$session_name" ]; then
+        tmux -2 attach $detach_others -t "$session_name" \
+            || tmux -2 new -s "$session_name"
+        return
+    fi
+
+    # No session name specified, act according to the number of sessions
+    local sessions=$(tmux list-sessions -F "#{session_name}")
+
+    if [ -z "$sessions" ]; then
+        tmux -2 new -s 'misc'
+        return
+    fi
+
+    if [ "$(echo "$sessions" | wc -l)" -eq 1 ]; then
+        tmux -2 attach $detach_others -t "$sessions"
+        return
+    fi
+
+    # Multiple sessions, prompt to choose one
+
+    local IFS=$'\n' # In case session names contain whitespaces. Must
+                    # 'local' to NOT pollute the global 'IFS'.
+                    # $'LITERAL_STR' => ansi-c quoting
+    local PS3="Select a session: "
+
+    select session_name in $sessions; do
+
+        if [ -n "$session_name" ]; then # A valid choice
+            tmux -2 attach $detach_others -t "$session_name"
+            return
+        else
+            echo "Invalid index '$REPLY', please retry"
+        fi
+
+    done
+}
