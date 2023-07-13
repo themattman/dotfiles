@@ -15,6 +15,7 @@ if [[ $? -ne 0 ]]; then
     fi
 fi
 
+mv ~/.bashrc ~/.bashrc.bk
 for pkg in $(ls .); do
     if [[ -d $pkg ]]; then
 	    set -x
@@ -22,18 +23,18 @@ for pkg in $(ls .); do
             ret=$?
 	    { set +x; } &>/dev/null
 
-        if [[ $ret -ne 0 ]]; then
-            set -x
-            stow --adopt $pkg
-            { set +x; } &>/dev/null
-            for existing_pkg in $(git diff --name-only -- $pkg); do
-                set -x
-                mv ${existing_pkg} ${existing_pkg}.bk
-                { set +x; } &>/dev/null
-            done
-            git reset --hard -- $pkg
-            stow $pkg
-        fi
+#        if [[ $ret -ne 0 ]]; then
+#            set -x
+#            stow --adopt $pkg
+#            { set +x; } &>/dev/null
+#            for existing_pkg in $(git diff --name-only -- $pkg); do
+#                set -x
+#                mv ${existing_pkg} ${existing_pkg}.bk
+#                { set +x; } &>/dev/null
+#            done
+#            git reset --hard -- $pkg
+#            stow $pkg
+#        fi
     fi
 done
 
