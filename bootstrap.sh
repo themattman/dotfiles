@@ -6,7 +6,7 @@ if [[ "/home/$USER/dotfiles" != $PWD ]]; then
     return 1
 fi
 
-ret=$(which stow &>/dev/null)
+which stow &>/dev/null
 if [[ $? -ne 0 ]]; then
     echo "Error: package stow doesn't exist" >&2
     sudo apt-get -y install stow
@@ -18,7 +18,8 @@ fi
 for pkg in $(ls .); do
     if [[ -d $pkg ]]; then
 	    set -x
-	    ret=$(stow $pkg)
+	    stow $pkg
+            ret=$?
 	    { set +x; } &>/dev/null
 
         if [[ $ret -ne 0 ]]; then
@@ -41,10 +42,18 @@ if [[ ! -f ~/.machine ]]; then
     echo "# [${HOSTNAME}] Machine-Specific Configs" > ~/.machine
 fi
 
-echo "Install dependencies"
+echo
+echo "[Install dependencies]"
 dependencies=(emacs source-highlight)
 for dep in ${dependencies[@]}; do
     set -x
     sudo apt-get -y install $dep
     { set +x; } &>/dev/null
 done
+
+echo
+echo "[Emacs setup]"
+emacs --batch --script ~/.emacs.d/init.el &> emacs-compile.$(date "+%Y_%m_%d__%H_%M_%S")
+
+echo
+echo "done."
