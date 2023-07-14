@@ -54,7 +54,9 @@ done
 
 echo
 echo "[Emacs setup]"
+set -x
 emacs --batch --script ~/.emacs.d/init.el &> emacs-compile.$(date "+%Y_%m_%d__%H_%M_%S")
+{ set +x; } &>/dev/null
 
 echo
 echo "done."
