@@ -3,7 +3,7 @@ My configuration files.
 
 ## Install
 
-    $ git clone https://github.com/themattman/dotfiles.git && cd dotfiles && ./bootstrap.sh
+    $ git clone https://github.com/themattman/dotfiles.git && cd dotfiles && source bootstrap.sh
 
 ### Make local modifications
 

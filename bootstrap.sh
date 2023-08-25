@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Purpose: Install all dotfiles on clean system
+# Usage:   `source boostrap.sh`
 
 if [[ "/home/$USER/dotfiles" != $PWD ]]; then
     echo "Must be run from expected dir: ~/dotfiles" >&2
@@ -45,7 +46,7 @@ fi
 
 echo
 echo "[Install dependencies]"
-dependencies=(emacs source-highlight)
+dependencies=(emacs screen source-highlight)
 for dep in ${dependencies[@]}; do
     set -x
     sudo apt-get -y install $dep
@@ -56,7 +57,9 @@ echo
 echo "[Emacs setup]"
 set -x
 emacs --batch --script ~/.emacs.d/init.el &> emacs-compile.$(date "+%Y_%m_%d__%H_%M_%S")
+source ~/.bashrc
 { set +x; } &>/dev/null
 
 echo
 echo "done."
+
