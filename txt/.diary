@@ -3695,3 +3695,37 @@ git format-patch -1 <SHA>                    # Git, create patch from commit
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 git checkout <old_commit> -- <file>          # Git, undoes all changes in file since SHA
+
+#
+# 07/11/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+lsof -p <PID>                                # List files opened by PID
+tail -c +0 -f /proc/<PID>/fd/2 > /tmp/recover# Copy deleted but opened file to filesystem
+https://github.com/<>/<>/commits/<branch>?author=<>
+                                             # Github, see all commits from one author
+
+#
+# 07/27/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+d                                            # Linux Perf (1), filter down to dso (.so)
+t                                            # Linux Perf (1), filter down to thread
+F                                            # Linux Perf (1), re-compute percentages
+
+#
+# 08/10/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+gcc -E -march=help -xc /dev/null             # Supported CPU architectures by gcc
+
+#
+# 08/22/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+pkgutil --pkg-info=com.apple.pkg.CLTools_Executables # XCode cmdline tools version
+pkgutil --pkgs | grep -i tools               # Helps locate the pkg name for prior cmd

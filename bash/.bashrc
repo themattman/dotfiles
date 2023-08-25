@@ -2574,6 +2574,7 @@ _add_function blame_every_line
 _rename_function blame_every_line bel
 
 next_file() {
+    : Next File
     if [[ $# -ne 1 ]]; then
         return $(_error "requires 1 argument" "<filename>")
     fi
@@ -2729,6 +2730,35 @@ _add_function lt
 # jira-cli-branch-open() {
 #     local _cur_branch=$(git rev-parse --abbrev-ref HEAD)
 # }
+
+# Inspiration: https://askubuntu.com/questions/1188024/how-to-test-oom-killer-from-command-line
+oomlog() {
+    local _boot_num=0 # `journalctl --list-boots` for full history
+    if [[ -n $1 ]]; then
+        _boot_num=$1
+    fi
+    local _boot_option="-b ${_boot_num}"
+
+    # Get timestamp if recorded with `logger` command:
+    journalctl --identifier=kernel "${_boot_option}" | grep -A 2 'oom-killer' | tail -n 3
+
+    # Get Call Trace
+    journalctl --identifier=kernel "${_boot_option}" | grep 'Call Trace:' | tail -n 1
+    journalctl --identifier=kernel "${_boot_option}" | grep ' kernel\:  .*0x[a-f0-9]\+$'
+
+    # Print headings for last oom-killer
+    journalctl --identifier=kernel "${_boot_option}" | grep '\[[ ]\+pid[ ]\+]' -B 11 | tail -n 11
+
+    # Get last oom_reaper entry's PID
+    PID=$(journalctl --identifier=kernel "${_boot_option}" | grep oom_reaper | tail -n 1 | cut -d' ' -f9)
+
+    # Print pid information
+    journalctl --identifier=kernel "${_boot_option}" | grep "$PID"']' | tail -n1
+
+    # Print summary infomation
+    journalctl --identifier=kernel "${_boot_option}" | grep oom_reaper -B2 | tail -n 3
+}
+_add_function oomlog
 
 
 ## 7) Bash Completion
