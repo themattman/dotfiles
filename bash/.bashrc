@@ -2977,15 +2977,19 @@ unset DATE_FORMAT
 if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
    echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
 else
-    if [[ -f ~/.ssh/id_rsa ]]; then
-        if [[ ! -d ~/.keychain ]]; then
+    if ls ~/.ssh/id_* &>/dev/null; then
+        eval "$(ssh-agent -s)"
+        if [[ -x $(which keychain 2>/dev/null) && -f ~/.ssh/id_rsa ]]; then
+            if [[ ! -d ~/.keychain ]]; then
+                set -x
+                mkdir -p ~/.keychain
+                { set +x; } &>/dev/null
+            fi
             set -x
-            mkdir -p ~/.keychain
+            keychain id_rsa
+            . ~/.keychain/`uname -n`-sh
             { set +x; } &>/dev/null
         fi
-        eval "$(ssh-agent -s)"
-        keychain id_rsa
-        . ~/.keychain/`uname -n`-sh
     fi
 fi
 

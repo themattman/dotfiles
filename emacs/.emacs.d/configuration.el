@@ -291,10 +291,18 @@ This command does not push text to `kill-ring'."
     (progn
       (insert "\"")
       (end-of-line 1)
-      (insert "\"")))
+      (insert "\""))))
+
+(defun mrk/save-without-hooks ()
+  (interactive)
+  (read-only-mode)
+  (save-buffer)
+  (read-only-mode)
 )
 
 ;; <return> vs. <kp-enter> (keypad enter)
+(global-set-key (kbd "C-x C-a"    ) 'mrk/save-without-hooks )
+
 ; swap windows
 (global-set-key (kbd "C-c l"    ) 'windmove-swap-states-left )
 (global-set-key (kbd "C-c r"    ) 'windmove-swap-states-right)
