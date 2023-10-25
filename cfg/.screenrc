@@ -7,4 +7,21 @@ defflow off # Handle CTRL-S properly
 vbell off   # Turn visual bell off
 # vbell_msg "bell: window ~%"  # Message for visual bell
 
-escape ^Ua # change default ctrl char for GNU Screen
+startup_message off
+
+# See ~/.bashrc for how this works. Shuts off almost all personal configs.
+setenv DISABLE_STARTUP "true"
+
+# Change default ctrl char for GNU Screen to Ctrl-U
+escape ^Ua
+defscrollback 10000
+
+# MongoDB Session
+screen -t mongo_shell
+screen -t mongod_shell
+split
+focus down
+select mongo_shell
+stuff "cd mdb/master && ./build/install/bin/mongo --port 28010"
+focus up
+stuff "cd mdb/master && new_data_dir=$(nd ${HOME}/data/db/test) && mkdir \$new_data_dir && ./build/install/bin/mongod --port 28010 --dbpath \$new_data_dir"

@@ -41,6 +41,32 @@ if [ -z "$PS1" ]; then
     return
 fi
 
+# See ~/.screenrc for usage.
+if [ "$DISABLE_STARTUP" = "true" ]; then
+    PS1="[\D{%m/%d/%y %r}][\${?:0:1}][\${STY}] \u:\W\$ "
+
+    if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
+        return
+    else
+        if ls ~/.ssh/id_* &>/dev/null; then
+            eval "$(ssh-agent -s)"
+            if [[ -x $(which keychain 2>/dev/null) && -f ~/.ssh/id_rsa ]]; then
+                if [[ ! -d ~/.keychain ]]; then
+                    set -x
+                    mkdir -p ~/.keychain
+                    { set +x; } &>/dev/null
+                fi
+                set -x
+                keychain id_rsa
+                . ~/.keychain/`uname -n`-sh
+                { set +x; } &>/dev/null
+            fi
+        fi
+    fi
+
+    return
+fi
+
 # Not doing much at the moment (remember, .bashrc should only be sourced
 #  within bash), might want to try something else here
 if [[ ! $SHELL =~ bash ]]; then
@@ -984,7 +1010,7 @@ _add_alias getip "nslookup"
 _add_alias les "less +G" # +G goes to end of file
 # Node.js
 _add_alias n "node"
-_add_alias nd "node server"
+# _add_alias nd "node server" # Needed for next_dir()
 # Pip
 _add_alias de "deactivate"
 _add_alias pi "pip install"
@@ -2003,6 +2029,69 @@ git_checkout_previous_branch() {
 _add_function git_checkout_previous_branch
 _rename_function git_checkout_previous_branch gcpb
 
+jira-cli-open() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "<JIRA-ID>")
+    fi
+    local _jira_id=$1
+    local _jira_tag
+    echo "[$1]"
+    $(echo "$1" | grep -E "^[a-zA-Z]{1,8}-[0-9]{1,6}$" &>/dev/null)
+    if [[ $? -eq 0 ]]; then
+        _jira_tag=$1
+    else
+        _jira_tag="SERVER-${_jira_id}"
+    fi
+    set -x
+    jira open ${_jira_tag}
+    { set +x; } &>/dev/null
+}
+_add_function jira-cli-open
+_rename_function jira-cli-open jo
+
+jira-cli-view() {
+    if [[ $# -lt 1 ]]; then
+        return $(_error "requires at least 1 argument" "<JIRA-ID>")
+    fi
+    local _jira_id=${@: -1}
+    local _options=${@:1:-1}
+    local _jira_tag
+    echo "[$1]"
+    $(echo "$1" | grep -E "^[a-zA-Z]{1,8}-[0-9]{1,6}$" &>/dev/null)
+    if [[ $? -eq 0 ]]; then
+        _jira_tag=$1
+    else
+        _jira_tag="SERVER-${_jira_id}"
+    fi
+    set -x
+    jira issue view --plain --comments 5 ${_jira_tag}
+    { set +x; } &>/dev/null
+}
+_add_function jira-cli-view
+_rename_function jira-cli-view jv
+
+scka() {
+    : Documentation: GNU SCREEN KILL ALL SESSIONS
+    local _screen_sessions=$(screen -ls | grep "\t" | tr -d '\t' | cut -d'(' -f1)
+    echo "doing something"
+    for session in ${_screen_sessions[@]}; do
+        set -x
+        screen -S $session -X quit
+        { set +x; } &>/dev/null
+    done
+}
+_add_function scka
+
+sck() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "<SCREEN_SESSION>")
+    fi
+    set -x
+    screen -X quit -S $1
+    { set +x; } &>/dev/null
+}
+_add_function sck
+
 color() {
     if [[ $# -ne 1 ]]; then
         return $(_error "" "[search_words...]")
@@ -2604,6 +2693,34 @@ next_file() {
 _add_function next_file
 _rename_function next_file nf
 
+next_dir() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "<filename>")
+    fi
+    local _fullpath=$1
+    local _filename=$(basename $1)
+    local _dirname=$(dirname $1)
+    local _file_list_count
+    case $OSTYPE in
+    linux*|msys*)
+        _file_list_count=$(\find /Users/matt.kneiser/data/db -maxdepth 1 -mindepth 1 -name "test*" | wc -l)
+    ;;
+    darwin*)
+        _file_list_count=$(\find /Users/matt.kneiser/data/db -maxdepth 1 -mindepth 1 -name "test*" | wc -l | awk -F' ' '{print $1}')
+    ;;
+    esac
+
+    # echo "cnt: ${_file_list_count}"
+    if [[ "${_file_list_count}" -gt 0 ]]; then
+        while [[ -d "${_fullpath}${_file_list_count}" ]]; do
+            _file_list_count=$((_file_list_count + 1))
+        done
+    fi
+    echo "${_fullpath}${_file_list_count}"
+}
+_add_function next_dir
+_rename_function next_dir nd
+
 head-and-tail() {
     if [[ $# -ne 1 ]]; then
         return $(_error "requires 1 argument" "<filename>")
@@ -2831,7 +2948,7 @@ _complete_scr() {
     fi
 }
 _add_function _complete_scr
-complete -F _complete_scr scr && _add_completion_function scr
+complete -F _complete_scr scr sck && _add_completion_function scr sck
 
 # Add bash auto-completion to `screen -D -R` alias
 _complete_scd() {

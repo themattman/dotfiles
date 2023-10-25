@@ -3637,11 +3637,35 @@ funcu _git_branch_delete \
  | source-highlight -s bash -f esc256        # Highlight bash in the terminal
 
 #
+# 04/10/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+rsync --remove-source-files --exclude=data ./* ./dest/ # Use rsync to move files
+checkpointer thread                          # mdb, src/mongo/db/storage/checkpointer.h
+
+#
 # 04/11/2023
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 WT has no notion of if a collection is replicated, only logged/not logged
+
+#
+# 04/13/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+noatime                                      # Linux, mount filesystem option to not write
+                                             #  access times on reads. Can save SSD writes
+                                             #  for longevity and perf reasons.
+
+#
+# 04/24/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git commit --amend --reset-author            # Reset author & timestamp/date on commit
 
 #
 # 04/30/2023
@@ -3697,10 +3721,18 @@ Command                                      Comments
 git checkout <old_commit> -- <file>          # Git, undoes all changes in file since SHA
 
 #
+# 06/27/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+https://api.github.com/users/USERNAME        # created_at -> how old github handle is
+
+#
 # 07/11/2023
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
+shasum -c <checkfile> -a 256 <tarball>       # Check checksum
 lsof -p <PID>                                # List files opened by PID
 tail -c +0 -f /proc/<PID>/fd/2 > /tmp/recover# Copy deleted but opened file to filesystem
 https://github.com/<>/<>/commits/<branch>?author=<>
@@ -3716,11 +3748,39 @@ t                                            # Linux Perf (1), filter down to th
 F                                            # Linux Perf (1), re-compute percentages
 
 #
+# 07/28/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+jq -r                                        # Remove double-quotes from jq output
+
+#
+# 08/02/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+F                                            # Less, make `less` behave like tail -f
+
+#
 # 08/10/2023
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 gcc -E -march=help -xc /dev/null             # Supported CPU architectures by gcc
+
+#
+# 08/15/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+dig +short <hostname>                        # Do IP DNS lookup of hostname
+
+#
+# 08/16/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+USE_SCHEDULER=<host> ICECC_DEBUG=debug icemon # Ice cream, how to monitor
 
 #
 # 08/22/2023
@@ -3729,3 +3789,64 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 pkgutil --pkg-info=com.apple.pkg.CLTools_Executables # XCode cmdline tools version
 pkgutil --pkgs | grep -i tools               # Helps locate the pkg name for prior cmd
+
+#
+# 08/24/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+screen -S <name> -X sessionname <new_name>   # Screen, rename an existing session
+
+#
+# 08/25/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+sudo sysctl vm.overcommit_memory=2           # Set limits on linux to prevent OOM
+
+#
+# 09/07/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+sudo swapon -a
+sudo swapoff -a                              # Flush swap memory
+gold --stats --trace --verbose               # linker options for debugging
+gold --no-map-whole-file --no-keep-memory --no-keep-files-mapped # linker, low memory
+sudo dphys-swapfile swapoff                  # Change swap size procedure:
+<edit /etc/dphys-swapfile CONF_SWAPSIZE      # Set swap size in MBs
+<edit /etc/dphys-swapfile CONF_MAXSWAP       # Set swap size in MBs
+sudo dphys-swapfile setup
+sudo dphys-swapfile swapon                   # last step in swap size change procedure
+
+#
+# 09/18/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+otool -L <binary>                            # Mac equivalent of ldd
+C-x C-q C-x C-s C-x C-q                      # Write a file without save hooks running
+
+#
+# 10/19/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+until <line_num>                             # gdb, execute until this line is reached
+
+#
+# 10/24/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+jq -c '.attr'                                # jq, output object without newlines
+
+#
+# 10/25/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+alignas(4096) char zeros[1024*1024*1024];    # Pre-allocate 1GB of zeros. Stored as 1 page
+                                             # of physical memory on Linux via .bss as a
+                                             # range of bytes. Don't write to it, nor
+                                             # declare it const.
