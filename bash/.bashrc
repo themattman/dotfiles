@@ -412,7 +412,7 @@ _append_variable_with_path_separator() {
     if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
         # Variable isn't tracked yet in custom env
         _custom_user_path_variables["${_variable}"]="${_contents_of_variable}"
-        if [[ -z "${_contents_of_variable+x}" ]]; then
+        if [[ -z "${_contents_of_variable}" ]]; then
             export "${_variable}=${_value}"
         else
             export "${_variable}=${_contents_of_variable}:${_value}"
