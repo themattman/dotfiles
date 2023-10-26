@@ -589,6 +589,9 @@ _append_variable_with_path_separator PATH "/bin"
 # _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
 # _append_variable_with_path_separator PATH "$JAVA_HOME"
 
+# Icecream distributed compiler cluster
+#_prepend_variable_with_path_separator PATH /usr/lib/icecc/bin
+
 # local binaries
 # _append_variable_with_path_separator PATH $HOME/bin #begin
 # _append_variable_with_path_separator PATH /usr/bin
