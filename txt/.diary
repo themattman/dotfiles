@@ -3828,6 +3828,13 @@ otool -L <binary>                            # Mac equivalent of ldd
 C-x C-q C-x C-s C-x C-q                      # Write a file without save hooks running
 
 #
+# 10/11/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+Consider (setq kill-whole-line t)
+
+#
 # 10/19/2023
 #
 Command                                      Comments
@@ -3850,3 +3857,17 @@ alignas(4096) char zeros[1024*1024*1024];    # Pre-allocate 1GB of zeros. Stored
                                              # of physical memory on Linux via .bss as a
                                              # range of bytes. Don't write to it, nor
                                              # declare it const.
+
+#
+# 11/08/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+yaml2json | jq                               # Parse yaml from the cmdline
+
+#
+# 01/25/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+errno 28                                     # prints E<error_name> for POSIX error codes
