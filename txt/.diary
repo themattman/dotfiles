@@ -3859,11 +3859,48 @@ alignas(4096) char zeros[1024*1024*1024];    # Pre-allocate 1GB of zeros. Stored
                                              # declare it const.
 
 #
+# 11/05/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+echo "${var//$'\n'/_}"                       # Bash substitution, replace newline
+
+#
 # 11/08/2023
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 yaml2json | jq                               # Parse yaml from the cmdline
+
+#
+# 11/21/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+std::char_traits<char_t>::eof() == EOF       # STL, constants <string> vs. <cstdio>
+
+#
+# 11/27/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+gcc -l:libXYZ.a                              # GCC/LD, name a library directly with colon
+                                             #  I haven't tested yet. https://stackoverflow.com/questions/6578484/telling-gcc-directly-to-link-a-library-statically
+
+#
+# 12/20/2023
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+jq --slurp '.[0]'                            # jq, get first element in stream
+
+#
+# 01/08/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+newgrp <group>                               # Login as new group, useful after adding
+                                             #  your user to a group without need restart
 
 #
 # 01/25/2024
