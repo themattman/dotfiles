@@ -16,7 +16,11 @@ if [[ $? -ne 0 ]]; then
     fi
 fi
 
+set -x
 mv ~/.bashrc ~/.bashrc.bk
+mv ~/.bash_profile ~/.bash_profile.bk
+{ set +x; } &>/dev/null
+
 for pkg in $(ls .); do
     if [[ -d $pkg ]]; then
 	    set -x
@@ -59,6 +63,10 @@ set -x
 emacs --batch --script ~/.emacs.d/init.el &> emacs-compile.$(date "+%Y_%m_%d__%H_%M_%S")
 source ~/.bashrc
 { set +x; } &>/dev/null
+
+
+emacs_version=$(emacs --version | head -n 1)
+echo "Emacs Version: [${emacs_version}]"
 
 echo
 echo "done."
