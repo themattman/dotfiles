@@ -973,6 +973,7 @@ _add_alias grbc "git rebase --continue"
 _add_alias grba "git rebase --abort"
 _add_alias gct "git checkout --theirs"
 _add_alias g-- "git --version"
+_add_alias gtip "git show-branch --sha1-name"
 _add_alias gcf "git config"
 _add_alias gcfl "git config --list"
 _add_alias gcfe "git config user.email"
@@ -1012,6 +1013,7 @@ _add_alias r "fc -s"
 _add_alias getip "nslookup"
 # LESS
 _add_alias les "less +G" # +G goes to end of file
+_add_alias le "less -iS" # Truncate lines, case-insensitive search
 # Node.js
 _add_alias n "node"
 # _add_alias nd "node server" # Needed for next_dir()
@@ -2882,6 +2884,21 @@ oomlog() {
 }
 _add_function oomlog
 
+yesterday() {
+    local _yesterday_date=$(date -d yesterday "+%Y-%m-%d")
+    set -x
+    cat ~/.logs/bash-history-${_yesterday_date}.log
+    { set +x; } &>/dev/null
+}
+_add_function yesterday
+
+today() {
+    local _today_date=$(date -d today "+%Y-%m-%d")
+    set -x
+    cat ~/.logs/bash-history-${_today_date}.log
+    { set +x; } &>/dev/null
+}
+_add_function today
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
@@ -2941,8 +2958,8 @@ _complete_most_recently_modified_text_file() {
         COMPREPLY="${_mrmtf}"
     fi
 }
-complete -o default -F _complete_most_recently_modified_text_file les
-_add_completion_function les
+complete -o default -F _complete_most_recently_modified_text_file les le
+_add_completion_function les le
 
 # Add bash auto-completion to `screen -r` alias
 _complete_scr() {

@@ -3908,3 +3908,24 @@ newgrp <group>                               # Login as new group, useful after 
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 errno 28                                     # prints E<error_name> for POSIX error codes
+
+#
+# 04/10/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git show-branch --sha1-name <branch>         # git, show commit at tip of another branch
+
+#
+# 04/25/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+du -csh <files>                              # Show size of each file and *sum total*
+
+#
+# 04/30/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git branch -u origin/<branch>                # git, update <branch> to track upstream
