@@ -3910,6 +3910,17 @@ Command                                      Comments
 errno 28                                     # prints E<error_name> for POSIX error codes
 
 #
+# 04/05/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+set logging file stacks                      # gdb, log future output to file
+set logging enabled on                       # gdb, start logging
+set logging enabled off                      # gdb, stop logging
+thread apply all bt                          # gdb, print all stacks
+grep -A 1 "^Thread [0-9]" stacks | grep -v "^Thread" | grep -v "^\-\-" | sort | uniq -c | sort -h
+
+#
 # 04/10/2024
 #
 Command                                      Comments
@@ -3929,3 +3940,11 @@ du -csh <files>                              # Show size of each file and *sum t
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 git branch -u origin/<branch>                # git, update <branch> to track upstream
+
+#
+# 05/14/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+ldconfig -v                                  # Print libs known to dynamic linker
+readelf -d <soname> | grep SONAME            # Print dynamic lib version
