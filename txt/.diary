@@ -3948,3 +3948,17 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 ldconfig -v                                  # Print libs known to dynamic linker
 readelf -d <soname> | grep SONAME            # Print dynamic lib version
+
+#
+# 06/05/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cargo install cpp_demangle --example cppfilt # cppfilt install from https://github.com/gimli-rs/cpp_demangle
+
+#
+# 06/12/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+sudo kill -INT <pid>                         # Perf, gracefully kill so dump is collected

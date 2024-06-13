@@ -2833,7 +2833,12 @@ _add_function lint-diary
 
 # list last few touched files
 lt() {
-    las -r ${1:-.} | tail
+    if [[ $# -gt 0 ]]; then
+        las -r . | tail -n ${1}
+    else
+        # las -r ${1:-.} | tail
+        las -r | tail
+    fi
 }
 _add_function lt
 
