@@ -1,5 +1,5 @@
 [user]
-	name = Matt Kneiser
+    name = Matt Kneiser
 [init]
 	defaultBranch = main
 [includeIf "gitdir:~/dotfiles/"]

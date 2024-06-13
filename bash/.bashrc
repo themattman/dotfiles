@@ -584,6 +584,8 @@ _append_variable_with_path_separator PATH "/usr/local/bin"
 _append_variable_with_path_separator PATH "/usr/bin"
 _append_variable_with_path_separator PATH "/bin"
 
+_append_variable_with_path_separator PATH "/home/ubuntu/.cargo/bin"
+
 # Android Studio/Intellij Paths
 # _append_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
 # _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
@@ -726,6 +728,7 @@ darwin*)
 esac
 
 ## 4b) Basic bash aliases
+_add_alias sx "set +x"
 _add_variable DATE_FORMAT "+%Y_%m_%d__%H_%M_%S"
 _add_alias rem "remove_trailing_spaces"
 _add_alias find "find -L"
@@ -3136,69 +3139,3 @@ else
         fi
     fi
 fi
-
-
-
-tg() {
-    # Attach to specified tmux session
-    #* 1. If the session does not exist, create it.
-    ## 2. If no session name specified, prompt to choose from existing ones.
-
-    # A simple/naive replacement of this "bloated" function:
-    # tmux -2 attach -t "$session_name" || tmux -2 new -s "$session_name"
-
-    if ! command -v tmux >/dev/null; then
-        echo "Warn: tmux could not be found, not starting any tmux session"
-        return
-    fi
-
-    local usage="tg [-d] [session_name]"
-    local detach_others=""
-
-    while getopts "d" opt; do
-        case $opt in
-            d) detach_others="-d";;
-            ?) echo "$usage" >&2;;
-        esac
-    done
-    shift $((OPTIND - 1))
-
-    local session_name="$1"
-
-    if [ -n "$session_name" ]; then
-        tmux -2 attach $detach_others -t "$session_name" \
-            || tmux -2 new -s "$session_name"
-        return
-    fi
-
-    # No session name specified, act according to the number of sessions
-    local sessions=$(tmux list-sessions -F "#{session_name}")
-
-    if [ -z "$sessions" ]; then
-        tmux -2 new -s 'misc'
-        return
-    fi
-
-    if [ "$(echo "$sessions" | wc -l)" -eq 1 ]; then
-        tmux -2 attach $detach_others -t "$sessions"
-        return
-    fi
-
-    # Multiple sessions, prompt to choose one
-
-    local IFS=$'\n' # In case session names contain whitespaces. Must
-                    # 'local' to NOT pollute the global 'IFS'.
-                    # $'LITERAL_STR' => ansi-c quoting
-    local PS3="Select a session: "
-
-    select session_name in $sessions; do
-
-        if [ -n "$session_name" ]; then # A valid choice
-            tmux -2 attach $detach_others -t "$session_name"
-            return
-        else
-            echo "Invalid index '$REPLY', please retry"
-        fi
-
-    done
-}

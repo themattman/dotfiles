@@ -68,6 +68,16 @@ source ~/.bashrc
 emacs_version=$(emacs --version | head -n 1)
 echo "Emacs Version: [${emacs_version}]"
 
+echo "Check .git-completion file against upstream tip."
+if [[ $(wget -q --spider http://github.com) -eq 0 ]]; then
+    wget https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
+    if [[ $(diff -q git-completion.bash git/.git-completion 1>/dev/null) -ne 0 ]]; then
+        echo "warning: .git-completion needs updating." >&2
+    fi
+else
+    echo "Skipping check, no network connection to github.com." >&2
+fi
+
 echo
 echo "done."
 

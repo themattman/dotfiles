@@ -3962,3 +3962,13 @@ cargo install cpp_demangle --example cppfilt # cppfilt install from https://gith
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 sudo kill -INT <pid>                         # Perf, gracefully kill so dump is collected
+
+#
+# 06/13/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+M-x eval expression                          # Setting up emacs on new machine, addresses
+(setq package-check-signature nil)           #  package errors
+package-refresh-contents
+(setq package-check-signature t)
