@@ -635,17 +635,20 @@ if [[ ! -x $(which tree 2>/dev/null) ]]; then
     # TODO exclude .git tree
 fi
 # Readlink replacement (for non-Ubuntu)
-_add_variable PYTHON_VERSION $(python -c 'import sys; print(sys.version_info[0])')
-case $PYTHON_VERSION in
-2*)
-    _add_alias pys "python -m SimpleHTTPServer"
-    _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
-;;
-3*)
-    _add_alias pys "python -m http.server"
-    _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
-;;
-esac
+if [[ -x $(which python 2>/dev/null) ]]; then
+    _add_variable PYTHON_VERSION $(python -c 'import sys; print(sys.version_info[0])')
+    case $PYTHON_VERSION in
+    2*)
+        _add_alias pys "python -m SimpleHTTPServer"
+        _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
+    ;;
+    3*)
+        _add_alias pys "python -m http.server"
+        _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
+    ;;
+    esac
+fi
+
 # Bash Polyfills
 if [[ ! -x $(which wget 2>/dev/null) ]]; then
     _add_alias wget "curl -LO"
@@ -692,7 +695,7 @@ linux*|msys*)
 
     # Ubuntu Package Management
     _add_alias acs "sudo apt-cache search"
-    _add_alias agi "sudo apt-get install"
+    # _add_alias agi "sudo apt-get install" # see agi function
     _add_alias agu "sudo apt-get install --only-upgrade"
 
     _add_alias wa "watch -n 1"
@@ -731,7 +734,7 @@ esac
 _add_alias sx "set +x"
 _add_variable DATE_FORMAT "+%Y_%m_%d__%H_%M_%S"
 _add_alias rem "remove_trailing_spaces"
-_add_alias find "find -L"
+# _add_alias find "find -L" # Too invasive, just don't forget to add -L for symbolic links
 #_add_alias ! "sudo !!" # This is a terrible alias and breaks a lot of stuff
 _add_alias c "cd \${OLDPWD}" # Use Ctrl-L instead of aliasing this to clear
 _add_alias cp "cp -i"        # Warn when overwriting
@@ -2177,16 +2180,18 @@ remove_starting_point() {
 _add_function remove_starting_point
 
 # More traceable pkg mgmt
-_agi() {
+agi() {
     if [[ $# -ne 1 ]]; then
         return $(_error "" "<package>")
     fi
     _prog=$1
     mkdir -p ~/.${HOSTNAME}.d
     echo "$(date) [${_prog}]" >> ~/.${HOSTNAME}.d/apt_get_packages
-    sudo apt-get install ${_prog} |& tee -a ~/.${HOSTNAME}.d/apt_get_packages
+    set -x
+    sudo apt-get install -y ${_prog} |& tee -a ~/.${HOSTNAME}.d/apt_get_packages
+    { set +x; } &>/dev/null
 }
-_add_function _agi
+_add_function agi
 
 opt() {
     if [[ $# -ne 2 ]]; then
@@ -3121,21 +3126,50 @@ unset DATE_FORMAT
 
 
 ## 11) SSH
+reboot-ssh-agent() {
+    # Kill the main ssh-agent
+    eval "$(ssh-agent -k)"
+
+    # Kill any duplicates, orphans, zombies.
+    pgrep -a ssh-agent
+    pkill ssh-agent
+
+    # Start anew.
+    eval "$(ssh-agent -s)"
+}
+_add_function reboot-ssh-agent
+
+# ssh-add -l # list all fingerprints of identities loaded by agent
+
 if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
    echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
 else
-    if ls ~/.ssh/id_* &>/dev/null; then
-        eval "$(ssh-agent -s)"
-        if [[ -x $(which keychain 2>/dev/null) && -f ~/.ssh/id_rsa ]]; then
-            if [[ ! -d ~/.keychain ]]; then
-                set -x
-                mkdir -p ~/.keychain
-                { set +x; } &>/dev/null
-            fi
+    num_ssh_keys=$(find -L ~/.ssh -name 'id_*' | wc -l)
+    if [[ $num_ssh_keys -gt 0 ]]; then
+        if [[ ! -d ~/.keychain ]]; then
             set -x
             keychain id_rsa
             . ~/.keychain/`uname -n`-sh
             { set +x; } &>/dev/null
         fi
+        eval "$(ssh-agent -s)"
+        if [[ $OSTYPE =~ linux ]]; then
+            if [[ ! -x $(which keychain 2>/dev/null) ]]; then
+                sudo apt-get install -y keychain
+            fi
+        fi
+        for key in $(ls ~/.ssh/id_*.pub); do
+            keyfile_name=$(basename ${key%.pub})
+            # Double check that there's a private key associated
+            # with this public key.
+            if [[ -f ~/.ssh/${keyfile_name} ]]; then
+                echo "Adding [${keyfile_name}] to keychain"
+                set -x
+                keychain ${keyfile_name}
+                ssh-add ~/.ssh/${keyfile_name}
+                { set +x; } &> /dev/null
+            fi
+        done
+        . ~/.keychain/`uname -n`-sh
     fi
 fi
