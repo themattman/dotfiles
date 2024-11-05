@@ -399,12 +399,22 @@ esac
 
 declare -A _custom_user_path_variables
 _append_variable_with_path_separator() {
-    local _variable _value _contents_of_variable
-    if [[ $# -ne 2 ]]; then
-        return $(_error "" "<variable> <value>")
+    local _variable _value _contents_of_variable _platform
+    if [[ $# -lt 2 || $# -gt 3 ]]; then
+        return $(_error "" "<variable> <value> [<platform>]")
     fi
     _variable="${1}"
     _value="${2}"
+    _platform="${3}"
+    if [[ -n $_platform ]]; then
+        local _ostype=$OSTYPE
+        if [[ $_ostype =~ "darwin" ]]; then
+            _ostype=mac
+        fi
+        if [[ ! $_platform =~ $_ostype ]]; then
+            return $(_error "variable ${_variable} set for os ${_platform} not set for this os ${_ostype}")
+        fi
+    fi
     if [[ ! -d ${_value} ]]; then
         return $(_error "location ${_value} doesn't exist and won't be appended to ${_variable}")
     fi
@@ -424,12 +434,22 @@ _append_variable_with_path_separator() {
 _add_function _append_variable_with_path_separator
 
 _prepend_variable_with_path_separator() {
-    local _variable _value _contents_of_variable
-    if [[ $# -ne 2 ]]; then
-        return $(_error "" "<variable> <value>")
+    local _variable _value _contents_of_variable _platform
+    if [[ $# -lt 2 || $# -gt 3 ]]; then
+        return $(_error "" "<variable> <value> [<platform>]")
     fi
     _variable="${1}"
     _value="${2}"
+    _platform="${3}"
+    if [[ -n $_platform ]]; then
+        local _ostype=$OSTYPE
+        if [[ $_ostype =~ "darwin" ]]; then
+            _ostype=mac
+        fi
+        if [[ ! $_platform =~ $_ostype ]]; then
+            return $(_error "variable ${_variable} set for os ${_platform} not set for this os ${_ostype}")
+        fi
+    fi
     if [[ ! -d ${_value} ]]; then
         return $(_error "location ${_value} doesn't exist and won't be appended to ${_variable}")
     fi
@@ -583,8 +603,9 @@ _add_function cpa
 _append_variable_with_path_separator PATH "/usr/local/bin"
 _append_variable_with_path_separator PATH "/usr/bin"
 _append_variable_with_path_separator PATH "/bin"
+_append_variable_with_path_separator PATH "/opt/homebrew/bin" mac
 
-_append_variable_with_path_separator PATH "/home/ubuntu/.cargo/bin"
+_append_variable_with_path_separator PATH "${HOME}/.cargo/bin"
 
 # Android Studio/Intellij Paths
 # _append_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
@@ -3147,8 +3168,19 @@ _add_function reboot-ssh-agent
 if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
    echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
 else
-    num_ssh_keys=$(find -L ~/.ssh -name 'id_*' | wc -l)
+    num_ssh_keys=$(find -L ~/.ssh -name 'id_*' | wc -l | awk -F' ' '{print $1}')
     if [[ $num_ssh_keys -gt 0 ]]; then
+        if [[ ! -x $(which keychain 2>/dev/null) ]]; then
+            case $OSTYPE in
+            linux*)
+                sudo apt-get install -y keychain
+            ;;
+            darwin*)
+                brew install keychain
+            ;;
+            esac
+        fi
+
         if [[ ! -d ~/.keychain ]]; then
             set -x
             keychain id_rsa
@@ -3156,23 +3188,6 @@ else
             { set +x; } &>/dev/null
         fi
         eval "$(ssh-agent -s)"
-        if [[ $OSTYPE =~ linux ]]; then
-            if [[ ! -x $(which keychain 2>/dev/null) ]]; then
-                sudo apt-get install -y keychain
-            fi
-        fi
-        for key in $(ls ~/.ssh/id_*.pub); do
-            keyfile_name=$(basename ${key%.pub})
-            # Double check that there's a private key associated
-            # with this public key.
-            if [[ -f ~/.ssh/${keyfile_name} ]]; then
-                echo "Adding [${keyfile_name}] to keychain"
-                set -x
-                keychain ${keyfile_name}
-                ssh-add ~/.ssh/${keyfile_name}
-                { set +x; } &> /dev/null
-            fi
-        done
         . ~/.keychain/`uname -n`-sh
     fi
 fi
