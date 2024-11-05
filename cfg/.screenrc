@@ -3,6 +3,11 @@
 #
 # Author:        Matt Kneiser
 # Created:       08/24/2015
+#
+# Reload this file within a screen session:
+# Ctrl-a : source $HOME/.screenrc
+
+
 defflow off # Handle CTRL-S properly
 vbell off   # Turn visual bell off
 # vbell_msg "bell: window ~%"  # Message for visual bell
@@ -10,18 +15,25 @@ vbell off   # Turn visual bell off
 startup_message off
 
 # See ~/.bashrc for how this works. Shuts off almost all personal configs.
-setenv DISABLE_STARTUP "true"
+# setenv DISABLE_STARTUP "true"
 
-# Change default ctrl char for GNU Screen to Ctrl-U
+# Change default ctrl char for GNU Screen from Ctrl-A -> Ctrl-U
 escape ^Ua
 defscrollback 10000
 
 # MongoDB Session
-screen -t mongo_shell
-screen -t mongod_shell
-split
-focus down
-select mongo_shell
-stuff "cd mdb/master && ./build/install/bin/mongo --port 28010"
-focus up
-stuff "cd mdb/master && new_data_dir=$(nd ${HOME}/data/db/test) && mkdir \$new_data_dir && ./build/install/bin/mongod --port 28010 --dbpath \$new_data_dir"
+# screen -t mongo_shell
+# screen -t mongod_shell
+# split
+# focus down
+# select mongo_shell
+# stuff "cd mdb/master && ./build/install/bin/mongo --port 28010"
+# focus up
+# stuff "cd mdb/master && new_data_dir=$(nd ${HOME}/data/db/test) && mkdir \$new_data_dir && ./build/install/bin/mongod --port 28010 --dbpath \$new_data_dir"
+
+# Enable scrolling in screen sessions.
+# Courtesy of https://superuser.com/questions/527273/how-to-enable-mouse-wheel-scrolling-in-gnu-screen
+termcapinfo xterm* ti@:te=\E[2J
+
+# Disable the password feature that has locked up many a session of mine (add this to ~/.bashrc)
+# export LOCKPRG='/bin/true'

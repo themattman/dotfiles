@@ -570,6 +570,7 @@ This command does not push text to `kill-ring'."
 (add-hook 'find-file-hook 'mrk/load-diary-for-append)
 (add-hook 'c++-mode-hook 'mrk/c++-mode-hook)
 
+(global-display-line-numbers-mode)
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
 (set-cursor-color "#116149")            ; MongoDB Color

@@ -787,7 +787,7 @@ _add_alias jl "jobs"    #  I always want to see the jobs' pids
 _add_alias kl "kill %%" # Kill most recent background job
 # Print out definition of bash function
 _add_alias func "declare -f"  # could also be "type" but more succinct output.
-_add_alias funcu "declare -f" # only useful for auto-complete. See `7) Miscellaneous`
+_add_alias funcu "declare -f" # only useful for auto-complete. See `8) Miscellaneous`
 _add_alias comp "complete -p"
 # Optional Shell Behavior
 shopt -s cdable_vars
@@ -842,6 +842,7 @@ _add_alias sc "screen -S"
 _add_alias scl "screen -ls"
 _add_alias scd "screen -D -R" # Re-attach to screen that is attached
 _add_alias detach "screen -d -m" # Run a command inside screen
+_add_variable LOCKPRG "/bin/true"  # Disable the password feature which has locked up many sessions of mine
 # Git
 source_file ~/.git-completion no_output # Will have to re-source this file later
 if [[ -f ~/.git-completion ]]; then
@@ -2455,6 +2456,8 @@ _add_function open_file_from_prior_cmd_in_less
 _rename_function open_file_from_prior_cmd_in_less opf
 
 open_file_from_prior_cmd_in_editor() {
+    : args - num_prior = index, 1+, starting from bottom of line to open as file default: 1
+    local _num_prior=${1:-1}
     local _output=$(history -p !!)
     local _last_line=""
     case $OSTYPE in
@@ -2462,10 +2465,10 @@ open_file_from_prior_cmd_in_editor() {
         if [[ ! -x $(which ansi2txt) ]]; then
             return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
         fi
-        _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
+        _last_line=$(eval "${_output}" | tail -n ${_num_prior} | head -n 1| ansi2txt)
     ;;
     darwin*)
-        _last_line=$(eval "${_output}" | tail -n 1)
+        _last_line=$(eval "${_output}" | tail -n ${_num_prior} | head -n 1)
     ;;
     esac
 
@@ -2906,7 +2909,7 @@ yesterday() {
 _add_function yesterday
 
 today() {
-    local _today_date=$(date -d today "+%Y-%m-%d")
+    local _today_date=$(date +%F)
     set -x
     cat ~/.logs/bash-history-${_today_date}.log
     { set +x; } &>/dev/null

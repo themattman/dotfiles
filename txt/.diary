@@ -3972,3 +3972,41 @@ M-x eval expression                          # Setting up emacs on new machine, 
 (setq package-check-signature nil)           #  package errors
 package-refresh-contents
 (setq package-check-signature t)
+
+#
+# 06/17/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+winheight [cmd|src] +20                      # GDB TUI, increase height of cmd area, tab
+                                             #  completion works for window names here
+
+#
+# 09/13/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+M-g TAB <num>                                # Emacs, move point to column number
+
+#
+# 09/17/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+<col> | sort -n | awk ' { a[i++]=$1; } END { print a[int(i/2)]; }' # awk, median
+
+#
+# 09/20/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+git log --author="<Name Here>" -- <file>     # Git, see history from one author on file
+
+#
+# 11/05/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+column -t -s, file.csv                       # Display csv as a padded table
+cat file.csv | td -s ' ' | column -t -s,     # May help with space padding
+

@@ -176,7 +176,7 @@
    ["#242424" "#e5786d" "#95e454" "#cae682" "#8ac6f2" "#333366" "#ccaa8f" "#f6f3e8"])
  '(custom-enabled-themes '(whiteboard))
  '(package-selected-packages
-   '(lsp-ui which-key lsp-mode vc-msg gnu-elpa-keyring-update mo-git-blame flycheck auto-complete)))
+   '(spinner lsp-ui which-key lsp-mode vc-msg gnu-elpa-keyring-update mo-git-blame flycheck auto-complete)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
