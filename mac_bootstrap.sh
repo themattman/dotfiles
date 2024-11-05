@@ -11,7 +11,7 @@ if [[ $? -ne 0 ]]; then
 fi
 # / bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-brew_formulae=(bash bash-completion boost cppfilt dos2unix emacs jira-cli jq keychain rust screen source-highlight stow wget)
+brew_formulae=(bash bash-completion boost cppfilt dos2unix emacs jira-cli jq keychain moreutils rust screen source-highlight stow wget)
 # ffmpeg
 
 for formula in ${brew_formulae[@]}; do
