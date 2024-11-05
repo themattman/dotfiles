@@ -3982,6 +3982,40 @@ winheight [cmd|src] +20                      # GDB TUI, increase height of cmd a
                                              #  completion works for window names here
 
 #
+# 07/16/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+#:~:text=                                    # Browser, text fragment link
+echo -n "hello world" | jq -sRr @uri         # encode url from text
+ hello%20world
+
+#
+# 08/12/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+perl -pe 's/(\d+)$/"="x(log($1))/e' <file>   # Print logarithmic histogram with Perl
+===
+========
+==========
+=======
+
+#
+# 08/15/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+jq -r '.[] | select(.distro | test("ubuntu")).host_name'  # jq, select element from array
+
+#
+# 09/03/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+timedatectl status                           # See earlier cmd for setting tz which refreshes
+
+#
 # 09/13/2024
 #
 Command                                      Comments
@@ -4003,10 +4037,47 @@ Command                                      Comments
 git log --author="<Name Here>" -- <file>     # Git, see history from one author on file
 
 #
+# 09/23/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+awk 'NR % 2 {print} !(NR % 2) && /pattern/ {print}' # Filter every other line of output
+cut -c 1-N                                   # cut first N chars of each line
+
+#
+# 09/24/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+-path:*test.cpp                              # DXR, exclude test files
+
+#
+# 10/12/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+set pagination off                           # gdb, annoying when printing large output
+
+#
+# 10/14/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+> [!NOTE]                                    # Github markdown, make notes/warnings stand out
+> Your warning here.                         # https://github.com/orgs/community/discussions/16925
+
+#
+# 10/29/2024
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+jq -C '.' | less -R                          # jq, retain color
+
+
+#
 # 11/05/2024
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
 column -t -s, file.csv                       # Display csv as a padded table
 cat file.csv | td -s ' ' | column -t -s,     # May help with space padding
-
