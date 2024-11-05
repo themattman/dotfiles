@@ -89,10 +89,16 @@ fi
 
 echo
 echo "##############"
+echo "# Git Config #"
+echo "##############"
+read -p "Git Email Address: " _email
+git config --global user.email "${_email}"
+
+echo
+echo "##############"
 echo "# SSH Keygen #"
 echo "##############"
-local _email="${USER}@${HOSTNAME}"
-echo -en "Is this the right identity [${_email}]? "
+echo -en "Is this the right identity for ssh [${_email}]? "
 read -p "[y/n]: " -n 1 -r
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     set -x
