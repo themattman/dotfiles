@@ -3,7 +3,7 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  07/08/2022
+# Last updated:  02/21/2025
 #
 # To refresh bash environment with changes to this file:
 #  $ source ~/.bashrc
@@ -15,8 +15,8 @@
 #   * Bash version:
 #     * 4.x, 4.4.x, 5.1.x
 #   * Platforms:
-#     * Mac OS X 10.11, 12.3
-#     * Ubuntu 12.04/14.04/18.04
+#     * Mac OS X 10.11, 12.3, 15.3
+#     * Ubuntu 12.04/14.04/18.04/22.04
 #
 #
 # Table of Contents:
@@ -791,7 +791,7 @@ _add_alias bell "tput bel"
 _add_alias y "yes"
 _add_alias no "yes | tr 'y' 'n'"
 _add_alias tmake "(\time -v make -j\$(cores)) &> \$(date $DATE_FORMAT)"
-_add_alias cdate "date $DATE_FORMAT"
+_add_alias cdate no "date $DATE_FORMAT"
 _add_alias nof "find ./ -maxdepth 1 -type f | wc -l" # Faster than: _add_alias nof "ls -l . | egrep -c '^-'"
 _add_alias old "echo \$OLDPWD"
 _add_alias sus no "sort | uniq -c | sort -h"
@@ -1056,7 +1056,7 @@ _add_alias psm "ps aux | grep mongo | grep -v grep"
 _add_alias psd "ps aux | grep mongod | grep -v grep"
 _add_alias psp "ps -f -C mongod"
 _add_alias pspf "ps --cols 20000 -f -C mongod"
-_add_alias kmd "ps -f -C mongod | tr -s ' ' | cut -d' ' -f2 | tail -n +2 | xargs -I% kill %"
+# _add_alias kmd "ps -f -C mongod | tr -s ' ' | cut -d' ' -f2 | tail -n +2 | xargs -I% kill %"
 _add_alias pse "ps fe -o \"%c %p %P\""
 _add_alias pe "ps fe -o \"%p\" --no-headers --ppid"
 _add_alias pid "ps fe --pid"
@@ -2936,6 +2936,16 @@ today() {
     { set +x; } &>/dev/null
 }
 _add_function today
+
+to_dec() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "[0x]<hex number>")
+    fi
+    local _hex=${1##*x} # strips everything before 'x' in input, hence '0xF31' -> 'F31'
+    echo "$((16#${_hex}))"
+}
+_add_function to_dec
+_rename_function to_dec from_hex
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
