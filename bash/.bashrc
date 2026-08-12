@@ -603,6 +603,7 @@ _add_function cpa
 _append_variable_with_path_separator PATH "/usr/local/bin"
 _append_variable_with_path_separator PATH "/usr/bin"
 _append_variable_with_path_separator PATH "/bin"
+_append_variable_with_path_separator PATH "${HOME}/usrbin"
 _append_variable_with_path_separator PATH "/opt/homebrew/bin" mac
 
 _append_variable_with_path_separator PATH "${HOME}/.cargo/bin"
@@ -661,11 +662,11 @@ if [[ -x $(which python 2>/dev/null) ]]; then
     case $PYTHON_VERSION in
     2*)
         _add_alias pys "python -m SimpleHTTPServer"
-        _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
+        # _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
     ;;
     3*)
         _add_alias pys "python -m http.server"
-        _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
+        # _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
     ;;
     esac
 fi
@@ -795,6 +796,7 @@ _add_alias cdate "date $DATE_FORMAT"
 _add_alias nof "find ./ -maxdepth 1 -type f | wc -l" # Faster than: _add_alias nof "ls -l . | egrep -c '^-'"
 _add_alias old "echo \$OLDPWD"
 _add_alias sus no "sort | uniq -c | sort -h"
+_add_alias susr no "sort | uniq -c | sort -hr"
 _add_alias blame  no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no-pager blame -L\$g,\$g \$f 2>/dev/null | cut -d'(' -f2 | awk '{print \$1}'; done | sus"
 _add_alias blamer no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no-pager blame -L\$g,\$g \$f 2>/dev/null; done"
 _add_alias extensions "find . -type f | awk -F. '!a[\$NF]++{print \$NF}'"
@@ -1006,6 +1008,7 @@ _add_alias gcf "git config"
 _add_alias gcfl "git config --list"
 _add_alias gcfe "git config user.email"
 _add_alias gcfu "git config user.name"
+_add_alias empty "git commit --no-verify --allow-empty -m 'empty commit'"
 _add_alias findgit "git rev-parse --git-dir"
 _add_alias gitdir "git rev-parse --git-dir"
 _add_alias toplevel "dirname \$(git rev-parse --git-dir)"
@@ -1075,7 +1078,7 @@ _add_alias pyk "pkill -9 python"
 # TAR
 _add_alias tarv "tar tvf"  # View an archive
 _add_alias tarc "tar caf"  # Compress an archive
-_add_alias untar "tar xvf" # Uncompress an archive, gzip -d
+# _add_alias untar "tar xvf" # Uncompress an archive, gzip -d
 # Vim
 _add_alias vmi "vim"
 _add_alias mvi "vim"
@@ -1446,6 +1449,7 @@ g() {
     local _remote=$(git remote)
     local _num_remotes=$(git remote | wc -l)
     local _branch=$(git rev-parse --abbrev-ref HEAD)
+    local _opts="--ff-only"
     local _r
 
     if [[ "dryrun" = ${1} ]]; then
@@ -1455,16 +1459,16 @@ g() {
     fi
 
     if [[ ${_num_remotes} -eq 1 ]]; then
-        echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_remote} ${_branch}${ENDCOLOR}]"
+        echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_opts} ${_remote} ${_branch}${ENDCOLOR}]"
         if [[ $# -eq 0 ]]; then
-            git pull ${_remote} ${_branch}
+            git pull ${_opts} ${_remote} ${_branch}
         fi
     elif [[ ${_num_remotes} -gt 1 ]]; then
         select _r in ${_remote[@]}
         do
-            echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_r} ${_branch}${ENDCOLOR}]"
+            echo -e "alias [${PURPLE}g${ENDCOLOR}] to [${PURPLE}git pull ${_opts} ${_r} ${_branch}${ENDCOLOR}]"
             if [[ $# -eq 0 ]]; then
-                git pull ${_r} ${_branch}
+                git pull ${_opts} ${_r} ${_branch}
             fi
             break
         done
@@ -2495,7 +2499,10 @@ open_file_from_prior_cmd_in_editor() {
 
     local _file=$(echo "${_last_line}" | cut -d':' -f1)
 
+    echo "first guess: (${_file})"
+
     if [[ ! -r "${_file}" ]]; then
+        echo "remove git-status: (${_file})"
         # Try to remove git status -s markings
         local _status_removed=$(echo "${_file}" | ansi2txt | tr -s ' ' | cut -d' ' -f2)
         # Unstaged changes have a leading space that needs special handling
@@ -2506,17 +2513,24 @@ open_file_from_prior_cmd_in_editor() {
         if [[ ! -r "${_file}" ]]; then
             return $(_error "file [${_file}] does not exist.")
         fi
+    else
+        echo "good file on first guess"
     fi
 
     local _unadjusted_line_num=$(echo "${_last_line}" | cut -d':' -f2 -s)
+    echo "num: [${_unadjusted_line_num}]"
     local _line_num_arg
-    if [[ -n $_unadjusted_line_num ]]; then
-        # Account for terminal height so line number appears at top of editor
-        _line_num=$((_unadjusted_line_num+$(tput lines)-8))
+    if [[ -n "$_unadjusted_line_num" ]]; then
+        echo "num: [${_unadjusted_line_num}]"
+        is_num_regex='^[0-9]+$'
+        if [[ $_unadjusted_line_num =~ $is_num_regex ]]; then
+            # Account for terminal height so line number appears at top of editor
+            _line_num=$((_unadjusted_line_num+$(tput lines)-8))
 
-        if [[ ("${_line_num}" -gt 0) && ("${_line_num}" -lt $(wc -l "${_file}" | cut -d' ' -f1)) ]]; then
-            echo -e "opening: [${_file}] @ [${GREEN}${_line_num}${ENDCOLOR}]"
-            _line_num_arg="+${_line_num}"
+            if [[ ("${_line_num}" -gt 0) && ("${_line_num}" -lt $(wc -l "${_file}" | cut -d' ' -f1)) ]]; then
+                echo -e "opening: [${_file}] @ [${GREEN}${_line_num}${ENDCOLOR}]"
+                _line_num_arg="+${_line_num}"
+            fi
         fi
     else
         echo "opening: [${_file}]"
@@ -2612,7 +2626,12 @@ num_commits_since_head() {
 _add_function num_commits_since_head
 
 sincehead() {
-    local _delimiter=${1:-SERVER}
+    local _diffContextNumLines=${1}
+    local _delimiter=${2:-SERVER}
+    local _diffContext=""
+    if [[ "x${_diffContextNumLines}" != "x" ]]; then
+        _diffContext="-U${_diffContextNumLines}"
+    fi
     local _commit=$(git log --format="format:%s|%H" | grep "^${_delimiter}-[0-9]\+" | head -n 1 | rev | cut -d'|' -f1 | rev)
     echo -e "${PURPLE}first commit off parent${ENDCOLOR}: [${CYAN}${_commit}${ENDCOLOR}]\n"
     git rev-list --ancestry-path --date=local --pretty=format:"%h - %Cgreen%cd%Creset - %s" ${_commit}^..HEAD | grep -v "^commit "
@@ -2623,7 +2642,7 @@ sincehead() {
     read -p "See diff? [y/n]: " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        eval gitdiffhead "${_num_commits}"
+        eval gitdiffhead "${_num_commits}" "${_diffContext}"
     fi
 }
 _add_function sincehead
@@ -2691,43 +2710,86 @@ git_file_and_line() {
 }
 _add_function git_file_and_line
 
+# blame_every_line() {
+#     git_file_and_line | while read l; do
+#         file=${l%%:*}
+#         line=${l##*:}
+#         git blame -L${line},+1 HEAD^ -- ${file}
+#     done
+# }
+# _add_function blame_every_line
+# _rename_function blame_every_line bel
+
+
 blame_every_line() {
-    git_file_and_line | while read l; do
-        file=${l%%:*}
-        line=${l##*:}
-        git blame -L${line},+1 HEAD^ -- ${file}
+    : Given the format of '<file>:<line>' this generates git-blame output for each entry
+    while read l; do
+        local _file=${l%%:*}
+        local _line=${l##*:}
+        # echo "f:[${_file}] l:[${_line}]"
+        git blame -L${_line},+1 HEAD^ -- ${_file}
     done
 }
 _add_function blame_every_line
 _rename_function blame_every_line bel
 
-next_file() {
+# next_file() {
+#     : Next File
+#     if [[ $# -ne 1 ]]; then
+#         return $(_error "requires 1 argument" "<filename>")
+#     fi
+#     local _filename=$1
+#     # find highest number given filename base
+#     local _counter=0
+#     local _file_list_count
+#     case $OSTYPE in
+#     linux*|msys*)
+#         _file_list_count=$(ls ${_filename}* 2>/dev/null | grep "${_filename}[0-9]\+$" | wc -l)
+#     ;;
+#     darwin*)
+#         _file_list_count=$(ls ${_filename}* 2>/dev/null | grep "${_filename}[0-9]\+$" | wc -l | awk -F' ' '{print $1}')
+#     ;;
+#     esac
+#     #echo "cnt: ${_file_list_count}"
+#     if [[ "${_file_list_count}" -gt 0 ]]; then
+#         ls "${_filename}*" 2>/dev/null | while read file; do
+#             echo "f: ${file}"
+#         done
+#         while [[ -f "${_filename}${_file_list_count}" ]]; do
+#             _file_list_count=$((_file_list_count + 1))
+#         done
+#     fi
+#     echo "${_filename}${_file_list_count}"
+# }
+# _add_function next_file
+# _rename_function next_file nf
+
+next_file () #Generated by Glean
+{
     : Next File
     if [[ $# -ne 1 ]]; then
         return $(_error "requires 1 argument" "<filename>")
     fi
+
     local _filename=$1
-    # find highest number given filename base
+    local base ext
     local _counter=0
-    local _file_list_count
-    case $OSTYPE in
-    linux*|msys*)
-        _file_list_count=$(ls ${_filename}* 2>/dev/null | grep "${_filename}[0-9]\+$" | wc -l)
-    ;;
-    darwin*)
-        _file_list_count=$(ls ${_filename}* 2>/dev/null | grep "${_filename}[0-9]\+$" | wc -l | awk -F' ' '{print $1}')
-    ;;
-    esac
-    #echo "cnt: ${_file_list_count}"
-    if [[ "${_file_list_count}" -gt 0 ]]; then
-        ls "${_filename}*" 2>/dev/null | while read file; do
-            echo "f: ${file}"
-        done
-        while [[ -f "${_filename}${_file_list_count}" ]]; do
-            _file_list_count=$((_file_list_count + 1))
-        done
+
+    # Split into base + extension (if any)
+    if [[ "$_filename" == *.* ]]; then
+        base="${_filename%.*}"
+        ext=".${_filename##*.}"
+    else
+        base="$_filename"
+        ext=""
     fi
-    echo "${_filename}${_file_list_count}"
+
+    # Find first non-existing file: base<N>ext
+    while [[ -e "${base}${_counter}${ext}" ]]; do
+        _counter=$((_counter + 1))
+    done
+
+    echo "${base}${_counter}${ext}"
 }
 _add_function next_file
 _rename_function next_file nf
@@ -2936,6 +2998,64 @@ today() {
     { set +x; } &>/dev/null
 }
 _add_function today
+
+thisweek() {
+    local _yesterday_date=$(date -d yesterday "+%Y-%m-%d")
+    set -x
+    cat ~/.logs/bash-history-${_yesterday_date}.log
+    { set +x; } &>/dev/null
+}
+_add_function thisweek
+
+to_dec() {
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "[0x]<hex number>")
+    fi
+    local _hex=${1##*x} # strips everything before 'x' in input, hence '0xF31' -> 'F31'
+    echo "$((16#${_hex}))"
+}
+_add_function to_dec
+_rename_function to_dec from_hex
+
+# func untar() {
+#     local _tarball=$1
+#     local _ext=${_tarball##*.}
+#     case $_ext in
+#         tar)
+#             gzip -d $_tarball
+#             ;;
+#         tar.gz)
+#             tar xvf $_tarball##*.
+#             ;;
+#     esac
+# }
+
+gttt() {
+    : Show git stash by number
+    if [[ $# -ne 1 ]]; then
+        return $(_error "requires 1 argument" "<stash number>")
+    fi
+    local _stash_num=${1}
+    set -x
+    git show "stash@{${_stash_num}}"
+    { set +x; } &> /dev/null
+}
+_add_function gttt
+
+mergedel() {
+    : Delete all files that block a git-merge
+    git merge master |&  grep "^[[:space:]]" | awk -F' ' '{print $1}' | grep -v "/$" | xargs -I% git status -s %
+    read -p "delete all? [y/n]: " -n 1 -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        set -x
+        git merge master |& grep "^[[:space:]]" | awk -F' ' '{print $1}' | grep -v "/$" | xargs -I% rm %
+        { set +x; } &> /dev/null
+    else
+        echo "Doing nothing."
+    fi
+}
+_add_function mergedel
+
 
 ## 7) Bash Completion
 # Enable bash completion in interactive shells

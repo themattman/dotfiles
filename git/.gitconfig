@@ -1,6 +1,9 @@
 [user]
     name = Matt Kneiser
+    email = matt.kneiser@mongodb.com
 [init]
 	defaultBranch = main
 [includeIf "gitdir:~/dotfiles/"]
     path = ~/dotfiles/.gitconfig
+[credential "https://github.com"]
+	helper = !/usr/bin/gh auth git-credential

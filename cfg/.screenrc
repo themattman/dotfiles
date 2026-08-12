@@ -37,3 +37,5 @@ termcapinfo xterm* ti@:te=\E[2J
 
 # Disable the password feature that has locked up many a session of mine (add this to ~/.bashrc)
 # export LOCKPRG='/bin/true'
+
+logfile /tmp/screenlog.%n

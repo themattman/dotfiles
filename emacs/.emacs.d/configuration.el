@@ -29,7 +29,7 @@
 (use-package engine-mode)
 ;; (use-package magit)
 (use-package yasnippet)
-(use-package cmake-mode)
+;; (use-package cmake-mode)
 (use-package yaml-mode)
 (use-package markdown-mode)
 (use-package web-mode)
@@ -391,7 +391,7 @@ This command does not push text to `kill-ring'."
 ; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
 
 (c-add-style "MongoDB-Style"
-	   '("gnu"
+	       '("gnu"
 		 (c-basic-offset . 4)     ; Guessed value
 		 (c-offsets-alist
 		  (access-label . 0)      ; Guessed value

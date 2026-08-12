@@ -4081,3 +4081,17 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 column -t -s, file.csv                       # Display csv as a padded table
 cat file.csv | td -s ' ' | column -t -s,     # May help with space padding
+
+#
+# 05/01/2025
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+y | nl | sed -n '0~3p' | head                # Test sampling output
+<chatty_command> | sed -n '0~10p'            # Print every 10th line of output from cmd
+
+#
+# 07/22/2025
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
