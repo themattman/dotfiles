@@ -1,2 +1,11 @@
 ssh/.ssh/config
 bash/.machine
+# Emacs generated artifacts (tangled/byte-compiled output, package autoload cache)
+emacs/.emacs.d/*.elc
+emacs/.emacs.d/package-quickstart.el
+emacs/.emacs.d/package-quickstart.elc
+emacs/.emacs.d/*.bak-*
+emacs/.emacs.d/auto-save-list/
+emacs/.emacs.d/ac-comphist.dat
+emacs/.emacs.d/.lsp-session-v1
+emacs/.emacs.d/elpa/

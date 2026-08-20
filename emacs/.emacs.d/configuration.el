@@ -1,94 +1,138 @@
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ansi-color-faces-vector
-   [default default default italic underline success warning error])
- '(ansi-color-names-vector
-   ["#242424" "#e5786d" "#95e454" "#cae682" "#8ac6f2" "#333366" "#ccaa8f" "#f6f3e8"])
- '(custom-enabled-themes (quote (whiteboard)))
- '(package-selected-packages (quote (mo-git-blame auto-complete flycheck))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+(load-theme 'whiteboard t)              ; built-in, no package needed
+(setq ansi-color-names-vector
+      ["#242424" "#e5786d" "#95e454" "#cae682"
+       "#8ac6f2" "#333366" "#ccaa8f" "#f6f3e8"])
 
+(defconst is-mac (eq system-type 'darwin)
+  "Non-nil when the current system is macOS.")
+(defconst is-linux (eq system-type 'gnu/linux)
+  "Non-nil when the current system is Linux.")
+
+(require 'use-package)
 (require 'use-package-ensure)
 (setq use-package-always-ensure t)
 
+;; Eager on purpose: auto-compile has to be active *before* anything else is
+;; loaded for it to do its job. load-prefer-newer is also set in init.el, which
+;; runs earlier; it is repeated here so this file stands alone.
 (use-package auto-compile
   :config (auto-compile-on-load-mode))
 
 (setq load-prefer-newer t)
 
-(use-package htmlize)
-(use-package flyspell)
+;; Built-in: flyspell-mode is already autoloaded by Emacs, so there is nothing
+;; to require here. hi-lock is required lazily inside
+;; `jpt-toggle-mark-word-at-point'.
+
+;; ---- deferred until a matching file is opened -------------------------------
+(use-package yaml-mode
+  :mode ("\\.ya?ml\\'" "\\.yml\\'"))
+(use-package markdown-mode
+  :mode ("\\.md\\'" "\\.markdown\\'"))
+;; web-mode was previously loaded eagerly but never wired to any extension, so
+;; it only ever cost startup time. Add :mode patterns here if you want it to
+;; take over .html/.jsx etc.
+(use-package web-mode
+  :defer t)
+
+;; ---- deferred until a command is invoked -----------------------------------
+(use-package htmlize
+  :commands (htmlize-buffer htmlize-file htmlize-region))
+(use-package multi-term
+  :commands (multi-term multi-term-next multi-term-prev))
+(use-package helpful
+  ;; :bind both defers the package and installs the keys at startup.
+  :bind (("C-h f" . helpful-callable)
+         ("C-h v" . helpful-variable)
+         ("C-h k" . helpful-key)))
+(use-package expand-region
+  :bind ("C-=" . er/expand-region))     ;; jumps to beginning of word at point
+(use-package symbol-overlay
+  :bind (("<f7>" . symbol-overlay-mode)
+         ("<f8>" . symbol-overlay-remove-all)
+         ("<f9>" . symbol-overlay-put)))
+(use-package clang-format
+  ;; Autoloads on first save in a C/C++/js buffer via mrk/enable-format-on-save.
+  :commands (clang-format clang-format-buffer clang-format-region))
+(use-package mo-git-blame
+  :commands (mo-git-blame-current mo-git-blame-file))
+(use-package yasnippet
+  :commands (yas-minor-mode yas-global-mode yas-expand))
+
+;; ---- deferred until a mode turns on ----------------------------------------
+(use-package org-bullets
+  :hook (org-mode . org-bullets-mode))
+(use-package flycheck
+  ;; Was a separate (add-hook 'after-init-hook #'global-flycheck-mode); folding
+  ;; it in here means flycheck.el itself isn't loaded until that hook fires.
+  :hook (after-init . global-flycheck-mode))
+
+;; ---- eager, on purpose -----------------------------------------------------
+;; engine-mode is loaded at startup (~0.05s) because the `defengine' calls in
+;; the Behavior section are macro expansions that need it, and because its
+;; C-x / keymap should exist immediately.
 (use-package engine-mode)
-;; (use-package magit)
-(use-package yasnippet)
-;; (use-package cmake-mode)
-(use-package yaml-mode)
-(use-package markdown-mode)
-(use-package web-mode)
-(use-package multi-term)
-;; (use-package org-pomodoro)
-;;  (use-package ivy-mode)
-(use-package helpful)
-(use-package expand-region) ;; C-= jumps to beginning of word at point
-(use-package hi-lock)       ;; word highlighting
-(use-package symbol-overlay)
-(use-package clang-format)
-(use-package auto-complete-clang)
+
+;; ---- LSP -------------------------------------------------------------------
 (use-package lsp-mode
-  :hook (
-        (c++-mode . lsp-deferred)
-	(lsp-mode . lsp-enable-which-key-integration))
-  :commands (lsp lsp-deferred))
-(use-package lsp-ui)
+  :commands (lsp lsp-deferred)
+  :hook ((c++-mode . lsp-deferred)
+         ;; which-key is optional; only wire the integration if it loaded.
+         (lsp-mode . (lambda ()
+                       (when (featurep 'which-key)
+                         (lsp-enable-which-key-integration)))))
+  :config
+  ;; Don't hardcode /usr/bin/clangd: it lives in /opt/homebrew/opt/llvm/bin on
+  ;; macOS and under the toolchain prefix on Linux build hosts.
+  (let ((clangd (executable-find "clangd")))
+    (when clangd
+      (setq lsp-clients-clangd-executable clangd))))
+(use-package lsp-ui
+  :after lsp-mode)                      ; never before: see note above
+
+;; ---- completion ------------------------------------------------------------
+;; auto-complete is a global minor mode, so it has to load in every session --
+;; but not during startup. :defer 1 loads it on the first idle second, which
+;; keeps ~0.3s (auto-complete + ac-config-default) off the critical path.
+(use-package auto-complete
+  :defer 1
+  :config
+  (ac-config-default)
+  (setq ac-clang-flags
+        (mapcar (lambda (item) (concat "-I" item))
+                (split-string "
+   /usr/local/include
+   /usr/include
+  ")))
+  ;; (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
+  ;; there used to be an extra slash between .d//ac-dict
+  (add-hook 'c-mode-common-hook #'mrk/ac-cc-mode-setup))
+(use-package auto-complete-clang
+  :commands (ac-complete-clang))
+
+;; (use-package magit)
+;; (use-package cmake-mode)
+;; (use-package org-pomodoro)
+;; (use-package ivy-mode)
 ;;(use-package alert)
 ;; https://github.com/BobVul/GrowlToToast
 
-; Package Manager
-(when (>= emacs-major-version 24)
-  (require 'package)
-  (add-to-list
-   'package-archives
-   '("melpa" . "https://melpa.org/packages/") t)
-  (add-to-list
-   'package-archives
-   '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-  (add-to-list
-   'package-archives
-   '("gnu" . "http://elpa.gnu.org/packages/") t)
-  (setq package-list
-        '(flycheck auto-complete mo-git-blame bookmark))
-  (unless package-archive-contents      ; fetch the list of packages available
-    (package-refresh-contents))
-  (dolist (package package-list)        ; install the missing packages
-    (unless (package-installed-p package)
-      (package-install package))))
-;; (when (< emacs-major-version 24)
-(require 'package) ; "~/.emacs.d/package.el")
-(add-to-list 'package-archives
-             '("melpa" . "https://melpa.org/packages/"))
-(add-to-list 'package-archives
-             '("melpa-stable" . "https://stable.melpa.org/packages/"))
-;; For important compatibility libraries like cl-lib
-(add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/"))
-;; (add-to-list 'load-path "~/.emacs.d/mo-git-blame.el")
-;; (autoload 'mo-git-blame-file "mo-git-blame" nil t)
-;; (autoload 'mo-git-blame-current "mo-git-blame" nil t)
+;; Compile-time-only requires. The tangled configuration.el is byte-compiled, and
+;; the byte-compiler needs any *macro* used in this file to be loadable at
+;; compile time -- otherwise `defengine' compiles into a plain function call and
+;; fails at runtime.
+(eval-when-compile
+  (require 'use-package)
+  (require 'cl-lib)
+  (require 'engine-mode))
 
 ;; BOUND = (buffer-size)/2 or similar
 (defun mrk/insert-diary-header ()
   (interactive)
-  (end-of-buffer)
+  (goto-char (point-max))
   (if (not (search-backward (mrk/get-timestamp) nil t))
     (progn
-      (end-of-buffer)
+      (goto-char (point-max))
       (insert "\n\n#\n# ")
       (insert-timestamp)
       (insert "\n#\nCommand")
@@ -98,7 +142,7 @@
       (insert "\n")
       (message "New Entry Created for Today"))
     (progn
-      (end-of-buffer)
+      (goto-char (point-max))
       (message "Today's entry already exists"))))
 
 (defun mrk/get-diary-width ()
@@ -107,6 +151,7 @@
 
 (defun jpt-toggle-mark-word-at-point ()
   (interactive)
+  (require 'hi-lock)                    ; lazy: keeps hi-lock out of startup
   (if hi-lock-interactive-patterns
       (unhighlight-regexp (car (car hi-lock-interactive-patterns)))
     (highlight-symbol-at-point)))
@@ -147,22 +192,28 @@
   (other-window -1))
 (defun open-emacs-file ()
   (interactive)
-  (find-file "~/.emacs.d/configuration.org"))
+  (find-file (locate-user-emacs-file "configuration.org")))
 (defun open-diary-file ()
   (interactive)
   (find-file "~/.diary")
   (goto-char (point-max)))
 (defun open-bashrc-file ()
+  "Open the shell rc file that actually exists on this machine.
+macOS defaults to zsh and often has no ~/.bashrc."
   (interactive)
-  (find-file "~/.bashrc"))
+  (find-file (or (seq-find #'file-exists-p
+                           (mapcar #'expand-file-name
+                                   '("~/.bashrc" "~/.zshrc" "~/.bash_profile")))
+                 (expand-file-name "~/.bashrc"))))
 (defun show-file-name ()
-  "Show the full path file name in the minibuffer."
+  "Show the full path file name in the minibuffer and copy it."
   (interactive)
-  (message (buffer-file-name))
-  (kill-new (file-truename buffer-file-name)))
+  (if buffer-file-name
+      (message "%s" (kill-new (file-truename buffer-file-name)))
+    (message "Buffer %s is not visiting a file" (buffer-name))))
 (defun reload-init-file ()
   (interactive)
-  (load-file "~/.emacs.d/init.el"))
+  (load-file (locate-user-emacs-file "init.el")))
 (defun copy-all ()
   (interactive)
   (clipboard-kill-ring-save (point-min) (point-max))
@@ -177,8 +228,11 @@
 (defun go-to-column ()
   (interactive)
   (move-to-column 81))
-(defun next-line-and-recenter () (interactive) (next-line) (recenter))
-(defun previous-line-and-recenter () (interactive) (previous-line) (recenter))
+;; forward-line, not next-line: next-line is flagged "for interactive use only"
+;; by the byte-compiler, and these are plain line moves with no visual-line or
+;; goal-column semantics to preserve.
+(defun next-line-and-recenter () (interactive) (forward-line 1) (recenter))
+(defun previous-line-and-recenter () (interactive) (forward-line -1) (recenter))
 (defun gcm-scroll-down ()
   (interactive)
   (scroll-up 1))
@@ -200,18 +254,31 @@ or nil if not found."
                          ;; accounts for both.
                          ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
                          (t (find-file-r (directory-file-name parent))))))) ; Continue
-      (find-file-r buffer-file-name)))
+      ;; Non-file buffers (dired, *scratch*, ...) have a nil buffer-file-name.
+      (when buffer-file-name
+        (find-file-r buffer-file-name))))
 (defun find-tags-file ()
   (interactive)
   (find-file-upwards "TAGS"))
 (defun cmd-regen-tags (tags-file)
-  (interactive)
+  "Back up TAGS-FILE, then regenerate it from the C/C++ sources beneath it."
+  (interactive "fTAGS file: ")
   (let ((tags-dir (file-name-directory tags-file)))
     (when tags-dir
-      (message "Backing up old tags file: %s as %s" tags-file (format-time-string "%Y-%m-%d__%H-%M-%S"))
-      (shell-command (concat "mv " tags-file " " tags-file "." (format-time-string "%Y-%m-%d__%H-%M-%S")))
+      ;; One timestamp, so the message and the actual filename can't disagree
+      ;; across a second boundary. Paths are quoted for spaces.
+      (let ((backup (concat tags-file "." (format-time-string "%Y-%m-%d__%H-%M-%S"))))
+        (message "Backing up old tags file: %s as %s" tags-file backup)
+        (shell-command (format "mv %s %s"
+                               (shell-quote-argument tags-file)
+                               (shell-quote-argument backup))))
       (message "Regenerating tags file: %s" tags-file)
-      (shell-command (concat "find " tags-dir " -name '*.[ch]' -o -name '*.cpp' -o -name '*.cc' | xargs etags -a -o " tags-file  " 2>/dev/null")))))
+      ;; BSD find (macOS) needs the -o group parenthesized before -print, and
+      ;; -print0/xargs -0 keeps paths with spaces intact on both platforms.
+      (shell-command
+       (format "find %s \\( -name '*.[ch]' -o -name '*.cpp' -o -name '*.cc' \\) -print0 | xargs -0 etags -a -o %s 2>/dev/null"
+               (shell-quote-argument (directory-file-name tags-dir))
+               (shell-quote-argument tags-file))))))
 (defun regenerate-tags-file ()
   (interactive)
   (let ((my-tags-file (find-tags-file)))
@@ -248,7 +315,9 @@ This command does not push text to `kill-ring'."
   (delete-region
    (point)
    (progn (end-of-line 1) (point)))
-  (delete-char 1))
+  ;; Guard: (delete-char 1) signals end-of-buffer on the last line.
+  (unless (eobp)
+    (delete-char 1)))
 
 (defun my-delete-line-backward ()
   "Delete text between the beginning of the line to the cursor position.
@@ -263,21 +332,28 @@ This command does not push text to `kill-ring'."
 (defun mrk/load-diary-for-append ()
   "Opens .diary with the pointer at the bottom line and dateline filled."
   (interactive)
-  (if (string-match "[.]diary" buffer-file-name)
+  ;; find-file-hook also runs for dired and other non-file buffers, where
+  ;; buffer-file-name is nil and string-match would signal.
+  (when (and buffer-file-name
+             (string-match-p "[.]diary" buffer-file-name))
     (mrk/insert-diary-header)))
 
 (defun mrk/c++-mode-hook ()
   (c-set-style "MongoDB-Style"))
 
+(defun mrk/find-companion-file (extension)
+  "Visit the current file with its extension replaced by EXTENSION."
+  (if buffer-file-name
+      (find-file (concat (file-name-sans-extension buffer-file-name) extension))
+    (message "Buffer %s is not visiting a file" (buffer-name))))
+
 (defun mrk/get-source-file ()
   (interactive)
-  (find-file (concat (file-name-sans-extension buffer-file-name) ".cpp"))
-)
+  (mrk/find-companion-file ".cpp"))
 
 (defun mrk/get-header-file ()
   (interactive)
-  (find-file (concat (file-name-sans-extension buffer-file-name) ".h"))
-)
+  (mrk/find-companion-file ".h"))
 
 (defun mrk/wrap-header-include ()
   (interactive)
@@ -294,11 +370,13 @@ This command does not push text to `kill-ring'."
       (insert "\""))))
 
 (defun mrk/save-without-hooks ()
+  "Save the current buffer with `before-save-hook' suppressed.
+The old implementation toggled `read-only-mode' twice, which inverted the
+read-only state of an already-read-only buffer and relied on clang-format
+erroring out to do the actual suppressing."
   (interactive)
-  (read-only-mode)
-  (save-buffer)
-  (read-only-mode)
-)
+  (let ((before-save-hook nil))
+    (save-buffer)))
 
 ;; <return> vs. <kp-enter> (keypad enter)
 (global-set-key (kbd "C-x C-a"    ) 'mrk/save-without-hooks )
@@ -309,44 +387,41 @@ This command does not push text to `kill-ring'."
 (global-set-key (kbd "C-c u"    ) 'windmove-swap-states-up   )
 (global-set-key (kbd "C-c d"    ) 'windmove-swap-states-down )
 
-(global-set-key (kbd "C-c C-h"  ) 'mrk/wrap-header-include   )
+(global-set-key (kbd "C-c w"    ) 'mrk/wrap-header-include   ) ; was C-c C-h
 (global-set-key (kbd "C-c m"    ) 'xterm-mouse-mode          )
 
-;; Scroll view with mouse?
-(global-set-key (kbd "<M-up>") (lambda () (interactive) (scroll-up 1)))
-(global-set-key (kbd "<M-down>") (lambda () (interactive) (scroll-down 1)))
+;; Scroll the view a line at a time without moving point.
+(global-set-key (kbd "<M-up>"   ) 'gcm-scroll-down           )
+(global-set-key (kbd "<M-down>" ) 'gcm-scroll-up             )
 
-(global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
-(global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
-(global-set-key (kbd "<f9>"    ) 'symbol-overlay-put        )
+;; <f7>/<f8>/<f9> (symbol-overlay), C-= (expand-region) and C-h f/v/k
+;; (helpful) are bound by :bind in their use-package declarations, which both
+;; installs the key and defers the package.
 (global-set-key (kbd "<f5>"    ) 'jpt-toggle-mark-word-at-point)
-(global-set-key (kbd "C-="     ) 'er/expand-region          )
 (global-set-key (kbd "C-c f"   ) 'eww-open-in-new-buffer    )
 ;; (global-set-key (kbd "<return>") 'newline                )
 ;; (global-set-key (kbd "C m"     ) 'insert-newline-before-line)
 (global-set-key (kbd "C-c a"   ) 'org-agenda                )
 (global-set-key (kbd "C-c z"   ) 'show-file-name            )
-(global-set-key (kbd "C-c C-j" ) 'regenerate-tags-file      )
+(global-set-key (kbd "C-c j"   ) 'regenerate-tags-file      ) ; was C-c C-j
 ;;(global-set-key (kbd "C-c d"   ) 'open-diary-file           )
 (global-set-key (kbd "C-c b"   ) 'open-bashrc-file          )
 (global-set-key (kbd "C-c e"   ) 'open-emacs-file           )
-(global-set-key (kbd "C-c C-e" ) 'open-emacs-file           )
 (global-set-key (kbd "C-c i d" ) 'insert-datestring         )
 (global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
 (global-set-key (kbd "C-c i i" ) 'insert-time               )
 (global-set-key (kbd "C-c t"   ) 'delete-trailing-whitespace)
 (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
 (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
-(global-set-key (kbd "C-c C-l" ) 'reload-init-file          ) ; Reload .emacs file
+(global-set-key (kbd "C-c R"   ) 'reload-init-file          ) ; was C-c C-l
 (global-set-key (kbd "C-x C-b" ) 'buffer-menu               ) ; Buffer-Menu shouldn't open
-(global-set-key (kbd "C-c C-c" ) 'fundamental-mode          ) ;  in another window
+(global-set-key (kbd "C-c n"   ) 'fundamental-mode          ) ; was C-c C-c
 (global-set-key (kbd "C-c h"   ) 'mrk/get-header-file       )
 (global-set-key (kbd "C-c s"   ) 'mrk/get-source-file       )
 (global-set-key (kbd "C-j"     ) 'scroll-down-command       )
 (global-set-key (kbd "C-x p"   ) 'navigate-backwards        ) ; Navigate Buffers Backwards
-; bind them to emacs's default shortcut keys:
-(global-set-key (kbd "C-c C-u" ) 'my-delete-line-backward   )
-(global-set-key (kbd "C-c C-k" ) 'my-delete-line            )
+(global-set-key (kbd "C-c k"   ) 'my-delete-line            ) ; was C-c C-k
+(global-set-key (kbd "C-c K"   ) 'my-delete-line-backward   ) ; was C-c C-u
 ;; (global-set-key (kbd "M-d"     ) 'describe-key              )
 ;; (global-set-key (kbd "<M-backspace>") 'my-backward-delete-word)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -356,17 +431,15 @@ This command does not push text to `kill-ring'."
 ; Easier killing
 (global-set-key (kbd "C-w"     ) 'backward-kill-word        ) ; Added Bonus: Matches
                                                               ; shell behavior
-(global-set-key (kbd "C-x C-k" ) 'kill-region               )
-(global-set-key (kbd "C-c C-k" ) 'kill-region               )
-; Bind Alternate M-x's
+(global-set-key (kbd "C-x C-k" ) 'kill-region               ) ; C-w's old job
+; Bind Alternate M-x
 (global-set-key (kbd "C-x C-m" ) 'execute-extended-command  )
-(global-set-key (kbd "C-c C-m" ) 'execute-extended-command  )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;End Section;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(global-set-key (kbd "C-c C-a" ) 'copy-all                  ) ; Copy everything in buffer
-(global-set-key (kbd "C-c C-r" ) 'revert-buffer             ) ; Revert Buffer
-(global-set-key (kbd "C-c C-s" ) 'shell-script-mode         ) ; Shell-script-mode
+(global-set-key (kbd "C-c A"   ) 'copy-all                  ) ; was C-c C-a
+(global-set-key (kbd "C-c v"   ) 'revert-buffer             ) ; was C-c C-r
+(global-set-key (kbd "C-c S"   ) 'shell-script-mode         ) ; was C-c C-s
 ;; (global-set-key (kbd "C-m"    ) 'scroll-up-command          )
 ;; (global-set-key (kbd "C-n"    ) 'next-line-and-recenter     )
 ;; (global-set-key (kbd "C-P"    ) 'previous-line-and-recenter )
@@ -390,7 +463,8 @@ This command does not push text to `kill-ring'."
 ;  -slash-to-the-terminal#comment27461_24282
 ; Remaps Ctrl-h to backspace so Emacs respects Unix tradition
 
-(c-add-style "MongoDB-Style"
+(with-eval-after-load 'cc-styles
+  (c-add-style "MongoDB-Style"
 	       '("gnu"
 		 (c-basic-offset . 4)     ; Guessed value
 		 (c-offsets-alist
@@ -466,13 +540,18 @@ This command does not push text to `kill-ring'."
 		  (string . -1000)
 		  (substatement-label . 0)
 		  (substatement-open . +)
-		  (template-args-cont c-lineup-template-args +))))
+		  (template-args-cont c-lineup-template-args +)))))
 
-(setq shell-command-switch "-ic")
-(setq lsp-clangd-binary-path "/usr/bin/clangd")
-;;(setq lsp-clients-clangd-executable "/usr/bin/clangd")
+;; NOT "-ic": an interactive shell sources the whole .bashrc/.zshrc per
+;; shell-command call, which is slow and lets rc-file output corrupt the
+;; result. On macOS the default shell is zsh, so don't assume bash either.
+(setq shell-command-switch "-c")
+;; clangd's path is discovered in the lsp-mode :config block via
+;; executable-find; hardcoding /usr/bin/clangd was wrong on both macOS
+;; (homebrew llvm) and toolchain-based Linux hosts.
 (setq lsp-clients-clangd-args
   '("--header-insertion=iwyu" "--log=verbose" "--clang-tidy"))
+(setq org-table-convert-region-max-lines 9999)
 ;; (setq vc-follow-symlinks nil)           ; don't warn when using GNU stow config
 (setq compilation-scroll-output t)
 ;; TAGS file
@@ -490,15 +569,6 @@ This command does not push text to `kill-ring'."
 ;; Tabs
 (setq-default indent-tabs-mode nil)     ; Use spaces not tabs
 (setq-default tab-width 4)
-(defvar is-mac (eq system-type 'darwin)
-    "Boolean that is true when the current system is detected to be Mac OS.")
-(defvar is-linux (or (eq system-type 'gnu/linux) (eq system-type 'linux))
-    "Boolean that is true when the current system is detected to be Linux.")
-(setq browse-url-generic-program
-    (cond
-        (is-mac "open")
-        (is-linux (executable-find "firefox"))
- ))
 (setq tab-width 4)
 ;; Startup
 (setq inhibit-startup-echo-area-message (lambda () (user-login-name)))
@@ -507,8 +577,6 @@ This command does not push text to `kill-ring'."
 (setq initial-scratch-message nil)      ; When opening emacs without a file,
                                         ;  suppress the dumb *scratch* message
                                         ;  in the buffer
-(setq auto-save-default nil)            ; Stop creating those #autosave# files
-(setq make-backup-files nil)            ; Do not create tilde backup files
 (setq max-mini-window-height 1)         ; Don't let echo area grow
                                         ;  This is useful for forcing
                                         ;  'shell-command-on-region' output to
@@ -524,15 +592,22 @@ This command does not push text to `kill-ring'."
 ;;   /user/mattman/somedir/another/dir/file.txt
 ;; Save its tilde file to
 ;;  ~/.tildes/user/mattman/somedir/another/dir/file.txt~
-(setq backup-directory "~/.tildes")
-(if (not (file-exists-p backup-directory))
-    (make-directory backup-directory t))
-(setq backup-directory-alist `(("." . ,backup-directory)))
+;; `backup-directory' is not an Emacs variable; only the alist matters. Use a
+;; plain let-bound path and expand it so it works regardless of $HOME.
+(let ((mrk/backup-directory (expand-file-name "~/.tildes")))
+  (unless (file-directory-p mrk/backup-directory)
+    (make-directory mrk/backup-directory t))
+  (setq backup-directory-alist `(("." . ,mrk/backup-directory)))
+  (setq auto-save-file-name-transforms
+        `((".*" ,(file-name-as-directory mrk/backup-directory) t))))
 (setq make-backup-files t               ; backup of a file the first time it is saved
       backup-by-copying t               ; don't clobber symlinks
       version-control t                 ; version numbers for backup files
       delete-old-versions t             ; delete excess backup files silently
-      delete-by-moving-to-trash t
+      ;; Not delete-by-moving-to-trash: combined with delete-old-versions it
+      ;; quietly fills ~/.Trash (macOS) / ~/.local/share/Trash (Linux) with
+      ;; every superseded backup.
+      delete-by-moving-to-trash nil
       kept-old-versions 5               ; oldest versions to keep when a new
                                         ;  numbered backup is made (default: 2)
       kept-new-versions 5               ; newest versions to keep when a new
@@ -545,22 +620,15 @@ This command does not push text to `kill-ring'."
 )
 (setq Buffer-menu-name-width 40)        ; Width of buffer name in *buffer-list*
 
-(add-hook 'after-init-hook #'global-flycheck-mode)
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
-(add-hook 'c-mode-common-hook
-          (function (lambda ()
-          (add-hook 'before-save-hook
-          'clang-format-buffer))))
-(add-hook 'js-mode-hook
-          (function (lambda ()
-          (add-hook 'before-save-hook
-          'clang-format-buffer))))
-(add-hook 'c-mode-common-hook
-          (function (lambda ()
-          (add-hook 'before-save-hook
-          'delete-trailing-whitespace))))
-;; (add-hook 'before-save-hook 'delete-trailing-whitespace)
-;; (add-hook 'before-save-hook 'py-autopep8-before-save)
+
+(defun mrk/enable-format-on-save ()
+  "Format and strip trailing whitespace on save, in this buffer only."
+  (add-hook 'before-save-hook #'clang-format-buffer nil t)
+  (add-hook 'before-save-hook #'delete-trailing-whitespace nil t))
+
+(add-hook 'c-mode-common-hook #'mrk/enable-format-on-save)
+(add-hook 'js-mode-hook       #'mrk/enable-format-on-save)
 ;; (add-hook 'before-save-hook 'py-autopep8-before-save)
 (add-hook 'emacs-startup-hook '2-windows-vertical-to-horizontal)
 (add-hook 'emacs-startup-hook (lambda () (message "Welcome, %s!" (user-login-name))))
@@ -573,25 +641,32 @@ This command does not push text to `kill-ring'."
 (global-display-line-numbers-mode)
 (setq column-number-mode t)             ; Show column numbers
 (blink-cursor-mode 0)                   ; Static cursor that doesn't blink
-(set-cursor-color "#116149")            ; MongoDB Color
+;; set-cursor-color only means anything on a graphical frame, and it signals
+;; when there is no frame at all (--batch). Set it as a default instead so it
+;; also applies to frames created later by emacsclient.
+(add-to-list 'default-frame-alist '(cursor-color . "#116149")) ; MongoDB Color
 ;; (tool-bar-mode -1)                      ; Disable toolbar
 (menu-bar-mode 0)
 ;; (setq require-final-newline t)          ; Newline at end of file
 (which-function-mode 1)                 ; Show the function you are in
 (fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
-(setq redisplay-dont-pause t            ; Better Scrolling
-      scroll-margin 1                   ;  http://stackoverflow.com
+;; redisplay-dont-pause was removed in Emacs 24.5 and is a no-op; dropped.
+(setq scroll-margin 1                   ;  http://stackoverflow.com
       scroll-step 1                     ;   /questions
       scroll-conservatively 10000       ;   /3631220
       scroll-preserve-screen-position 1);   /fix-to-get-smooth-scrolling-in-emacs
-(setq vc-handled-backends ())
+;; This used to be (setq vc-handled-backends ()), which disabled VC entirely and
+;; silently neutered diff-hl below (diff-hl asks VC for the diff). Keep Git only
+;; -- that's the cost the blanket disable was trying to avoid.
+(setq vc-handled-backends '(Git))
 (setq inhibit-startup-screen t)         ; Don't show the welcome screen
 ;; (set-window-scroll-bars (mini-buffer-window) nil nil) ; Hide tiny scrollbar in minibuffer
 (global-hl-line-mode)
+;; :hook rather than :config + add-hook -- :config only runs *after* the package
+;; is loaded, so that form loaded diff-hl at startup just to register two hooks.
 (use-package diff-hl
-  :config
-  (add-hook 'prog-mode-hook 'turn-on-diff-hl-mode)
-  (add-hook 'vc-dir-mode-hook 'turn-on-diff-hl-mode))
+  :hook ((prog-mode   . turn-on-diff-hl-mode)
+         (vc-dir-mode . turn-on-diff-hl-mode)))
 
 ;; (use-package moody
 ;;   :config
@@ -599,10 +674,19 @@ This command does not push text to `kill-ring'."
 ;;   (moody-replace-mode-line-buffer-identification)
 ;;   (moody-replace-vc-mode))
 
-(setq browse-url-browser-function 'w3m-browse-url)
-(autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
+;; Was w3m-browse-url with an autoload for a package that isn't installed, so
+;; every URL open failed. Hand off to the system browser when we can find one
+;; (`open' on macOS, xdg-open/firefox on Linux) and fall back to the built-in
+;; eww, which always exists.
+(let ((opener (cond (is-mac "open")
+                    (is-linux (or (executable-find "xdg-open")
+                                  (executable-find "firefox"))))))
+  (if opener
+      (setq browse-url-generic-program opener
+            browse-url-browser-function 'browse-url-generic)
+    (setq browse-url-browser-function 'eww-browse-url)))
 ;; optional keyboard short-cut
-(global-set-key "\C-xm" 'browse-url-at-point)
+(global-set-key (kbd "C-x m") 'browse-url-at-point)
 
 ;; Java Mode file types
 (setq auto-mode-alist (cons '("\\.aidl$" . java-mode) auto-mode-alist))
@@ -628,14 +712,25 @@ This command does not push text to `kill-ring'."
 ; Let's you do:
 ;     Ctrl-<space> + Ctrl-n + Esc-;
 (transient-mark-mode 1)
-(setq-default show-trailing-whitespace t)
+; Only in code and text buffers -- setq-default made trailing whitespace show up
+; in shells, multi-term, *Help*, and compilation buffers too.
+(add-hook 'prog-mode-hook (lambda () (setq show-trailing-whitespace t)))
+(add-hook 'text-mode-hook (lambda () (setq show-trailing-whitespace t)))
 ; http://stackoverflow.com/questions/6344474/how-can-i-make-emacs-highlight-lines
 ; -that-go-over-80-chars
 ; free of trailing whitespace and to use 80-column width, standard indentation
 (setq whitespace-line-column 80)
 (setq inhibit-splash-screen t)
-(bookmark-bmenu-list)
-(switch-to-buffer "*Bookmark List*")
+;; Show the bookmark list on startup, but only in a real interactive session:
+;; calling it at load time broke --batch/--script runs and raced the
+;; 2-windows-vertical-to-horizontal startup hook.
+(defun mrk/show-bookmark-list ()
+  (when (and (not noninteractive)
+             (not (buffer-file-name))
+             (null (cdr command-line-args-left)))
+    (bookmark-bmenu-list)
+    (switch-to-buffer "*Bookmark List*")))
+(add-hook 'emacs-startup-hook #'mrk/show-bookmark-list t)
 (defengine duckduckgo
   "https://duckduckgo.com/?q=%s"
   :keybinding "d")
@@ -652,42 +747,31 @@ This command does not push text to `kill-ring'."
 
 
 ; Load Emacs Libraries
-(add-to-list 'load-path "~/.emacs.d/themes")
-(add-to-list 'load-path "~/.emacs.d/elpa")
-;; (add-to-list 'load-path "~/.emacs.d/") ; Not needed in Emacs 24.x
+;; elpa/ is a directory *of* package directories -- putting it on load-path did
+;; nothing; package.el already handles it. themes/ is only added if it exists.
+(let ((themes (locate-user-emacs-file "themes")))
+  (when (file-directory-p themes)
+    (add-to-list 'load-path themes)
+    (add-to-list 'custom-theme-load-path themes)))
 
 (setq clang-format-style "file")
 ;; Bind-key
 ;; (bind-key* "C-i" 'some-function)
-;; Autocomplete
-(ac-config-default)
+;; Autocomplete: ac-config-default and ac-clang-flags now live in the
+;; `use-package auto-complete' :config block so they run off the critical path.
 ;; from: https://github.com/brianjcj/auto-complete-clang
 (defun mrk/ac-cc-mode-setup ()
+  ;; ac-source-clang is a variable defined by auto-complete-clang, so the
+  ;; package must be loaded by the time a C buffer actually completes.
+  (require 'auto-complete-clang)
   (setq ac-sources (append '(ac-source-clang ac-source-yasnippet) ac-sources)))
-(add-hook 'c-mode-common-hook 'mrk/ac-cc-mode-setup)
-(setq ac-clang-flags
-      (mapcar (lambda (item)(concat "-I" item))
-              (split-string
-               "
- /usr/local/include
- /usr/include
-"
-               )))
-;; (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
-; there used to be an extra slash between .d//ac-dict
 (setq whitespace-style '(trailing
                          lines
                          space-before-tab
                          indentation
                          space-after-tab))
 ;; (setq whitespace-style '(trailing tabs newline tab-mark newline-mark))
-(global-set-key (kbd "C-h f") #'helpful-callable)
-(global-set-key (kbd "C-h v") #'helpful-variable)
-(global-set-key (kbd "C-h k") #'helpful-key)
 
-(add-hook 'org-mode-hook
-          (lambda ()
-            (org-bullets-mode t)))
 (setq org-hide-leading-stars t)
 (setq org-todo-keywords
   (quote ((sequence "TODO(t)" "PAUSED(p)" "|" "ABANDONED(b)" "DONE(d)" "SUFFICIENT(s)"))))

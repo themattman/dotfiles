@@ -52,7 +52,9 @@ Defined early so later sections can branch on it.
 *** Init / Config
 ~use-package-always-ensure~ installs anything not present, so built-in libraries
 (flyspell, hi-lock, ...) must be ~require~-d instead of ~use-package~-d --
-otherwise use-package tries to download them from ELPA and fails.
+otherwise use-package tries to download them from ELPA and fails. init.el also
+replaces ~use-package-ensure-function~ so this check doesn't force a
+~package-initialize~ on every boot.
 #+BEGIN_SRC emacs-lisp
   (require 'use-package)
   (require 'use-package-ensure)
@@ -62,6 +64,9 @@ otherwise use-package tries to download them from ELPA and fails.
 Always compile packages, and use the newest version available.
 
 #+BEGIN_SRC emacs-lisp
+  ;; Eager on purpose: auto-compile has to be active *before* anything else is
+  ;; loaded for it to do its job. load-prefer-newer is also set in init.el, which
+  ;; runs earlier; it is repeated here so this file stands alone.
   (use-package auto-compile
     :config (auto-compile-on-load-mode))
 
@@ -69,31 +74,71 @@ Always compile packages, and use the newest version available.
 #+END_SRC
 
 *** Packages
-#+BEGIN_SRC emacs-lisp
-;; Built-ins: require, don't ensure.
-(require 'flyspell)
-(require 'hi-lock)                      ; word highlighting
+A bare ~(use-package foo)~ *loads foo immediately*: use-package only generates
+autoloads and defers when you give it a deferring keyword (~:commands~, ~:mode~,
+~:hook~, ~:bind~, ~:after~, or explicit ~:defer~). Every declaration below
+therefore carries one. Measured effect: ~3.5s of the old ~7.2s boot was spent
+loading packages that had not been used yet.
 
-;; From ELPA/MELPA.
-(use-package htmlize)
-(use-package engine-mode)
-;; (use-package magit)
-(use-package yasnippet)
-;; (use-package cmake-mode)
-(use-package yaml-mode)
-(use-package markdown-mode)
-(use-package web-mode)
-(use-package multi-term)
-;; (use-package org-pomodoro)
-;;  (use-package ivy-mode)
-(use-package helpful)
-(use-package expand-region) ;; C-= jumps to beginning of word at point
-(use-package symbol-overlay)
-(use-package clang-format)
-(use-package auto-complete)
-(use-package auto-complete-clang)
+The worst offender was ~(use-package lsp-ui)~ -- lsp-ui hard-~require~s
+lsp-mode, so loading it eagerly dragged all of lsp-mode in at startup and
+completely defeated lsp-mode's own ~:commands~ deferral. Hence ~:after lsp-mode~.
+
+#+BEGIN_SRC emacs-lisp
+;; Built-in: flyspell-mode is already autoloaded by Emacs, so there is nothing
+;; to require here. hi-lock is required lazily inside
+;; `jpt-toggle-mark-word-at-point'.
+
+;; ---- deferred until a matching file is opened -------------------------------
+(use-package yaml-mode
+  :mode ("\\.ya?ml\\'" "\\.yml\\'"))
+(use-package markdown-mode
+  :mode ("\\.md\\'" "\\.markdown\\'"))
+;; web-mode was previously loaded eagerly but never wired to any extension, so
+;; it only ever cost startup time. Add :mode patterns here if you want it to
+;; take over .html/.jsx etc.
+(use-package web-mode
+  :defer t)
+
+;; ---- deferred until a command is invoked -----------------------------------
+(use-package htmlize
+  :commands (htmlize-buffer htmlize-file htmlize-region))
+(use-package multi-term
+  :commands (multi-term multi-term-next multi-term-prev))
+(use-package helpful
+  ;; :bind both defers the package and installs the keys at startup.
+  :bind (("C-h f" . helpful-callable)
+         ("C-h v" . helpful-variable)
+         ("C-h k" . helpful-key)))
+(use-package expand-region
+  :bind ("C-=" . er/expand-region))     ;; jumps to beginning of word at point
+(use-package symbol-overlay
+  :bind (("<f7>" . symbol-overlay-mode)
+         ("<f8>" . symbol-overlay-remove-all)
+         ("<f9>" . symbol-overlay-put)))
+(use-package clang-format
+  ;; Autoloads on first save in a C/C++/js buffer via mrk/enable-format-on-save.
+  :commands (clang-format clang-format-buffer clang-format-region))
+(use-package mo-git-blame
+  :commands (mo-git-blame-current mo-git-blame-file))
+(use-package yasnippet
+  :commands (yas-minor-mode yas-global-mode yas-expand))
+
+;; ---- deferred until a mode turns on ----------------------------------------
 (use-package org-bullets
   :hook (org-mode . org-bullets-mode))
+(use-package flycheck
+  ;; Was a separate (add-hook 'after-init-hook #'global-flycheck-mode); folding
+  ;; it in here means flycheck.el itself isn't loaded until that hook fires.
+  :hook (after-init . global-flycheck-mode))
+
+;; ---- eager, on purpose -----------------------------------------------------
+;; engine-mode is loaded at startup (~0.05s) because the `defengine' calls in
+;; the Behavior section are macro expansions that need it, and because its
+;; C-x / keymap should exist immediately.
+(use-package engine-mode)
+
+;; ---- LSP -------------------------------------------------------------------
 (use-package lsp-mode
   :commands (lsp lsp-deferred)
   :hook ((c++-mode . lsp-deferred)
@@ -107,7 +152,33 @@ Always compile packages, and use the newest version available.
   (let ((clangd (executable-find "clangd")))
     (when clangd
       (setq lsp-clients-clangd-executable clangd))))
-(use-package lsp-ui)
+(use-package lsp-ui
+  :after lsp-mode)                      ; never before: see note above
+
+;; ---- completion ------------------------------------------------------------
+;; auto-complete is a global minor mode, so it has to load in every session --
+;; but not during startup. :defer 1 loads it on the first idle second, which
+;; keeps ~0.3s (auto-complete + ac-config-default) off the critical path.
+(use-package auto-complete
+  :defer 1
+  :config
+  (ac-config-default)
+  (setq ac-clang-flags
+        (mapcar (lambda (item) (concat "-I" item))
+                (split-string "
+   /usr/local/include
+   /usr/include
+  ")))
+  ;; (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
+  ;; there used to be an extra slash between .d//ac-dict
+  (add-hook 'c-mode-common-hook #'mrk/ac-cc-mode-setup))
+(use-package auto-complete-clang
+  :commands (ac-complete-clang))
+
+;; (use-package magit)
+;; (use-package cmake-mode)
+;; (use-package org-pomodoro)
+;; (use-package ivy-mode)
 ;;(use-package alert)
 ;; https://github.com/BobVul/GrowlToToast
 #+END_SRC
@@ -121,9 +192,18 @@ manual ~package-list~ / ~dolist~ install loop lived here; it is gone because
 ~use-package-always-ensure~ does the same job, and it listed ~bookmark~, a
 built-in with no ELPA entry, which made ~package-install~ fail on a new machine.
 
+Both packages that used to be installed here (flycheck, mo-git-blame) are now
+declared with deferring keywords in the Packages section above.
+
 #+BEGIN_SRC emacs-lisp
-(use-package flycheck)
-(use-package mo-git-blame)
+;; Compile-time-only requires. The tangled configuration.el is byte-compiled, and
+;; the byte-compiler needs any *macro* used in this file to be loadable at
+;; compile time -- otherwise `defengine' compiles into a plain function call and
+;; fails at runtime.
+(eval-when-compile
+  (require 'use-package)
+  (require 'cl-lib)
+  (require 'engine-mode))
 #+END_SRC
 
 * Functions
@@ -153,6 +233,7 @@ built-in with no ELPA entry, which made ~package-install~ fail on a new machine.
 
 (defun jpt-toggle-mark-word-at-point ()
   (interactive)
+  (require 'hi-lock)                    ; lazy: keeps hi-lock out of startup
   (if hi-lock-interactive-patterns
       (unhighlight-regexp (car (car hi-lock-interactive-patterns)))
     (highlight-symbol-at-point)))
@@ -229,8 +310,11 @@ macOS defaults to zsh and often has no ~/.bashrc."
 (defun go-to-column ()
   (interactive)
   (move-to-column 81))
-(defun next-line-and-recenter () (interactive) (next-line) (recenter))
-(defun previous-line-and-recenter () (interactive) (previous-line) (recenter))
+;; forward-line, not next-line: next-line is flagged "for interactive use only"
+;; by the byte-compiler, and these are plain line moves with no visual-line or
+;; goal-column semantics to preserve.
+(defun next-line-and-recenter () (interactive) (forward-line 1) (recenter))
+(defun previous-line-and-recenter () (interactive) (forward-line -1) (recenter))
 (defun gcm-scroll-down ()
   (interactive)
   (scroll-up 1))
@@ -402,11 +486,10 @@ later binding silently overwrote (=C-c C-k= for both `my-delete-line' and
   (global-set-key (kbd "<M-up>"   ) 'gcm-scroll-down           )
   (global-set-key (kbd "<M-down>" ) 'gcm-scroll-up             )
 
-  (global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
-  (global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
-  (global-set-key (kbd "<f9>"    ) 'symbol-overlay-put        )
+  ;; <f7>/<f8>/<f9> (symbol-overlay), C-= (expand-region) and C-h f/v/k
+  ;; (helpful) are bound by :bind in their use-package declarations, which both
+  ;; installs the key and defers the package.
   (global-set-key (kbd "<f5>"    ) 'jpt-toggle-mark-word-at-point)
-  (global-set-key (kbd "C-="     ) 'er/expand-region          )
   (global-set-key (kbd "C-c f"   ) 'eww-open-in-new-buffer    )
   ;; (global-set-key (kbd "<return>") 'newline                )
   ;; (global-set-key (kbd "C m"     ) 'insert-newline-before-line)
@@ -474,8 +557,14 @@ later binding silently overwrote (=C-c C-k= for both `my-delete-line' and
 #+END_SRC
 
 * Code Style
+`c-add-style' lives in cc-styles, so calling it at top level pulled all of
+cc-mode into startup (~0.14s) for a style that is only needed once a C buffer
+exists. `with-eval-after-load' registers it the moment cc-mode does load, which
+is always before `mrk/c++-mode-hook' can run `c-set-style'.
+
 #+BEGIN_SRC emacs-lisp
-  (c-add-style "MongoDB-Style"
+  (with-eval-after-load 'cc-styles
+    (c-add-style "MongoDB-Style"
 		 '("gnu"
 		   (c-basic-offset . 4)     ; Guessed value
 		   (c-offsets-alist
@@ -551,7 +640,7 @@ later binding silently overwrote (=C-c C-k= for both `my-delete-line' and
 		    (string . -1000)
 		    (substatement-label . 0)
 		    (substatement-open . +)
-		    (template-args-cont c-lineup-template-args +))))
+		    (template-args-cont c-lineup-template-args +)))))
 #+END_SRC
 
 * Variables
@@ -642,7 +731,6 @@ trailing =nil t=). Without it, opening a single C file installs
 of a .py / .el / .org / .yaml buffer gets run through clang-format.
 
 #+BEGIN_SRC emacs-lisp
-(add-hook 'after-init-hook #'global-flycheck-mode)
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 (defun mrk/enable-format-on-save ()
@@ -688,10 +776,11 @@ of a .py / .el / .org / .yaml buffer gets run through clang-format.
 (setq inhibit-startup-screen t)         ; Don't show the welcome screen
 ;; (set-window-scroll-bars (mini-buffer-window) nil nil) ; Hide tiny scrollbar in minibuffer
 (global-hl-line-mode)
+;; :hook rather than :config + add-hook -- :config only runs *after* the package
+;; is loaded, so that form loaded diff-hl at startup just to register two hooks.
 (use-package diff-hl
-  :config
-  (add-hook 'prog-mode-hook 'turn-on-diff-hl-mode)
-  (add-hook 'vc-dir-mode-hook 'turn-on-diff-hl-mode))
+  :hook ((prog-mode   . turn-on-diff-hl-mode)
+         (vc-dir-mode . turn-on-diff-hl-mode)))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -790,31 +879,20 @@ of a .py / .el / .org / .yaml buffer gets run through clang-format.
   (setq clang-format-style "file")
   ;; Bind-key
   ;; (bind-key* "C-i" 'some-function)
-  ;; Autocomplete
-  (ac-config-default)
+  ;; Autocomplete: ac-config-default and ac-clang-flags now live in the
+  ;; `use-package auto-complete' :config block so they run off the critical path.
   ;; from: https://github.com/brianjcj/auto-complete-clang
   (defun mrk/ac-cc-mode-setup ()
+    ;; ac-source-clang is a variable defined by auto-complete-clang, so the
+    ;; package must be loaded by the time a C buffer actually completes.
+    (require 'auto-complete-clang)
     (setq ac-sources (append '(ac-source-clang ac-source-yasnippet) ac-sources)))
-  (add-hook 'c-mode-common-hook 'mrk/ac-cc-mode-setup)
-  (setq ac-clang-flags
-        (mapcar (lambda (item)(concat "-I" item))
-                (split-string
-                 "
-   /usr/local/include
-   /usr/include
-  "
-                 )))
-  ;; (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
-  ; there used to be an extra slash between .d//ac-dict
   (setq whitespace-style '(trailing
                            lines
                            space-before-tab
                            indentation
                            space-after-tab))
   ;; (setq whitespace-style '(trailing tabs newline tab-mark newline-mark))
-  (global-set-key (kbd "C-h f") #'helpful-callable)
-  (global-set-key (kbd "C-h v") #'helpful-variable)
-  (global-set-key (kbd "C-h k") #'helpful-key)
 #+END_SRC
 
 * Org-mode
