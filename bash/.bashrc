@@ -223,16 +223,19 @@ _add_alias() {
         return $(_error "alias [${CYAN}${_alias}${ENDCOLOR}] doesn't have a target. You need something to alias this word to")
     fi
 
-    # Handle alias collision
-    _already_exists=$(type -t "${_alias}" 2>&1)
-    if [[ $? -eq 0 ]]; then
-        if [[ "file" = "${_already_exists}" ]]; then
-            _already_exists=$(type -p "${_alias}" 2>&1)
+    # Handle alias collision.
+    #  Run `BASHRC_DEBUG=1 source ~/.bashrc` when editing this file to see the warnings.
+    if [[ -n ${BASHRC_DEBUG} ]]; then
+        _already_exists=$(type -t "${_alias}" 2>&1)
+        if [[ $? -eq 0 ]]; then
+            if [[ "file" = "${_already_exists}" ]]; then
+                _already_exists=$(type -p "${_alias}" 2>&1)
+            fi
+            if [[ ${_cmd} != ${_custom_user_aliases[${_alias}]} ]]; then
+                _custom_user_aliases_broken[${_alias}]="${_cmd}"
+            fi
+            _warning "alias [${CYAN}${_alias}${ENDCOLOR}] \t already exists as [${PURPLE}${_already_exists}${ENDCOLOR}]"
         fi
-        if [[ ${_cmd} != ${_custom_user_aliases[${_alias}]} ]]; then
-            _custom_user_aliases_broken[${_alias}]="${_cmd}"
-        fi
-        _warning "alias [${CYAN}${_alias}${ENDCOLOR}] \t already exists as [${PURPLE}${_already_exists}${ENDCOLOR}]"
     fi
 
 
@@ -282,9 +285,9 @@ _add_alias() {
     # Add alias and cmd to database
     alias ${_alias}="${_full_cmd}"
     _custom_user_aliases["${_alias}"]="${_cmd}"
-    if [[ -z ${_add_comp_func+x} ]]; then
-        _optionally_add_completion_function_to_alias "$@"
-    fi
+    # Completion inheritance used to happen here, eagerly, for every alias.
+    # It is now resolved on the first TAB for an alias instead.
+    # See _lazy_alias_completion_loader in `7) Bash Completion`.
 }
 _add_function _add_alias
 
@@ -3291,6 +3294,52 @@ complete -F _man man # therefore the m alias will pick this up
 
 _add_alias cdc "cd"
 complete -F _complete_most_recently_modified_file cdc && _add_completion_function cdc
+
+
+# Lazy alias-completion inheritance.
+#
+#  Resolve an alias the first time it is TAB-completed and then
+#  return 124, which tells bash to retry completion now that a spec exists.
+_prev_default_completion_loader=""
+if [[ $(complete -p -D 2>/dev/null) =~ -F[[:space:]]+([^[:space:]]+) ]]; then
+    if [[ ${BASH_REMATCH[1]} != "_lazy_alias_completion_loader" ]]; then
+        _prev_default_completion_loader="${BASH_REMATCH[1]}"
+    fi
+fi
+
+_lazy_alias_completion_loader() {
+    local _cmd="${1}" _body _base
+    # Never clobber a spec that was registered explicitly further down this
+    #  file (__git_complete, _complete_scr, ...). Bash normally wouldn't call
+    #  the default handler at all in that case; this just makes it safe to
+    #  call this function directly.
+    if complete -p "${_cmd}" &>/dev/null; then
+        return 124
+    fi
+    if [[ -n ${_custom_user_aliases[${_cmd}]+x} ]]; then
+        _body="${_custom_user_aliases[${_cmd}]}"
+        _base="${_body%% *}"
+        if [[ "sudo" = "${_base}" ]]; then
+            _body="${_body#sudo }"
+            _base="${_body%% *}"
+        fi
+        # The base program's own spec may itself be lazily loaded, so give the
+        #  previous default loader a chance to install it before inheriting.
+        if [[ -n ${_prev_default_completion_loader} ]] && ! complete -p "${_base}" &>/dev/null; then
+            ${_prev_default_completion_loader} "${_base}" &>/dev/null
+        fi
+        if _optionally_add_completion_function_to_alias "${_cmd}" "${_body}"; then
+            return 124
+        fi
+    fi
+    if [[ -n ${_prev_default_completion_loader} ]]; then
+        ${_prev_default_completion_loader} "$@"
+        return $?
+    fi
+    return 1
+}
+_add_function _lazy_alias_completion_loader
+complete -o default -o bashdefault -D -F _lazy_alias_completion_loader
 
 
 ## 8) Miscellaneous
