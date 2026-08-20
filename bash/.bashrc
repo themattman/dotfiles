@@ -3,24 +3,42 @@
 #
 # Author:        Matt Kneiser
 # Created:       03/19/2014
-# Last updated:  07/08/2022
+# Last updated:  08/20/2026
 #
 # To refresh bash environment with changes to this file:
 #  $ source ~/.bashrc
 # or alternatively:
 #  $ sb
 #
+# Controls:
+# * BASHRC_NO_CACHE=1
+#     Skip the compiled environment cache (section 0b) and derive everything
+#     from this file. The cache is rewritten afterwards, so this is also how
+#     you force a rebuild:
+#       $ BASHRC_NO_CACHE=1 sb
+# * BASHRC_DEBUG=1
+#     Skip the cache, and re-enable the collision lints that warn when an
+#     alias or variable defined here shadows something that already exists.
+#     Those lints fork a subshell per definition (~500 of them), so they are
+#     off by default; turn them on when editing this file:
+#       $ BASHRC_DEBUG=1 sb
+#     Nothing is written to the cache in this mode.
+#
+# The cache rebuilds itself whenever ~/.bashrc, ~/.machine, ~/.git-completion
+#  or ~/.git-prompt changes, so neither control is needed for ordinary edits.
+#  Delete ~/.bashrc.cache at any time; the next shell regenerates it.
+#
 # Notes:
 # * Only tested on:
 #   * Bash version:
-#     * 4.x, 4.4.x, 5.1.x
+#     * 3.2.x, 4.x, 4.4.x, 5.1.x
 #   * Platforms:
-#     * Mac OS X 10.11, 12.3
-#     * Ubuntu 12.04/14.04/18.04
+#     * Mac OS X 10.11, 12.3, etc
+#     * Ubuntu 12.04/14.04/18.04/20.04/22.04
 #
 #
 # Table of Contents:
-# 0) Bashrc Guard
+# 0) Bashrc Guard & Compiled Environment Cache
 # 1) Internal Functions
 # 2) PATH
 # 3) Polyfills
@@ -32,6 +50,7 @@
 # 9) Machine-Specific
 # 10) Cleanup
 # 11) SSH
+# 12) Session Init & Cache Generation
 
 
 ## 0) Bashrc Guard
@@ -71,6 +90,61 @@ if [[ -z $BASH_VERSION ]]; then
 fi
 
 
+# Compiled Environment Cache
+#
+# Deriving this environment of hundreds of environment settings costs
+# far more than reading the result back. The derived, session-independent
+# part is therefore serialized to ~/.bashrc.cache and replayed on
+# subsequent shells; only the genuinely per-session pieces
+# (PATH, tty, prompt, terminal, completion framework, ssh-agent)
+# are re-executed, by _bashrc_session_init in section 12.
+#
+# The cache is rebuilt automatically when this file or ~/.machine changes.
+# Force a rebuild with `BASHRC_NO_CACHE=1 sb`; `BASHRC_DEBUG=1 sb` bypasses
+#  the cache entirely and re-enables the collision lints.
+_BASHRC_CACHE="${HOME}/.bashrc.cache"
+_BASHRC_CACHE_KEY="v1|${OSTYPE}|${HOSTNAME}|${BASH_VERSION}|${USER}"
+_BASHRC_CACHE_DEPS=("${HOME}/.bashrc" "${HOME}/.machine" "${HOME}/.git-completion" "${HOME}/.git-prompt")
+
+_bashrc_cache_is_usable() {
+    local _dep
+    [[ -z ${BASHRC_DEBUG} && -z ${BASHRC_NO_CACHE} ]] || return 1
+    [[ -r ${_BASHRC_CACHE} ]] || return 1
+    for _dep in "${_BASHRC_CACHE_DEPS[@]}"; do
+        # -nt follows symlinks, so this works for a symlinked ~/.bashrc
+        [[ -e ${_dep} && ${_dep} -nt ${_BASHRC_CACHE} ]] && return 1
+    done
+    return 0
+}
+
+if _bashrc_cache_is_usable; then
+    _bashrc_cache_ok=""
+    source "${_BASHRC_CACHE}"
+    # A truncated or stale-keyed cache falls through to a full rebuild below.
+    if [[ ${_bashrc_cache_ok} = "1" && ${_bashrc_cache_key} = "${_BASHRC_CACHE_KEY}" ]]; then
+        unset _bashrc_cache_ok _bashrc_cache_key
+        _bashrc_session_init
+        return
+    fi
+    # Truncated or stale-keyed: it may have defined part of the environment
+    #  already, so discard that before the full run below rebuilds it.
+    unset _bashrc_cache_ok _bashrc_cache_key _bashrc_path_additions
+    unset _custom_user_functions _custom_user_aliases _custom_user_aliases_broken \
+          _custom_user_variables _custom_user_path_variables \
+          _custom_user_completion_functions _custom_user_auto_alias_completion_functions
+    unalias -a
+fi
+
+# Snapshot of what exists before this file runs. Diffing against it later
+#  identifies everything this file and ~/.machine define -- including the
+#  functions in ~/.machine that never call _add_function and so are absent
+#  from the registries. Only reached on a cache miss.
+declare -A _bashrc_pre_fns=() _bashrc_pre_vars=()
+while read -r _ _ _bashrc_snap; do _bashrc_pre_fns["${_bashrc_snap}"]=1; done < <(declare -F)
+while read -r _bashrc_snap; do _bashrc_pre_vars["${_bashrc_snap}"]=1; done < <(compgen -e)
+unset _bashrc_snap
+
+
 ## 1) Internal Functions
 source_file() {
     if [[ -r $1 ]]; then
@@ -104,6 +178,7 @@ _add_function() {
     _custom_user_functions["${_func}"]=""
 }
 _add_function _add_function
+_add_function source_file
 
 _error() {
     local _error_msg="${1}"
@@ -308,9 +383,11 @@ _add_variable() {
     fi
     _variable="${1}"
     _value="${@:2}"
-    eval _contents_of_variable="\$${_variable}"
-    if [[ (-n ${_contents_of_variable}) && ("${_variable}" != "PS1") ]]; then
-        _warning "variable [${_variable}] \t already exists as [${_contents_of_variable}]"
+    if [[ -n ${BASHRC_DEBUG} ]]; then
+        eval _contents_of_variable="\$${_variable}"
+        if [[ (-n ${_contents_of_variable}) && ("${_variable}" != "PS1") ]]; then
+            _warning "variable [${_variable}] \t already exists as [${_contents_of_variable}]"
+        fi
     fi
     export "${_variable}=${_value}"
     _custom_user_variables["${_variable}"]=""
@@ -401,6 +478,12 @@ darwin*)
 esac
 
 declare -A _custom_user_path_variables
+# Ordered log of every PATH-like entry this file (and ~/.machine) asks for,
+#  recorded whether or not it was actually added. Recording the *intent*
+#  rather than the resulting PATH matters: a shell that already inherited
+#  these entries adds none of them, and a cache built from such a shell
+#  would otherwise teach every later shell to add nothing.
+declare -a _bashrc_path_additions=()
 _append_variable_with_path_separator() {
     local _variable _value _contents_of_variable _platform
     if [[ $# -lt 2 || $# -gt 3 ]]; then
@@ -421,6 +504,7 @@ _append_variable_with_path_separator() {
     if [[ ! -d ${_value} ]]; then
         return $(_error "location ${_value} doesn't exist and won't be appended to ${_variable}")
     fi
+    _bashrc_path_additions+=("${_variable}|post|${_value}")
     eval _contents_of_variable="\$${_variable}"
     if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
         # Variable isn't tracked yet in custom env
@@ -460,6 +544,7 @@ _prepend_variable_with_path_separator() {
     if [[ ! -d ${_value} ]]; then
         return $(_error "location ${_value} doesn't exist and won't be appended to ${_variable}")
     fi
+    _bashrc_path_additions+=("${_variable}|pre|${_value}")
     eval _contents_of_variable="\$${_variable}"
     if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
         # Variable isn't tracked yet in custom env
@@ -607,32 +692,39 @@ _add_function cpa
 
 
 ## 2) PATH
-# Basic PATHs
-_append_variable_with_path_separator PATH "/usr/local/bin"
-_append_variable_with_path_separator PATH "/usr/bin"
-_append_variable_with_path_separator PATH "/bin"
-_append_variable_with_path_separator PATH "${HOME}/usrbin"
-_append_variable_with_path_separator PATH "/opt/homebrew/bin" mac
+# Deferred: run per-shell by _bashrc_session_init (see section 12).
+_bashrc_set_path() {
+    # Basic PATHs
+    _append_variable_with_path_separator PATH "/usr/local/bin"
+    _append_variable_with_path_separator PATH "/usr/bin"
+    _append_variable_with_path_separator PATH "/bin"
+    _append_variable_with_path_separator PATH "${HOME}/usrbin"
+    _append_variable_with_path_separator PATH "/opt/homebrew/bin" mac
 
-_append_variable_with_path_separator PATH "${HOME}/.cargo/bin"
-_append_variable_with_path_separator PATH "${HOME}/.local/bin"
+    _append_variable_with_path_separator PATH "${HOME}/.cargo/bin"
+    _append_variable_with_path_separator PATH "${HOME}/.local/bin"
 
-# Android Studio/Intellij Paths
-# _append_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
-# _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
-# _append_variable_with_path_separator PATH "$JAVA_HOME"
+    # Android Studio/Intellij Paths
+    # _append_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
+    # _add_variable JAVA_HOME /usr/lib/jvm/java-1.7.0-openjdk-amd64
+    # _append_variable_with_path_separator PATH "$JAVA_HOME"
 
-# Icecream distributed compiler cluster
-#_prepend_variable_with_path_separator PATH /usr/lib/icecc/bin
+    # Icecream distributed compiler cluster
+    #_prepend_variable_with_path_separator PATH /usr/lib/icecc/bin
 
-# local binaries
-# _append_variable_with_path_separator PATH $HOME/bin #begin
-# _append_variable_with_path_separator PATH /usr/bin
-# _append_variable_with_path_separator PATH /bin
+    # local binaries
+    # _append_variable_with_path_separator PATH $HOME/bin #begin
+    # _append_variable_with_path_separator PATH /usr/bin
+    # _append_variable_with_path_separator PATH /bin
 
-_append_variable_with_path_separator PATH /usr/local/sbin
-_append_variable_with_path_separator PATH /usr/sbin
-_append_variable_with_path_separator PATH /sbin
+    _append_variable_with_path_separator PATH /usr/local/sbin
+    _append_variable_with_path_separator PATH /usr/sbin
+    _append_variable_with_path_separator PATH /sbin
+}
+_add_function _bashrc_set_path
+# Run now (not from _bashrc_session_init): ~/.machine appends to PATH later in
+#  this file, and those entries must come after these, as they always have.
+_bashrc_set_path
 
 _add_variable EMACS_INIT_FILE "~/.emacs.d/configuration.org"
 
@@ -645,21 +737,29 @@ unset IFS
 _add_variable LANG en_US.UTF-8
 _add_variable LC_ALL en_US.UTF-8
 #_add_variable LANG C
-stty ixany       # Turn off Ctrl-S XOFF "feature", particularly helpful for
-stty ixoff -ixon #  GNU screen sessions.
-                 #  https://raamdev.com
-                 #   /2007
-                 #   /recovering-from-ctrls-in-putty
-#stty ek
+# Deferred: tty state is per-shell, never cached.
+_bashrc_tty_settings() {
+    stty ixany       # Turn off Ctrl-S XOFF "feature", particularly helpful for
+    stty ixoff -ixon #  GNU screen sessions.
+                     #  https://raamdev.com
+                     #   /2007
+                     #   /recovering-from-ctrls-in-putty
+    #stty ek
+}
+_add_function _bashrc_tty_settings
 
-case $OSTYPE in
-linux*)
-    source_file /etc/bash_completion
-;;
-darwin*)
-    source_file $(brew --prefix)/etc/profile.d/bash_completion.sh
-;;
-esac
+# Deferred: the completion framework is re-sourced per-shell, not cached.
+_bashrc_source_bash_completion() {
+    case $OSTYPE in
+    linux*)
+        source_file /etc/bash_completion
+    ;;
+    darwin*)
+        source_file $(brew --prefix)/etc/profile.d/bash_completion.sh
+    ;;
+    esac
+}
+_add_function _bashrc_source_bash_completion
 
 ## 3) Polyfills
 # Tree
@@ -700,9 +800,13 @@ _add_alias icurl "curl -I"
 # Needed on every platform: `dy` and friends pass this to diff -W.
 # NOTE: this is a snapshot of the width at shell start; resizing the
 #  terminal won't update it.
-_add_variable SCREEN_WIDTH $(tput cols)
-_add_variable SCREEN_WIDTH_HALF $((SCREEN_WIDTH / 2))
-_add_variable SCREEN_WIDTH_QUARTER $((SCREEN_WIDTH / 4))
+# Deferred: terminal geometry is per-shell.
+_bashrc_screen_width() {
+    _add_variable SCREEN_WIDTH $(tput cols)
+    _add_variable SCREEN_WIDTH_HALF $((SCREEN_WIDTH / 2))
+    _add_variable SCREEN_WIDTH_QUARTER $((SCREEN_WIDTH / 4))
+}
+_add_function _bashrc_screen_width
 case $OSTYPE in
 linux*|msys*)
     # tree
@@ -830,14 +934,18 @@ _add_alias func "declare -f"  # could also be "type" but more succinct output.
 _add_alias funcu "declare -f" # only useful for auto-complete. See `8) Miscellaneous`
 _add_alias comp "complete -p"
 # Optional Shell Behavior
-shopt -s cdable_vars
-shopt -s cdspell
-shopt -s checkwinsize # Make bash check its window size after a process completes
-#shopt -s dirspell
-shopt -s histappend   # append history to ~\.bash_history when exiting shell
-shopt -s interactive_comments # on by default, but want to ensure comments are ok
-#shopt -s nocaseglob # eh? windows?
-shopt -s progcomp # on by default
+# Deferred: shell options are per-shell state, not cacheable data.
+_bashrc_shell_options() {
+    shopt -s cdable_vars
+    shopt -s cdspell
+    shopt -s checkwinsize # Make bash check its window size after a process completes
+    #shopt -s dirspell
+    shopt -s histappend   # append history to ~\.bash_history when exiting shell
+    shopt -s interactive_comments # on by default, but want to ensure comments are ok
+    #shopt -s nocaseglob # eh? windows?
+    shopt -s progcomp # on by default
+}
+_add_function _bashrc_shell_options
 # https://www.gnu.org/software/bash/manual/html_node
 #  /Programmable-Completion.html#Programmable-Completion
 # Death
@@ -885,46 +993,51 @@ _add_alias detach "screen -d -m" # Run a command inside screen
 _add_alias cld "screen -S cld"
 _add_variable LOCKPRG "/bin/true"  # Disable the password feature which has locked up many sessions of mine
 # Git
-source_file ~/.git-completion no_output # Will have to re-source this file later
-if [[ -f ~/.git-completion ]]; then
-    # TODO: auto-detect git aliases for completions
-    __git_complete ga _git_add && _add_completion_function ga
-    __git_complete gaf _git_add && _add_completion_function gaf
-    __git_complete gau _git_add && _add_completion_function gau
-    __git_complete gb _git_branch && _add_completion_function gb
-    __git_complete gc _git_checkout && _add_completion_function gc
-    __git_complete gcl _git_clone && _add_completion_function gcl
-    __git_complete gt _git_stash && _add_completion_function gt
-    __git_complete gd _git_diff && _add_completion_function gd
-    __git_complete gdbb _git_diff && _add_completion_function gdbb
-    __git_complete gdsb _git_diff && _add_completion_function gdsb
-    __git_complete gdr _git_diff && _add_completion_function gdr
-    __git_complete gdrs _git_diff && _add_completion_function gdrs
-    __git_complete gds _git_diff && _add_completion_function gds
-    __git_complete gdss _git_diff && _add_completion_function gdss
-    __git_complete gdsss _git_diff && _add_completion_function gdsss
-    __git_complete gl _git_log && _add_completion_function gl
-    __git_complete gls _git_log && _add_completion_function gls
-    __git_complete glsn _git_log && _add_completion_function glsn
-    __git_complete glo _git_log && _add_completion_function glo
-    __git_complete gll _git_log && _add_completion_function gll
-    __git_complete gg _git_log && _add_completion_function gg
-    __git_complete g _git_pull && _add_completion_function g
-    __git_complete gp _git_push && _add_completion_function gp
-    __git_complete gpo _git_push && _add_completion_function gpo
-    __git_complete gpr _git_push && _add_completion_function gpr
-    __git_complete gr _git_reset && _add_completion_function gr
-    __git_complete gsh _git_show && _add_completion_function gsh
-    __git_complete gshh _git_show && _add_completion_function gshh
-    __git_complete gshn _git_show && _add_completion_function gshn
-    __git_complete gshs _git_show && _add_completion_function gshs
-    __git_complete gshhs _git_show && _add_completion_function gshhs
-    __git_complete gshhss _git_show && _add_completion_function gshhss
-    __git_complete gshhn _git_show && _add_completion_function gshhn
-    __git_complete gbd _git_branch && _add_completion_function gbd
-    __git_complete gmm _git_merge && _add_completion_function gmm
-    __git_complete gmb _git_checkout && _add_completion_function gmb
-fi
+# Deferred: __git_complete generates wrapper functions that must be
+#  regenerated per-shell rather than serialized into the cache.
+_bashrc_git_completions() {
+    source_file ~/.git-completion no_output # Will have to re-source this file later
+    if [[ -f ~/.git-completion ]]; then
+        # TODO: auto-detect git aliases for completions
+        __git_complete ga _git_add && _add_completion_function ga
+        __git_complete gaf _git_add && _add_completion_function gaf
+        __git_complete gau _git_add && _add_completion_function gau
+        __git_complete gb _git_branch && _add_completion_function gb
+        __git_complete gc _git_checkout && _add_completion_function gc
+        __git_complete gcl _git_clone && _add_completion_function gcl
+        __git_complete gt _git_stash && _add_completion_function gt
+        __git_complete gd _git_diff && _add_completion_function gd
+        __git_complete gdbb _git_diff && _add_completion_function gdbb
+        __git_complete gdsb _git_diff && _add_completion_function gdsb
+        __git_complete gdr _git_diff && _add_completion_function gdr
+        __git_complete gdrs _git_diff && _add_completion_function gdrs
+        __git_complete gds _git_diff && _add_completion_function gds
+        __git_complete gdss _git_diff && _add_completion_function gdss
+        __git_complete gdsss _git_diff && _add_completion_function gdsss
+        __git_complete gl _git_log && _add_completion_function gl
+        __git_complete gls _git_log && _add_completion_function gls
+        __git_complete glsn _git_log && _add_completion_function glsn
+        __git_complete glo _git_log && _add_completion_function glo
+        __git_complete gll _git_log && _add_completion_function gll
+        __git_complete gg _git_log && _add_completion_function gg
+        __git_complete g _git_pull && _add_completion_function g
+        __git_complete gp _git_push && _add_completion_function gp
+        __git_complete gpo _git_push && _add_completion_function gpo
+        __git_complete gpr _git_push && _add_completion_function gpr
+        __git_complete gr _git_reset && _add_completion_function gr
+        __git_complete gsh _git_show && _add_completion_function gsh
+        __git_complete gshh _git_show && _add_completion_function gshh
+        __git_complete gshn _git_show && _add_completion_function gshn
+        __git_complete gshs _git_show && _add_completion_function gshs
+        __git_complete gshhs _git_show && _add_completion_function gshhs
+        __git_complete gshhss _git_show && _add_completion_function gshhss
+        __git_complete gshhn _git_show && _add_completion_function gshhn
+        __git_complete gbd _git_branch && _add_completion_function gbd
+        __git_complete gmm _git_merge && _add_completion_function gmm
+        __git_complete gmb _git_checkout && _add_completion_function gmb
+    fi
+}
+_add_function _bashrc_git_completions
 
 _add_alias rbranches "for k in \$(git branch -r | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r"
 _add_alias branches  "for k in \$(git branch | perl -pe 's/^..(.*?)( ->.*)?\$/\1/'); do echo -e \$(git show --pretty=format:\"%Cgreen%ci %Cblue%cr%Creset \" \$k -- | head -n 1)\\\t\$k; done | sort -r | head -n 30"
@@ -1135,105 +1248,110 @@ _add_alias pb "una; echo -e '${YELLOW}Build Environment Ready${ENDCOLOR}'"
 
 
 ## 5) Prompt String
-source_file ~/.git-prompt
-_add_variable PS1_prev "$PS1"
-case $OSTYPE in
-linux*|msys*)
-    # Prompt String
-    _add_variable STARTCOLOR "${CYAN}"
-    # For colorizing your prompt, please use $PS_PRE and $PS_POST around the
-    #  beginning of all color definitions and at the very end of the prompt
-    #  string around the final terminating $ENDCOLOR.
-    # It took me over 6 months to figure this out. If you don't have the proper
-    #  escaping in your prompt string using $PS_PRE and $PS_POST, scrolling up
-    #  for at least 20 commands causes all sorts of issues with getting bash to
-    #  write the correct prompt string. Ctrl-l will clear the screen and re-draw
-    #  the prompt string correctly in that case.
-    # This is explained in bash(1) under PROMPTING
-    _add_variable PS_STARTCOLOR "${PS_PRE}${STARTCOLOR}${PS_POST}"
-    _add_variable PS_ENDCOLOR "${PS_PRE}${ENDCOLOR}${PS_POST}"
-    _add_variable PS_BRANCHCOLOR "${PS_PRE}${LIGHTCYAN}${PS_POST}"
-    _add_variable PS_STYCOLOR "${PS_PRE}${LIGHTPURPLE}${PS_POST}"
-    # _add_variable PS4 "${LIGHTPURPLE}+${ENDCOLOR} " #messes up scripts :/
-    if [[ ! -f ~/.git-prompt ]]; then
-        if [[ -z $SSH_CONNECTION ]]; then
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+# Deferred: the prompt depends on $STY / $SSH_CONNECTION, which vary
+#  per session, so it must be recomputed rather than cached.
+_bashrc_set_prompt() {
+    source_file ~/.git-prompt
+    _add_variable PS1_prev "$PS1"
+    case $OSTYPE in
+    linux*|msys*)
+        # Prompt String
+        _add_variable STARTCOLOR "${CYAN}"
+        # For colorizing your prompt, please use $PS_PRE and $PS_POST around the
+        #  beginning of all color definitions and at the very end of the prompt
+        #  string around the final terminating $ENDCOLOR.
+        # It took me over 6 months to figure this out. If you don't have the proper
+        #  escaping in your prompt string using $PS_PRE and $PS_POST, scrolling up
+        #  for at least 20 commands causes all sorts of issues with getting bash to
+        #  write the correct prompt string. Ctrl-l will clear the screen and re-draw
+        #  the prompt string correctly in that case.
+        # This is explained in bash(1) under PROMPTING
+        _add_variable PS_STARTCOLOR "${PS_PRE}${STARTCOLOR}${PS_POST}"
+        _add_variable PS_ENDCOLOR "${PS_PRE}${ENDCOLOR}${PS_POST}"
+        _add_variable PS_BRANCHCOLOR "${PS_PRE}${LIGHTCYAN}${PS_POST}"
+        _add_variable PS_STYCOLOR "${PS_PRE}${LIGHTPURPLE}${PS_POST}"
+        # _add_variable PS4 "${LIGHTPURPLE}+${ENDCOLOR} " #messes up scripts :/
+        if [[ ! -f ~/.git-prompt ]]; then
+            if [[ -z $SSH_CONNECTION ]]; then
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                fi
             else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                fi
             fi
         else
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            if [[ -z $SSH_CONNECTION ]]; then
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                fi
             else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                fi
             fi
         fi
-    else
-        if [[ -z $SSH_CONNECTION ]]; then
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+        _add_alias ps1 "_add_variable PS1 '${PS1}'" # Intentionally not escaping $PS1 varname
+        _add_alias ps2 "_add_variable PS1 '${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
+    ;;
+    darwin*)
+        # Prompt String
+        _add_variable STARTCOLOR "${GREEN}"
+        # ~~See note above in the `Prompt String' section for Linux~~
+        _add_variable PS_STARTCOLOR "${PS_PRE}${STARTCOLOR}${PS_POST}"
+        _add_variable PS_ENDCOLOR "${PS_PRE}${ENDCOLOR}${PS_POST}"
+        _add_variable PS_BRANCHCOLOR "${PS_PRE}${CYAN}${PS_POST}"
+        _add_variable PS_STYCOLOR "${PS_PRE}${HPURPLE}${PS_POST}"
+        if [[ ! -f ~/.git-prompt ]]; then
+            if [[ -z $SSH_CONNECTION ]]; then
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                fi
             else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                fi
             fi
         else
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+            if [[ -z $SSH_CONNECTION ]]; then
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                fi
             else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                if [[ -n "$STY" ]]; then
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                else
+                    _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
+                fi
             fi
         fi
+        _add_alias ps1 "_add_variable PS1 '${PS1}'" # Intentionally not escaping $PS1 varname
+        _add_alias ps2 "_add_variable PS1 '${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
+    ;;
+    esac
+    if [[ -z $SSH_CONNECTION ]]; then
+        _add_variable GIT_PS1_SHOWUNTRACKEDFILES 1
+        _add_variable GIT_PS1_SHOWDIRTYSTATE 1
+        _add_variable GIT_PS1_SHOWCOLORHINTS 1
+        _add_variable GIT_PS1_SHOWUPSTREAM "auto"
     fi
-    _add_alias ps1 "_add_variable PS1 '${PS1}'" # Intentionally not escaping $PS1 varname
-    _add_alias ps2 "_add_variable PS1 '${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
-;;
-darwin*)
-    # Prompt String
-    _add_variable STARTCOLOR "${GREEN}"
-    # ~~See note above in the `Prompt String' section for Linux~~
-    _add_variable PS_STARTCOLOR "${PS_PRE}${STARTCOLOR}${PS_POST}"
-    _add_variable PS_ENDCOLOR "${PS_PRE}${ENDCOLOR}${PS_POST}"
-    _add_variable PS_BRANCHCOLOR "${PS_PRE}${CYAN}${PS_POST}"
-    _add_variable PS_STYCOLOR "${PS_PRE}${HPURPLE}${PS_POST}"
-    if [[ ! -f ~/.git-prompt ]]; then
-        if [[ -z $SSH_CONNECTION ]]; then
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
-            else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
-            fi
-        else
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
-            else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR} ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
-            fi
-        fi
-    else
-        if [[ -z $SSH_CONNECTION ]]; then
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
-            else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
-            fi
-        else
-            if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
-            else
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u@\h:\W\$${PS_ENDCOLOR} "
-            fi
-        fi
-    fi
-    _add_alias ps1 "_add_variable PS1 '${PS1}'" # Intentionally not escaping $PS1 varname
-    _add_alias ps2 "_add_variable PS1 '${PS_STARTCOLOR}\u:\w\$${PS_ENDCOLOR} '"
-;;
-esac
-if [[ -z $SSH_CONNECTION ]]; then
-    _add_variable GIT_PS1_SHOWUNTRACKEDFILES 1
-    _add_variable GIT_PS1_SHOWDIRTYSTATE 1
-    _add_variable GIT_PS1_SHOWCOLORHINTS 1
-    _add_variable GIT_PS1_SHOWUPSTREAM "auto"
-fi
+}
+_add_function _bashrc_set_prompt
 
 
 ## 6) Bash Functions
@@ -3153,210 +3271,219 @@ _add_function diffmatt
 ## 7) Bash Completion
 # Enable bash completion in interactive shells
 # recursively sources everything in /etc/bash_completion.d/
-source_file ~/.git-completion # This needs to be re-sourced after
-                              #  the previous line. TODO: Consider moving above line
-# SSH auto-completion based on entries in known_hosts.
-if [[ -f ~/.ssh/known_hosts ]]; then
-    ssh_complete="$(sed 's/[, ].*//' ~/.ssh/known_hosts | grep -v '\[' | sort | uniq)"
-    _add_alias hosts "echo \${ssh_complete}"
-fi
-if [[ -f ~/.ssh/config ]]; then
-    ssh_complete="$(cat <(echo $ssh_complete) <(grep "^Host " ~/.ssh/config | cut -d ' ' -f 2- | tr ' ' '\n') | sort | uniq)"
-fi
+# Deferred: completion specs are re-registered per-shell so they stay in
+#  sync with the completion framework loaded above.
+_bashrc_completions() {
+    source_file ~/.git-completion # This needs to be re-sourced after
+                                  #  the previous line. TODO: Consider moving above line
+    # SSH auto-completion based on entries in known_hosts.
+    if [[ -f ~/.ssh/known_hosts ]]; then
+        ssh_complete="$(sed 's/[, ].*//' ~/.ssh/known_hosts | grep -v '\[' | sort | uniq)"
+        _add_alias hosts "echo \${ssh_complete}"
+    fi
+    if [[ -f ~/.ssh/config ]]; then
+        ssh_complete="$(cat <(echo $ssh_complete) <(grep "^Host " ~/.ssh/config | cut -d ' ' -f 2- | tr ' ' '\n') | sort | uniq)"
+    fi
 
-_complete_most_recently_modified_file() {
-    # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
-    # Args:[cdc out cdc] C:[1] 1:[cdc] 2:[out]
-    local _mrmf;
-    if [[ "${COMP_CWORD}" -eq 1 ]]; then
-        if [[ -n "${2}" && (-f "${2}" || -d "${2}") ]]; then
-            _mrmf=$(_most_recently_modified_file "${2}")
-        elif [[ -z "${2}" ]]; then
-             _mrmf=$(_most_recently_modified_file)
-             #echo "not doing"
-        # else
-        #     _mrmf=$(compgen -w "${verbs[*]}" -- "${COMP_WORDS[COMP_CWORD]}")
+    _complete_most_recently_modified_file() {
+        # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
+        # Args:[cdc out cdc] C:[1] 1:[cdc] 2:[out]
+        local _mrmf;
+        if [[ "${COMP_CWORD}" -eq 1 ]]; then
+            if [[ -n "${2}" && (-f "${2}" || -d "${2}") ]]; then
+                _mrmf=$(_most_recently_modified_file "${2}")
+            elif [[ -z "${2}" ]]; then
+                 _mrmf=$(_most_recently_modified_file)
+                 #echo "not doing"
+            # else
+            #     _mrmf=$(compgen -w "${verbs[*]}" -- "${COMP_WORDS[COMP_CWORD]}")
+            fi
+            #echo "result: ${_mrmf}"
+            COMPREPLY="${_mrmf}"
         fi
-        #echo "result: ${_mrmf}"
-        COMPREPLY="${_mrmf}"
-    fi
-    # if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
-    #     local latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 2 2>/dev/null | head -n 1)
-    #     if [[ -n "${latest_filename}" ]]; then
-    #         if [[ "${2}" == */ ]]; then
-    #             COMPREPLY="${2}${latest_filename}"
-    #         else
-    #             COMPREPLY="${2}/${latest_filename}"
-    #         fi
-    #     fi
-    # elif [[ "${COMP_CWORD}" -eq 1 ]]; then
-    #     COMPREPLY=$(\ls -t --color=never | head -n 1)
-    # fi
-}
-_add_function _complete_most_recently_modified_file
-complete -o default -F _complete_most_recently_modified_file tl l dx unz \
-    && _add_completion_function tl l dx unz
+        # if [[ ("${COMP_CWORD}" -eq 1) && (-n "${2}") ]]; then
+        #     local latest_filename=$(find "${2}" -maxdepth 1 -printf '%T@ %f\n' 2>/dev/null | sort -n 2>/dev/null | cut -d' ' -f2- 2>/dev/null | tail -n 2 2>/dev/null | head -n 1)
+        #     if [[ -n "${latest_filename}" ]]; then
+        #         if [[ "${2}" == */ ]]; then
+        #             COMPREPLY="${2}${latest_filename}"
+        #         else
+        #             COMPREPLY="${2}/${latest_filename}"
+        #         fi
+        #     fi
+        # elif [[ "${COMP_CWORD}" -eq 1 ]]; then
+        #     COMPREPLY=$(\ls -t --color=never | head -n 1)
+        # fi
+    }
+    _add_function _complete_most_recently_modified_file
+    complete -o default -F _complete_most_recently_modified_file tl l dx unz \
+        && _add_completion_function tl l dx unz
 
-_complete_most_recently_modified_text_file() {
-    local _mrmtf;
-    if [[ "${COMP_CWORD}" -eq 1 ]]; then
-        if [[ -n "${2}" && (-f "${2}" || -d "${2}") ]]; then
-            _mrmtf=$(_most_recently_modified_text_file "${2}")
-        elif [[ -z "${2}" ]]; then
-             _mrmtf=$(_most_recently_modified_text_file)
+    _complete_most_recently_modified_text_file() {
+        local _mrmtf;
+        if [[ "${COMP_CWORD}" -eq 1 ]]; then
+            if [[ -n "${2}" && (-f "${2}" || -d "${2}") ]]; then
+                _mrmtf=$(_most_recently_modified_text_file "${2}")
+            elif [[ -z "${2}" ]]; then
+                 _mrmtf=$(_most_recently_modified_text_file)
+            fi
+            COMPREPLY="${_mrmtf}"
         fi
-        COMPREPLY="${_mrmtf}"
-    fi
-}
-complete -o default -F _complete_most_recently_modified_text_file les le
-_add_completion_function les le
+    }
+    complete -o default -F _complete_most_recently_modified_text_file les le
+    _add_completion_function les le
 
-# Add bash auto-completion to `screen -r` alias
-_complete_scr() {
-    local does_screen_exist=$(type -t _screen_sessions)
-    local cur=$2 # Needed by _screen_sessions
-    if [[ "function" = "${does_screen_exist}" ]]; then
-        _screen_sessions "Detached"
-    fi
-}
-_add_function _complete_scr
-complete -F _complete_scr scr sck && _add_completion_function scr sck
-
-# Add bash auto-completion to `screen -D -R` alias
-_complete_scd() {
-    local does_screen_exist=$(type -t _screen_sessions)
-    local cur=$2 # Needed by _screen_sessions
-    if [[ "function" = "${does_screen_exist}" ]]; then
-        _screen_sessions "Attached"
-    fi
-}
-_add_function _complete_scd
-complete -F _complete_scd scd && _add_completion_function scd
-
-_apt_get_install() {
-    local cur prev;
-    COMPREPLY=();
-    _get_comp_words_by_ref cur prev;
-    if [[ ${#COMP_WORDS[@]} -gt 2 ]]; then
-        # Once one package name has been completed, stop
-        COMPREPLY=()
-    elif [[ "$cur" == -* ]]; then
-        COMPREPLY=($( compgen -W '-d -f -h -v -m -q -s -y -u -t -b -c -o \
-            --download-only --fix-broken --help --version --ignore-missing \
-            --fix-missing --no-download --quiet --simulate --just-print \
-            --dry-run --recon --no-act --yes --assume-yes --show-upgraded \
-            --only-source --compile --build --ignore-hold --target-release \
-            --no-upgrade --force-yes --print-uris --purge --reinstall \
-            --list-cleanup --default-release --trivial-only --no-remove \
-            --diff-only --no-install-recommends --tar-only --config-file \
-            --only-upgrade --option --auto-remove' -- "$cur" ));
-    else
-        COMPREPLY=($( apt-cache --no-generate pkgnames "$cur" ))
-    fi
-}
-_add_function _apt_get_install
-complete -F _apt_get_install _agi agi acs && _add_completion_function _agi agi acs
-
-_mail_addresses() {
-    local cur prev;
-    COMPREPLY=();
-    _get_comp_words_by_ref cur prev;
-    if [[ -z $USER_EMAIL ]]; then
-        return
-    fi
-    email_address="${USER_EMAIL}"
-    email_host="@${USER_EMAIL#*@}"
-    # If you have typed a "@" in the most recent word, autocomplete the domain
-    # Also if you have typed a subset of my email address, autocomplete the rest
-    if [[ $cur == *"@"* ]]; then
-        COMPREPLY=("${cur%@*}${email_host}")
-    # elif [[ $cur != $email_address && $prev != $email_address ]]; then
-    elif [[ (-z $cur || $email_address =~ $cur) && $prev != $email_address ]]; then
-        COMPREPLY=($email_address)
-    fi
-}
-_add_function _mail_addresses
-complete -F _mail_addresses mail && _add_completion_function mail
-
-_grep_completion() {
-    _longopt grep
-}
-_add_function _grep_completion
-complete -F _grep_completion gre gree && _add_completion_function gre gree
-
-complete -W '$(echo ${ssh_complete})' ssh scp host getip && _add_completion_function ssh scp host getip
-complete -o default -W '$(compgen -A function | grep -v ^_)' func && _add_completion_function func
-complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completion_function funcu
-complete -f bk && _add_completion_function bk
-complete -W "\$(complete -p | rev | cut -d' ' -f1 | rev)" comp && _add_completion_function comp
-complete -F _command wow wowz && _add_completion_function wow wowz
-complete -F _man man # therefore the m alias will pick this up
-
-_add_alias cdc "cd"
-complete -F _complete_most_recently_modified_file cdc && _add_completion_function cdc
-
-
-# Lazy alias-completion inheritance.
-#
-#  Resolve an alias the first time it is TAB-completed and then
-#  return 124, which tells bash to retry completion now that a spec exists.
-_prev_default_completion_loader=""
-if [[ $(complete -p -D 2>/dev/null) =~ -F[[:space:]]+([^[:space:]]+) ]]; then
-    if [[ ${BASH_REMATCH[1]} != "_lazy_alias_completion_loader" ]]; then
-        _prev_default_completion_loader="${BASH_REMATCH[1]}"
-    fi
-fi
-
-_lazy_alias_completion_loader() {
-    local _cmd="${1}" _body _base
-    # Never clobber a spec that was registered explicitly further down this
-    #  file (__git_complete, _complete_scr, ...). Bash normally wouldn't call
-    #  the default handler at all in that case; this just makes it safe to
-    #  call this function directly.
-    if complete -p "${_cmd}" &>/dev/null; then
-        return 124
-    fi
-    if [[ -n ${_custom_user_aliases[${_cmd}]+x} ]]; then
-        _body="${_custom_user_aliases[${_cmd}]}"
-        _base="${_body%% *}"
-        if [[ "sudo" = "${_base}" ]]; then
-            _body="${_body#sudo }"
-            _base="${_body%% *}"
+    # Add bash auto-completion to `screen -r` alias
+    _complete_scr() {
+        local does_screen_exist=$(type -t _screen_sessions)
+        local cur=$2 # Needed by _screen_sessions
+        if [[ "function" = "${does_screen_exist}" ]]; then
+            _screen_sessions "Detached"
         fi
-        # The base program's own spec may itself be lazily loaded, so give the
-        #  previous default loader a chance to install it before inheriting.
-        if [[ -n ${_prev_default_completion_loader} ]] && ! complete -p "${_base}" &>/dev/null; then
-            ${_prev_default_completion_loader} "${_base}" &>/dev/null
+    }
+    _add_function _complete_scr
+    complete -F _complete_scr scr sck && _add_completion_function scr sck
+
+    # Add bash auto-completion to `screen -D -R` alias
+    _complete_scd() {
+        local does_screen_exist=$(type -t _screen_sessions)
+        local cur=$2 # Needed by _screen_sessions
+        if [[ "function" = "${does_screen_exist}" ]]; then
+            _screen_sessions "Attached"
         fi
-        if _optionally_add_completion_function_to_alias "${_cmd}" "${_body}"; then
+    }
+    _add_function _complete_scd
+    complete -F _complete_scd scd && _add_completion_function scd
+
+    _apt_get_install() {
+        local cur prev;
+        COMPREPLY=();
+        _get_comp_words_by_ref cur prev;
+        if [[ ${#COMP_WORDS[@]} -gt 2 ]]; then
+            # Once one package name has been completed, stop
+            COMPREPLY=()
+        elif [[ "$cur" == -* ]]; then
+            COMPREPLY=($( compgen -W '-d -f -h -v -m -q -s -y -u -t -b -c -o \
+                --download-only --fix-broken --help --version --ignore-missing \
+                --fix-missing --no-download --quiet --simulate --just-print \
+                --dry-run --recon --no-act --yes --assume-yes --show-upgraded \
+                --only-source --compile --build --ignore-hold --target-release \
+                --no-upgrade --force-yes --print-uris --purge --reinstall \
+                --list-cleanup --default-release --trivial-only --no-remove \
+                --diff-only --no-install-recommends --tar-only --config-file \
+                --only-upgrade --option --auto-remove' -- "$cur" ));
+        else
+            COMPREPLY=($( apt-cache --no-generate pkgnames "$cur" ))
+        fi
+    }
+    _add_function _apt_get_install
+    complete -F _apt_get_install _agi agi acs && _add_completion_function _agi agi acs
+
+    _mail_addresses() {
+        local cur prev;
+        COMPREPLY=();
+        _get_comp_words_by_ref cur prev;
+        if [[ -z $USER_EMAIL ]]; then
+            return
+        fi
+        email_address="${USER_EMAIL}"
+        email_host="@${USER_EMAIL#*@}"
+        # If you have typed a "@" in the most recent word, autocomplete the domain
+        # Also if you have typed a subset of my email address, autocomplete the rest
+        if [[ $cur == *"@"* ]]; then
+            COMPREPLY=("${cur%@*}${email_host}")
+        # elif [[ $cur != $email_address && $prev != $email_address ]]; then
+        elif [[ (-z $cur || $email_address =~ $cur) && $prev != $email_address ]]; then
+            COMPREPLY=($email_address)
+        fi
+    }
+    _add_function _mail_addresses
+    complete -F _mail_addresses mail && _add_completion_function mail
+
+    _grep_completion() {
+        _longopt grep
+    }
+    _add_function _grep_completion
+    complete -F _grep_completion gre gree && _add_completion_function gre gree
+
+    complete -W '$(echo ${ssh_complete})' ssh scp host getip && _add_completion_function ssh scp host getip
+    complete -o default -W '$(compgen -A function | grep -v ^_)' func && _add_completion_function func
+    complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completion_function funcu
+    complete -f bk && _add_completion_function bk
+    complete -W "\$(complete -p | rev | cut -d' ' -f1 | rev)" comp && _add_completion_function comp
+    complete -F _command wow wowz && _add_completion_function wow wowz
+    complete -F _man man # therefore the m alias will pick this up
+
+    _add_alias cdc "cd"
+    complete -F _complete_most_recently_modified_file cdc && _add_completion_function cdc
+
+
+    # Lazy alias-completion inheritance.
+    #
+    #  Resolve an alias the first time it is TAB-completed and then
+    #  return 124, which tells bash to retry completion now that a spec exists.
+    _prev_default_completion_loader=""
+    if [[ $(complete -p -D 2>/dev/null) =~ -F[[:space:]]+([^[:space:]]+) ]]; then
+        if [[ ${BASH_REMATCH[1]} != "_lazy_alias_completion_loader" ]]; then
+            _prev_default_completion_loader="${BASH_REMATCH[1]}"
+        fi
+    fi
+
+    _lazy_alias_completion_loader() {
+        local _cmd="${1}" _body _base
+        # Never clobber a spec that was registered explicitly further down this
+        #  file (__git_complete, _complete_scr, ...). Bash normally wouldn't call
+        #  the default handler at all in that case; this just makes it safe to
+        #  call this function directly.
+        if complete -p "${_cmd}" &>/dev/null; then
             return 124
         fi
-    fi
-    if [[ -n ${_prev_default_completion_loader} ]]; then
-        ${_prev_default_completion_loader} "$@"
-        return $?
-    fi
-    return 1
+        if [[ -n ${_custom_user_aliases[${_cmd}]+x} ]]; then
+            _body="${_custom_user_aliases[${_cmd}]}"
+            _base="${_body%% *}"
+            if [[ "sudo" = "${_base}" ]]; then
+                _body="${_body#sudo }"
+                _base="${_body%% *}"
+            fi
+            # The base program's own spec may itself be lazily loaded, so give the
+            #  previous default loader a chance to install it before inheriting.
+            if [[ -n ${_prev_default_completion_loader} ]] && ! complete -p "${_base}" &>/dev/null; then
+                ${_prev_default_completion_loader} "${_base}" &>/dev/null
+            fi
+            if _optionally_add_completion_function_to_alias "${_cmd}" "${_body}"; then
+                return 124
+            fi
+        fi
+        if [[ -n ${_prev_default_completion_loader} ]]; then
+            ${_prev_default_completion_loader} "$@"
+            return $?
+        fi
+        return 1
+    }
+    _add_function _lazy_alias_completion_loader
+    complete -o default -o bashdefault -D -F _lazy_alias_completion_loader
 }
-_add_function _lazy_alias_completion_loader
-complete -o default -o bashdefault -D -F _lazy_alias_completion_loader
+_add_function _bashrc_completions
 
 
 ## 8) Miscellaneous
-# Set XTERM window name
-case "$TERM" in
-xterm*|rxvt*)
-    #_add_variable PROMPT_COMMAND 'echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
-    # Store *all* bash history in ~/.logs
-    if [[ ! -d ~/.logs ]]; then
-        mkdir ~/.logs
-    fi
-    _add_variable PROMPT_COMMAND 'if [ "$(id -u)" -ne 0 ]; then echo "$(date "+%Y-%m-%d.%H:%M:%S") $(pwd) $(history 1)" >> ~/.logs/bash-history-$(date "+%Y-%m-%d").log; fi; echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
-;;
-dumb*) # Emacs
-    _add_variable TERM xterm-256color
-;;
-esac
+# Deferred: depends on $TERM, which varies per session.
+_bashrc_terminal_init() {
+    # Set XTERM window name
+    case "$TERM" in
+    xterm*|rxvt*)
+        #_add_variable PROMPT_COMMAND 'echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
+        # Store *all* bash history in ~/.logs
+        if [[ ! -d ~/.logs ]]; then
+            mkdir ~/.logs
+        fi
+        _add_variable PROMPT_COMMAND 'if [ "$(id -u)" -ne 0 ]; then echo "$(date "+%Y-%m-%d.%H:%M:%S") $(pwd) $(history 1)" >> ~/.logs/bash-history-$(date "+%Y-%m-%d").log; fi; echo -ne "\033]0;${PWD##*/}| ${USER}@${HOSTNAME}\007"'
+    ;;
+    dumb*) # Emacs
+        _add_variable TERM xterm-256color
+    ;;
+    esac
+}
+_add_function _bashrc_terminal_init
 _add_variable EDITOR_OPTS "-nw" # --no-init"
 _add_variable EDITOR "emacs ${EDITOR_OPTS}"
 _add_variable GIT_EDITOR "${EDITOR}"
@@ -3405,7 +3532,8 @@ _add_function seml
 
 
 ## 10) Cleanup
-unset DATE_FORMAT
+# (DATE_FORMAT is unset by _bashrc_session_init, after the aliases that
+#  interpolate it have been defined.)
 
 
 ## 11) SSH
@@ -3424,23 +3552,177 @@ _add_function reboot-ssh-agent
 
 # ssh-add -l # list all fingerprints of identities loaded by agent
 
-if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
-   echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
-else
-    _num_ssh_keys=$(find -L ~/.ssh -name 'id_*' 2>/dev/null | wc -l | awk -F' ' '{print $1}')
-    if [[ ${_num_ssh_keys:-0} -gt 0 ]]; then
-        # Never install packages from a shell startup file: it blocks every new
-        #  terminal on a sudo password prompt. Just say what is missing.
-        if [[ -z $(type -P keychain) ]]; then
-            _warning "keychain not installed; skipping ssh-agent setup. Install it with 'apt-get install keychain' / 'brew install keychain'."
-        else
-            # keychain is idempotent: it reuses a running agent instead of
-            #  spawning a new one, which is what leaked agents previously.
-            keychain --quiet id_rsa
-            _keychain_env=~/.keychain/$(uname -n)-sh
-            source_file "${_keychain_env}" no_output
-            unset _keychain_env
+# Deferred: agent state is per-shell.
+_bashrc_ssh_init() {
+    if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
+       echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
+    else
+        _num_ssh_keys=$(find -L ~/.ssh -name 'id_*' 2>/dev/null | wc -l | awk -F' ' '{print $1}')
+        if [[ ${_num_ssh_keys:-0} -gt 0 ]]; then
+            # Never install packages from a shell startup file: it blocks every new
+            #  terminal on a sudo password prompt. Just say what is missing.
+            if [[ -z $(type -P keychain) ]]; then
+                _warning "keychain not installed; skipping ssh-agent setup. Install it with 'apt-get install keychain' / 'brew install keychain'."
+            else
+                # keychain is idempotent: it reuses a running agent instead of
+                #  spawning a new one, which is what leaked agents previously.
+                keychain --quiet id_rsa
+                _keychain_env=~/.keychain/$(uname -n)-sh
+                source_file "${_keychain_env}" no_output
+                unset _keychain_env
+            fi
         fi
+        unset _num_ssh_keys
     fi
-    unset _num_ssh_keys
+}
+_add_function _bashrc_ssh_init
+
+
+## 12) Session Init & Cache Generation
+# Everything below runs on every shell. The blocks it calls are the ones that
+#  cannot be serialized: they depend on the tty, $TERM, $STY, $SSH_CONNECTION,
+#  the inherited PATH, or on generated functions (__git_wrap_*) that must be
+#  rebuilt in the live shell.
+# Emit the entries this file added to each PATH-like variable, in order.
+# `local IFS` keeps the split-on-colon scoped to this function; assigning and
+#  restoring IFS by hand leaks an empty IFS when it started out unset.
+_bashrc_emit_path_additions() {
+    local _item
+    for _item in "${_bashrc_path_additions[@]}"; do
+        printf '_bashrc_path_additions+=(%q)\n' "${_item}"
+    done
+}
+_add_function _bashrc_emit_path_additions
+
+# Re-apply the PATH-like entries recorded in the cache. Values are appended
+#  with the same dedup and existence checks _append_variable_with_path_separator
+#  uses, so this is a no-op for anything already present in the inherited
+#  environment.
+_bashrc_replay_path_additions() {
+    local _item _var _rest _pos _val _cur
+    declare -A _seen=()
+    # Record this session's inherited value first, so _clear_environment
+    #  restores what this shell actually started with.
+    for _item in "${_bashrc_path_additions[@]}"; do
+        _var="${_item%%|*}"
+        if [[ -z ${_seen[${_var}]+x} ]]; then
+            _seen["${_var}"]=1
+            eval _cur="\$${_var}"
+            _custom_user_path_variables["${_var}"]="${_cur}"
+        fi
+    done
+    # Appends in recorded order...
+    for _item in "${_bashrc_path_additions[@]}"; do
+        _var="${_item%%|*}"; _rest="${_item#*|}"
+        _pos="${_rest%%|*}"; _val="${_rest#*|}"
+        [[ ${_pos} = "post" ]] || continue
+        [[ -d ${_val} ]] || continue
+        eval _cur="\$${_var}"
+        [[ ":${_cur}:" == *":${_val}:"* ]] && continue
+        export "${_var}=${_cur:+${_cur}:}${_val}"
+    done
+    # ...then prepends, in the order they were originally requested. Repeated
+    #  prepends invert: requesting A then B leaves B:A, which is what replaying
+    #  them in the same order reproduces.
+    for _item in "${_bashrc_path_additions[@]}"; do
+        _var="${_item%%|*}"; _rest="${_item#*|}"
+        _pos="${_rest%%|*}"; _val="${_rest#*|}"
+        [[ ${_pos} = "pre" ]] || continue
+        [[ -d ${_val} ]] || continue
+        eval _cur="\$${_var}"
+        [[ ":${_cur}:" == *":${_val}:"* ]] && continue
+        export "${_var}=${_val}${_cur:+:${_cur}}"
+    done
+}
+_add_function _bashrc_replay_path_additions
+
+_bashrc_session_init() {
+    unset IFS
+    # On a cache hit the file body never ran, so re-apply the PATH entries it
+    #  would have added (including ~/.machine's) instead of rebuilding them.
+    if [[ ${#_bashrc_path_additions[@]} -gt 0 ]]; then
+        _bashrc_replay_path_additions
+    fi
+    _bashrc_tty_settings
+    _bashrc_source_bash_completion
+    _bashrc_screen_width
+    _bashrc_shell_options
+    _bashrc_git_completions
+    _bashrc_set_prompt
+    _bashrc_completions
+    _bashrc_terminal_init
+    _bashrc_ssh_init
+    unset DATE_FORMAT
+}
+_add_function _bashrc_session_init
+
+# Serialize the derived environment. Everything written here round-trips
+#  through bash's own quoting (declare -p / declare -f / alias -p), so no
+#  escaping is done by hand.
+_bashrc_write_cache() {
+    local _tmp="${_BASHRC_CACHE}.$$" _name
+    {
+        echo "# Generated by ~/.bashrc on $(date). Do not edit."
+        echo "# Rebuild: BASHRC_NO_CACHE=1 sb"
+        echo "_bashrc_cache_key='${_BASHRC_CACHE_KEY}'"
+
+        # Registries first: the functions below expect them to exist.
+        declare -p _custom_user_functions _custom_user_aliases \
+                   _custom_user_aliases_broken _custom_user_variables \
+                   _custom_user_path_variables _custom_user_completion_functions \
+                   _custom_user_auto_alias_completion_functions 2>/dev/null
+
+        # PATH-like variables are recorded as an ordered delta rather than a
+        #  frozen absolute value, so a shell that inherits a different PATH
+        #  (tmux, a venv, direnv) keeps it.
+        echo "_bashrc_path_additions=()"
+        _bashrc_emit_path_additions
+
+        for _name in "${!_bashrc_own_vars[@]}"; do
+            # PS1/PS1_prev are per-session: caching PS1_prev would make
+            #  _clear_environment "restore" this file's own prompt.
+            case ${_name} in PS1|PS1_prev) continue;; esac
+            [[ -v ${_name} ]] && declare -p "${_name}" 2>/dev/null
+        done
+
+        for _name in "${!_bashrc_own_fns[@]}"; do
+            declare -f "${_name}" 2>/dev/null
+        done
+
+        alias -p
+
+        # Sentinel: a truncated cache (interrupted write, full disk) will not
+        #  have this line, and the loader will rebuild instead of half-loading.
+        echo "_bashrc_cache_ok=1"
+    } > "${_tmp}" 2>/dev/null && \mv -f "${_tmp}" "${_BASHRC_CACHE}" || \
+        { \rm -f "${_tmp}"; _warning "could not write ${_BASHRC_CACHE}"; }
+}
+_add_function _bashrc_write_cache
+
+# Everything defined since the pre-snapshot belongs to this file or
+#  ~/.machine. This must be computed *before* _bashrc_session_init sources
+#  bash-completion and git-completion, so their functions (and the
+#  __git_wrap_* wrappers) stay out of the cache and are regenerated per-shell.
+declare -A _bashrc_own_fns=() _bashrc_own_vars=()
+while read -r _ _ _bashrc_snap; do
+    [[ -n ${_bashrc_pre_fns[${_bashrc_snap}]+x} ]] || _bashrc_own_fns["${_bashrc_snap}"]=1
+done < <(declare -F)
+while read -r _bashrc_snap; do
+    [[ -n ${_bashrc_pre_vars[${_bashrc_snap}]+x} ]] || _bashrc_own_vars["${_bashrc_snap}"]=1
+done < <(compgen -e)
+unset _bashrc_snap "_bashrc_own_vars[_BASHRC_CACHE]" "_bashrc_own_vars[_BASHRC_CACHE_KEY]"
+
+_bashrc_session_init
+
+# Registered names win regardless of when they were defined: the completion
+#  helpers in section 7 only come into existence during _bashrc_session_init.
+for _bashrc_snap in "${!_custom_user_functions[@]}"; do _bashrc_own_fns["${_bashrc_snap}"]=1; done
+for _bashrc_snap in "${!_custom_user_variables[@]}"; do _bashrc_own_vars["${_bashrc_snap}"]=1; done
+unset _bashrc_snap
+
+# Write the cache last, so it captures the fully-derived environment.
+#  Skipped under BASHRC_DEBUG, whose extra bookkeeping isn't what a normal
+#  shell should replay.
+if [[ -z ${BASHRC_DEBUG} ]]; then
+    _bashrc_write_cache
 fi
