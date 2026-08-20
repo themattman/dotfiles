@@ -607,6 +607,7 @@ _append_variable_with_path_separator PATH "${HOME}/usrbin"
 _append_variable_with_path_separator PATH "/opt/homebrew/bin" mac
 
 _append_variable_with_path_separator PATH "${HOME}/.cargo/bin"
+_append_variable_with_path_separator PATH "${HOME}/.local/bin"
 
 # Android Studio/Intellij Paths
 # _append_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
@@ -633,7 +634,9 @@ unset IFS
 # Make backspace work in Emacs
 # TODO: make these work conditionally based on OS/Environ
 #stty erase ^H
-_add_variable LANG C
+_add_variable LANG en_US.UTF-8
+_add_variable LC_ALL en_US.UTF-8
+#_add_variable LANG C
 stty ixany       # Turn off Ctrl-S XOFF "feature", particularly helpful for
 stty ixoff -ixon #  GNU screen sessions.
                  #  https://raamdev.com
@@ -865,6 +868,7 @@ _add_alias sc "screen -S"
 _add_alias scl "screen -ls"
 _add_alias scd "screen -D -R" # Re-attach to screen that is attached
 _add_alias detach "screen -d -m" # Run a command inside screen
+_add_alias cld "screen -S cld"
 _add_variable LOCKPRG "/bin/true"  # Disable the password feature which has locked up many sessions of mine
 # Git
 source_file ~/.git-completion no_output # Will have to re-source this file later
@@ -1540,6 +1544,7 @@ body() {
         return $(_error "$3 is not a regular file.")
     fi
     if [[ $3 = "-" ]]; then
+        echo "stdin"
         sed -n "${1},${2}p"
     else
         sed -n "${1},${2}p" "${3}"
@@ -2440,6 +2445,17 @@ _most_recently_modified_text_file() {
 _add_function _most_recently_modified_text_file
 _rename_function _most_recently_modified_text_file mrmtf
 
+open_file_and_line_in_less() {
+    local _file=$(echo "${1}" | cut -d':' -f1)
+    local _line=$(echo "${1}" | cut -d':' -f2)
+
+    set -x
+    eval less -N "+${_line}" "${_file}"
+    { set +x; } &> /dev/null
+}
+_add_function open_file_and_line_in_less
+_rename_function open_file_and_line_in_less opfl
+
 # TODO: For efficiency,
 #  Have functions like `cpptype` set an env variable that is first checked here.
 #  Falls back to re-running the command.
@@ -2479,6 +2495,55 @@ open_file_from_prior_cmd_in_less() {
 }
 _add_function open_file_from_prior_cmd_in_less
 _rename_function open_file_from_prior_cmd_in_less opf
+
+# open_file_from_prior_cmd_in_pager() {
+#     : args - num_prior = index, 1+, starting from bottom of line to open as file default: 1
+#     local _num_prior=${1:-1}
+#     local _output=$(history -p !!)
+#     local _last_line=""
+#     case $OSTYPE in
+#     linux*|msys*)
+#         if [[ ! -x $(which ansi2txt) ]]; then
+#             return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
+#         fi
+#         _last_line=$(eval "${_output}" | tail -n ${_num_prior} | head -n 1| ansi2txt)
+#     ;;
+#     darwin*)
+#         _last_line=$(eval "${_output}" | tail -n ${_num_prior} | head -n 1)
+#     ;;
+#     esac
+
+#     local _file=$(echo "${_last_line}" | cut -d':' -f1)
+
+#     echo "first guess: (${_file})"
+
+#     if [[ ! -r "${_file}" ]]; then
+#         echo "remove git-status: (${_file})"
+#         # Try to remove git status -s markings
+#         local _status_removed=$(echo "${_file}" | ansi2txt | tr -s ' ' | cut -d' ' -f2)
+#         # Unstaged changes have a leading space that needs special handling
+#         if [[ $_status_removed = "M" || $_status_removed = "A" || $_status_removed = "R" || $_status_removed = "D" || $_status_removed = "C" || $_status_removed = "U" ]]; then
+#             _status_removed=$(echo "${_file}" | tr -s ' ' | cut -d' ' -f3)
+#         fi
+#         _file=$_status_removed
+#         if [[ ! -r "${_file}" ]]; then
+#             return $(_error "file [${_file}] does not exist.")
+#         fi
+#     else
+#         echo "good file on first guess"
+#     fi
+
+#     local _line_num=$(echo "${_last_line}" | cut -d':' -f2 -s)
+#     echo "num: [${_line_num}]"
+#     local _line_num_arg
+#     echo "opening: [${_file}]"
+
+#     set -x
+#     eval less -N ${_line_num_arg} "${_file}"
+#     { set +x; } &> /dev/null
+# }
+# _add_function open_file_from_prior_cmd_in_page
+# _rename_function open_file_from_prior_cmd_in_pager opfl
 
 open_file_from_prior_cmd_in_editor() {
     : args - num_prior = index, 1+, starting from bottom of line to open as file default: 1
