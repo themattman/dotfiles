@@ -35,9 +35,10 @@
 
 
 ## 0) Bashrc Guard
-# The prompt string only gets set on interactive shells.
-# Don't apply custom configs if this is the case.
-if [ -z "$PS1" ]; then
+# Only apply custom configs to interactive shells.
+# $- contains 'i' for interactive shells. More reliable than testing $PS1,
+#  which can be inherited by non-interactive contexts.
+if [[ $- != *i* ]]; then
     return
 fi
 
@@ -49,17 +50,11 @@ if [ "$DISABLE_STARTUP" = "true" ]; then
         return
     else
         if ls ~/.ssh/id_* &>/dev/null; then
-            eval "$(ssh-agent -s)"
-            if [[ -x $(which keychain 2>/dev/null) && -f ~/.ssh/id_rsa ]]; then
-                if [[ ! -d ~/.keychain ]]; then
-                    set -x
-                    mkdir -p ~/.keychain
-                    { set +x; } &>/dev/null
-                fi
-                set -x
-                keychain id_rsa
-                . ~/.keychain/`uname -n`-sh
-                { set +x; } &>/dev/null
+            if [[ -n $(type -P keychain) && -f ~/.ssh/id_rsa ]]; then
+                # keychain reuses an existing agent, so don't `eval ssh-agent -s`
+                #  first -- that spawns a fresh agent on every shell.
+                keychain --quiet id_rsa
+                [[ -r ~/.keychain/$(uname -n)-sh ]] && . ~/.keychain/$(uname -n)-sh
             fi
         fi
     fi
@@ -67,10 +62,11 @@ if [ "$DISABLE_STARTUP" = "true" ]; then
     return
 fi
 
-# Not doing much at the moment (remember, .bashrc should only be sourced
-#  within bash), might want to try something else here
-if [[ ! $SHELL =~ bash ]]; then
-    echo "Not running bash. Exiting. Shell=[${SHELL}]"
+# .bashrc should only be sourced within bash. $BASH_VERSION is set by the
+#  running shell; $SHELL is only the *login* shell and says nothing about
+#  what is interpreting this file right now.
+if [[ -z $BASH_VERSION ]]; then
+    echo "Not running bash. Exiting."
     return
 fi
 
@@ -100,7 +96,11 @@ _add_function() {
         echo "bad function: $*"
         return $(_error "" "<function_name>")
     fi
-    export -f "${_func}"
+    # Deliberately NOT `export -f` here. Exporting every function leaks
+    #  definitions like cd/line/tabs/all/each/color into every child process,
+    #  where they shadow the real builtins and binaries for any script you run.
+    #  Interactive use doesn't need the export; the functions are already
+    #  defined in this shell.
     _custom_user_functions["${_func}"]=""
 }
 _add_function _add_function
@@ -422,11 +422,15 @@ _append_variable_with_path_separator() {
     if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
         # Variable isn't tracked yet in custom env
         _custom_user_path_variables["${_variable}"]="${_contents_of_variable}"
-        if [[ -z "${_contents_of_variable}" ]]; then
-            export "${_variable}=${_value}"
-        else
-            export "${_variable}=${_contents_of_variable}:${_value}"
-        fi
+    fi
+    # Don't add a path that is already present. Without this, entries like
+    #  /usr/bin (already in the default PATH) get duplicated on every shell,
+    #  and every re-source (`sb`) appends yet another copy.
+    if [[ ":${_contents_of_variable}:" == *":${_value}:"* ]]; then
+        return 0
+    fi
+    if [[ -z "${_contents_of_variable}" ]]; then
+        export "${_variable}=${_value}"
     else
         export "${_variable}=${_contents_of_variable}:${_value}"
     fi
@@ -457,11 +461,13 @@ _prepend_variable_with_path_separator() {
     if [[ -z "${_custom_user_path_variables[${_variable}]+x}" ]]; then
         # Variable isn't tracked yet in custom env
         _custom_user_path_variables["${_variable}"]="${_contents_of_variable}"
-        if [[ -z "${_contents_of_variable+x}" ]]; then
-            export "${_variable}=${_value}"
-        else
-            export "${_variable}=${_value}:${_contents_of_variable}"
-        fi
+    fi
+    # See the dedup note in _append_variable_with_path_separator
+    if [[ ":${_contents_of_variable}:" == *":${_value}:"* ]]; then
+        return 0
+    fi
+    if [[ -z "${_contents_of_variable}" ]]; then
+        export "${_variable}=${_value}"
     else
         export "${_variable}=${_value}:${_contents_of_variable}"
     fi
@@ -495,15 +501,14 @@ _remove_all_of() {
     echo -n "unsetting all ${_name} (${_num_objects} set)..."
     for _object in ${_objects[@]}; do
         #echo "unset: ${_object}"
-        if [[ "${_name}" = "aliases" ]]; then
-            unalias "${_object}"
+        if [[ "${_name}" = "aliases" || "${_name}" = "aliases_broken" ]]; then
+            unalias "${_object}" 2>/dev/null
         elif [[ "${_name}" =~ "completion" ]]; then
             complete -r $_object 2>/dev/null
-        elif [[ "${_name}" = "PATH variables" ]]; then
+        elif [[ "${_name}" = "path variables" ]]; then
             if [[ -n ${_object+x} ]]; then
-                # echo "  [${_custom_user_path_variables[${_var}]}]"
-                # Reset to original value
-                export ${_object}="${_custom_user_path_variables[${_var}]}"
+                # Reset to the value captured before this bashrc touched it
+                export ${_object}="${_custom_user_path_variables[${_object}]}"
             fi
         else
             unset $_object &> /dev/null || unset -f $_object
@@ -689,14 +694,17 @@ _add_alias icurl "curl -I"
 #   d) Common
 
 ## 4a) OS-specific aliases
+# Needed on every platform: `dy` and friends pass this to diff -W.
+# NOTE: this is a snapshot of the width at shell start; resizing the
+#  terminal won't update it.
+_add_variable SCREEN_WIDTH $(tput cols)
+_add_variable SCREEN_WIDTH_HALF $((SCREEN_WIDTH / 2))
+_add_variable SCREEN_WIDTH_QUARTER $((SCREEN_WIDTH / 4))
 case $OSTYPE in
 linux*|msys*)
-    _add_variable SCREEN_WIDTH $(tput cols)
-    _add_variable SCREEN_WIDTH_HALF $(echo ${SCREEN_WIDTH}/2 | bc)
-    _add_variable SCREEN_WIDTH_QUARTER $(echo ${SCREEN_WIDTH}/4 | bc)
     # tree
     if [[ $(type -P tree) ]]; then
-        _add_alias ll "tree --dirsfirst -aLpughDFiC 1"
+        _add_alias llt "tree --dirsfirst -aLpughDFiC 1" # `ll` is redefined below
         _add_alias lk "tree --dirsfirst -LpughDFiC 1"
         _add_alias lsd "ll -d"
         _add_alias treel "tree | \less -iFXR"
@@ -995,7 +1003,7 @@ _add_alias grf "git reflog" # List all commits current branch points to
 _add_alias gsh "git show"
 _add_alias gshh "git show HEAD"
 _add_alias gshhs "git show HEAD --stat"
-_add_alias gshhss "git show HEAD --stat --stat-name-width=$(tput cols)" # Ensure filenames don't get chopped off
+_add_alias gshhss "git show HEAD --stat --stat-name-width=\$(tput cols)" # Ensure filenames don't get chopped off
 _add_alias gshhn "git show HEAD --name-only"
 _add_alias gshn "git show --name-only"
 _add_alias gshs "git show --stat"
@@ -1039,7 +1047,7 @@ _add_alias h "history"
 _add_alias hist "history | grep -P --color=always \"^.*?]\" | \less -iFRX +G"
 _add_alias hisd "history -d"
 _add_variable HISTCONTROL "erasedups"
-_add_alias freq "cut -f1 -d" " "$HISTFILE" | sort | uniq -c | sort -nr | head -n 30"
+_add_alias freq "cut -f1 -d' ' \"\${HISTFILE}\" | sort | uniq -c | sort -nr | head -n 30"
 # Give history timestamps
 _add_variable HISTTIMEFORMAT "[%F %T] "
 # Johannes Gutenberg's Bible
@@ -1161,7 +1169,7 @@ linux*|msys*)
     else
         if [[ -z $SSH_CONNECTION ]]; then
             if [[ -n "$STY" ]]; then
-                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}]${ENDCOLOR}[$([[ \$? = 0 ]] && : || echo -e "${RED}")\${?:0:1}${ENDCOLOR}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
+                _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_STYCOLOR}[\${STY}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             else
                 _add_variable PS1 "${PS_STARTCOLOR}[\D{%m/%d/%y %r}][\${?:0:1}]${PS_BRANCHCOLOR}\$(__git_ps1) ${PS_STARTCOLOR}\u:\W\$${PS_ENDCOLOR} "
             fi
@@ -1504,12 +1512,7 @@ gpa() {
             fi
         done
     else
-        return $(_error <<ERROR_MSG
-You need to have the well-known ~/.git-completion file.
-It is located at:
-  https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
-ERROR_MSG
-            )
+        return $(_error "You need the well-known ~/.git-completion file. Get it at: https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash")
     fi
 }
 _add_function gpa
@@ -2005,9 +2008,11 @@ _git_rebase_theirs() {
 
     local num_rebase_commit_conflicts=0
     local num_rebase_file_conflicts=0
-    IFS=''
+    # `local` so the empty IFS doesn't leak into the rest of the session
+    local IFS=''
     while [[ ${rebase_ret} -ne 0 ]]; do
-        git status --porcelain -uno | while read l; do
+        # Process substitution (not a pipe) so the counters below survive
+        while read l; do
             echo -ne "${ENDCOLOR}"
             echo "output: [${l}]"
             git_status_flag=${l:0:2}
@@ -2021,7 +2026,7 @@ _git_rebase_theirs() {
                 { set +x; } &> /dev/null && echo -ne "${ENDCOLOR}"
                 num_rebase_file_conflicts=$((num_rebase_file_conflicts+1))
             fi
-        done
+        done < <(git status --porcelain -uno)
         num_rebase_commit_conflicts=$((num_rebase_commit_conflicts+1))
         echo -ne "${PURPLE}" && set -x
         git rebase --continue
@@ -2074,7 +2079,8 @@ git_checkout_previous_branch() {
     echo "1: ${_previous_branches[1]}"
 }
 _add_function git_checkout_previous_branch
-_rename_function git_checkout_previous_branch gcpb
+# NOTE: `gcpb` is defined further down by _git_checkout_prior_branch, which is
+#  the working implementation; this one is kept only under its long name.
 
 jira-cli-open() {
     if [[ $# -ne 1 ]]; then
@@ -2083,8 +2089,7 @@ jira-cli-open() {
     local _jira_id=$1
     local _jira_tag
     echo "[$1]"
-    $(echo "$1" | grep -E "^[a-zA-Z]{1,8}-[0-9]{1,6}$" &>/dev/null)
-    if [[ $? -eq 0 ]]; then
+    if grep -qE "^[a-zA-Z]{1,8}-[0-9]{1,6}$" <<< "$1"; then
         _jira_tag=$1
     else
         _jira_tag="SERVER-${_jira_id}"
@@ -2101,11 +2106,9 @@ jira-cli-view() {
         return $(_error "requires at least 1 argument" "<JIRA-ID>")
     fi
     local _jira_id=${@: -1}
-    local _options=${@:1:-1}
     local _jira_tag
     echo "[$1]"
-    $(echo "$1" | grep -E "^[a-zA-Z]{1,8}-[0-9]{1,6}$" &>/dev/null)
-    if [[ $? -eq 0 ]]; then
+    if grep -qE "^[a-zA-Z]{1,8}-[0-9]{1,6}$" <<< "$1"; then
         _jira_tag=$1
     else
         _jira_tag="SERVER-${_jira_id}"
@@ -2870,14 +2873,7 @@ next_dir() {
     local _filename=$(basename $1)
     local _dirname=$(dirname $1)
     local _file_list_count
-    case $OSTYPE in
-    linux*|msys*)
-        _file_list_count=$(\find /Users/matt.kneiser/data/db -maxdepth 1 -mindepth 1 -name "test*" | wc -l)
-    ;;
-    darwin*)
-        _file_list_count=$(\find /Users/matt.kneiser/data/db -maxdepth 1 -mindepth 1 -name "test*" | wc -l | awk -F' ' '{print $1}')
-    ;;
-    esac
+    _file_list_count=$(\find "${_dirname}" -maxdepth 1 -mindepth 1 -name "${_filename}*" 2>/dev/null | wc -l | awk -F' ' '{print $1}')
 
     # echo "cnt: ${_file_list_count}"
     if [[ "${_file_list_count}" -gt 0 ]]; then
@@ -3068,10 +3064,13 @@ today() {
 _add_function today
 
 thisweek() {
-    local _yesterday_date=$(date -d yesterday "+%Y-%m-%d")
-    set -x
-    cat ~/.logs/bash-history-${_yesterday_date}.log
-    { set +x; } &>/dev/null
+    local _i _date
+    for _i in $(seq 6 -1 0); do
+        _date=$(date -d "${_i} days ago" "+%Y-%m-%d")
+        [[ -r ~/.logs/bash-history-${_date}.log ]] || continue
+        echo "== ${_date} =="
+        cat ~/.logs/bash-history-${_date}.log
+    done
 }
 _add_function thisweek
 
@@ -3112,11 +3111,20 @@ _add_function gttt
 
 mergedel() {
     : Delete all files that block a git-merge
-    git merge master |&  grep "^[[:space:]]" | awk -F' ' '{print $1}' | grep -v "/$" | xargs -I% git status -s %
+    # Capture the blocking files ONCE. Re-running the merge to build the
+    #  delete list gave different (mid-merge) output than the list shown.
+    local _blockers
+    _blockers=$(git merge master |& grep "^[[:space:]]" | awk -F' ' '{print $1}' | grep -v "/$")
+    if [[ -z ${_blockers} ]]; then
+        echo "No files blocking the merge."
+        return 0
+    fi
+    echo "${_blockers}" | xargs -I% git status -s %
     read -p "delete all? [y/n]: " -n 1 -r
+    echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         set -x
-        git merge master |& grep "^[[:space:]]" | awk -F' ' '{print $1}' | grep -v "/$" | xargs -I% rm %
+        echo "${_blockers}" | xargs -I% rm %
         { set +x; } &> /dev/null
     else
         echo "Doing nothing."
@@ -3133,7 +3141,7 @@ diffmatt() {
     fi
     printf '%.30s%65s\n' "${_file1}" "${_file2}" "================" "===================";
     set -x
-    command diff -y -W \${SCREEN_WIDTH} "${_file1}" "${_file2}"
+    command diff -y -W "${SCREEN_WIDTH}" "${_file1}" "${_file2}"
     { set +x; } &> /dev/null
 }
 _add_function diffmatt
@@ -3150,7 +3158,7 @@ if [[ -f ~/.ssh/known_hosts ]]; then
     _add_alias hosts "echo \${ssh_complete}"
 fi
 if [[ -f ~/.ssh/config ]]; then
-    ssh_complete="$(cat <(echo $ssh_complete) <(grep \"^Host\" ~/.ssh/config | cut -d ' ' -f 2- | tr ' ' '\n') | sort | uniq)"
+    ssh_complete="$(cat <(echo $ssh_complete) <(grep "^Host " ~/.ssh/config | cut -d ' ' -f 2- | tr ' ' '\n') | sort | uniq)"
 fi
 
 _complete_most_recently_modified_file() {
@@ -3282,7 +3290,7 @@ complete -F _command wow wowz && _add_completion_function wow wowz
 complete -F _man man # therefore the m alias will pick this up
 
 _add_alias cdc "cd"
-complete -F _complete_most_recently_modified_file cdc && _add_completion_function
+complete -F _complete_most_recently_modified_file cdc && _add_completion_function cdc
 
 
 ## 8) Miscellaneous
@@ -3370,26 +3378,20 @@ _add_function reboot-ssh-agent
 if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
    echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
 else
-    num_ssh_keys=$(find -L ~/.ssh -name 'id_*' | wc -l | awk -F' ' '{print $1}')
-    if [[ $num_ssh_keys -gt 0 ]]; then
-        if [[ ! -x $(which keychain 2>/dev/null) ]]; then
-            case $OSTYPE in
-            linux*)
-                sudo apt-get install -y keychain
-            ;;
-            darwin*)
-                brew install keychain
-            ;;
-            esac
+    _num_ssh_keys=$(find -L ~/.ssh -name 'id_*' 2>/dev/null | wc -l | awk -F' ' '{print $1}')
+    if [[ ${_num_ssh_keys:-0} -gt 0 ]]; then
+        # Never install packages from a shell startup file: it blocks every new
+        #  terminal on a sudo password prompt. Just say what is missing.
+        if [[ -z $(type -P keychain) ]]; then
+            _warning "keychain not installed; skipping ssh-agent setup. Install it with 'apt-get install keychain' / 'brew install keychain'."
+        else
+            # keychain is idempotent: it reuses a running agent instead of
+            #  spawning a new one, which is what leaked agents previously.
+            keychain --quiet id_rsa
+            _keychain_env=~/.keychain/$(uname -n)-sh
+            source_file "${_keychain_env}" no_output
+            unset _keychain_env
         fi
-
-        if [[ ! -d ~/.keychain ]]; then
-            set -x
-            keychain id_rsa
-            . ~/.keychain/`uname -n`-sh
-            { set +x; } &>/dev/null
-        fi
-        eval "$(ssh-agent -s)"
-        . ~/.keychain/`uname -n`-sh
     fi
+    unset _num_ssh_keys
 fi
