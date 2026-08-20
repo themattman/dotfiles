@@ -691,6 +691,9 @@ _add_alias icurl "curl -I"
 ## 4a) OS-specific aliases
 case $OSTYPE in
 linux*|msys*)
+    _add_variable SCREEN_WIDTH $(tput cols)
+    _add_variable SCREEN_WIDTH_HALF $(echo ${SCREEN_WIDTH}/2 | bc)
+    _add_variable SCREEN_WIDTH_QUARTER $(echo ${SCREEN_WIDTH}/4 | bc)
     # tree
     if [[ $(type -P tree) ]]; then
         _add_alias ll "tree --dirsfirst -aLpughDFiC 1"
@@ -765,11 +768,11 @@ _add_alias c "cd \${OLDPWD}" # Use Ctrl-L instead of aliasing this to clear
 _add_alias cp "cp -i"        # Warn when overwriting
 _add_alias mv "mv -i"        # Warn when overwriting
 _add_alias ln "ln -i"        # Warn when overwriting
-_add_alias d "diff --color -U 0"
-_add_alias dr "diff --color -r"
-_add_alias dy "diff --color -y -W 180"
-_add_alias dyf "diff --color -y -W 180 --suppress-common-lines"
-_add_alias dw "diff -U 0 -w --color" # Ignore whitespace differences
+_add_alias d "diff --color=always -U 0"
+_add_alias dr "diff --color=always -r"
+_add_alias dy "diff --color=always -y -W \${SCREEN_WIDTH}"
+_add_alias dyf "diff --color=always -y -W 180 --suppress-common-lines"
+_add_alias dw "diff -U 0 -w --color=always" # Ignore whitespace differences
 _add_alias dff "diff --changed-group-format='%<' --unchanged-group-format=''"
 _add_alias s "source"
 _add_alias a "alias"
@@ -3120,6 +3123,20 @@ mergedel() {
     fi
 }
 _add_function mergedel
+
+diffmatt() {
+    : Print out file names on first line, then color prints diffs
+    local _file1=$1
+    local _file2=$2
+    if [[ ! -f ${_file1} || ! -f ${_file2} ]]; then
+        return $(_error "requires 2 files" "<file1> <file2>")
+    fi
+    printf '%.30s%65s\n' "${_file1}" "${_file2}" "================" "===================";
+    set -x
+    command diff -y -W \${SCREEN_WIDTH} "${_file1}" "${_file2}"
+    { set +x; } &> /dev/null
+}
+_add_function diffmatt
 
 
 ## 7) Bash Completion
