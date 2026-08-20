@@ -65,17 +65,18 @@ fi
 if [ "$DISABLE_STARTUP" = "true" ]; then
     PS1="[\D{%m/%d/%y %r}][\${?:0:1}][\${STY}] \u:\W\$ "
 
-    if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
+    if [[ -n ${SSH_AGENT_PID} ]] && kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
         return
     else
-        if ls ~/.ssh/id_* &>/dev/null; then
-            if [[ -n $(type -P keychain) && -f ~/.ssh/id_rsa ]]; then
-                # keychain reuses an existing agent, so don't `eval ssh-agent -s`
-                #  first -- that spawns a fresh agent on every shell.
-                keychain --quiet id_rsa
-                [[ -r ~/.keychain/$(uname -n)-sh ]] && . ~/.keychain/$(uname -n)-sh
-            fi
+        _keys=(~/.ssh/id_*)
+        if [[ -e ${_keys[0]} && -f ~/.ssh/id_rsa ]] && type -P keychain >/dev/null 2>&1; then
+            # keychain reuses an existing agent, so don't `eval ssh-agent -s`
+            #  first -- that spawns a fresh agent on every shell.
+            _keychain_env=~/.keychain/$(uname -n)-sh
+            keychain --quiet id_rsa
+            [[ -r ${_keychain_env} ]] && . "${_keychain_env}"
         fi
+        unset _keys _keychain_env
     fi
 
     return
@@ -183,11 +184,7 @@ _add_function source_file
 _error() {
     local _error_msg="${1}"
     local _usage_msg="${2}"
-    if [[ -x $(which basename 2>/dev/null) ]]; then
-        echo -e "${RED}$(basename -- ${0}): Error:${ENDCOLOR} ${_error_msg}" >&2
-    else
-        echo -e "${RED}Error:${ENDCOLOR} ${_error_msg}" >&2
-    fi
+    echo -e "${RED}${0##*/}: Error:${ENDCOLOR} ${_error_msg}" >&2
     if [[ -n "${_usage_msg}" ]]; then
         echo -e "${RED}Usage:${ENDCOLOR} ${FUNCNAME[1]} ${_usage_msg}" >& 2
     fi
@@ -197,11 +194,7 @@ _add_function _error
 
 _warning() {
     local _warn_msg="${1}"
-    if [[ -x $(which basename 2>/dev/null) ]]; then
-        echo -e "${YELLOW}$(basename -- ${0}): Warning:${ENDCOLOR} ${_warn_msg}" >&2
-    else
-        echo -e "${YELLOW}Warning:${ENDCOLOR} ${_warn_msg}" >&2
-    fi
+    echo -e "${YELLOW}${0##*/}: Warning:${ENDCOLOR} ${_warn_msg}" >&2
     return 1
 }
 _add_function _warning
@@ -739,8 +732,9 @@ _add_variable LC_ALL en_US.UTF-8
 #_add_variable LANG C
 # Deferred: tty state is per-shell, never cached.
 _bashrc_tty_settings() {
-    stty ixany       # Turn off Ctrl-S XOFF "feature", particularly helpful for
-    stty ixoff -ixon #  GNU screen sessions.
+    [[ -t 0 ]] && stty ixany ixoff -ixon
+                     # Turn off Ctrl-S XOFF "feature", particularly helpful for
+                     #  GNU screen sessions.
                      #  https://raamdev.com
                      #   /2007
                      #   /recovering-from-ctrls-in-putty
@@ -763,27 +757,27 @@ _add_function _bashrc_source_bash_completion
 
 ## 3) Polyfills
 # Tree
-if [[ ! -x $(which tree 2>/dev/null) ]]; then
+if ! type -P tree >/dev/null 2>&1; then
     _add_alias tree "find . -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'"
     # TODO exclude .git tree
 fi
-# Readlink replacement (for non-Ubuntu)
-if [[ -x $(which python 2>/dev/null) ]]; then
-    _add_variable PYTHON_VERSION $(python -c 'import sys; print(sys.version_info[0])')
-    case $PYTHON_VERSION in
-    2*)
-        _add_alias pys "python -m SimpleHTTPServer"
-        # _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
-    ;;
-    3*)
-        _add_alias pys "python -m http.server"
-        # _add_alias realpath "python -c 'import os.path, sys; print os.path.realpath(sys.argv[1])'"
-    ;;
-    esac
-fi
+# Simple HTTP server, module renamed between python 2 and 3.
+# Decides version at call time instead of load time.
+pys() {
+    : Serve the current directory over HTTP
+    if ! type -P python >/dev/null 2>&1; then
+        return $(_error "python not installed")
+    fi
+    if python -c 'import sys; sys.exit(0 if sys.version_info[0] == 2 else 1)' 2>/dev/null; then
+        python -m SimpleHTTPServer "$@"
+    else
+        python -m http.server "$@"
+    fi
+}
+_add_function pys
 
 # Bash Polyfills
-if [[ ! -x $(which wget 2>/dev/null) ]]; then
+if ! type -P wget >/dev/null 2>&1; then
     _add_alias wget "curl -LO"
 fi
 _add_alias icurl "curl -I"
@@ -802,7 +796,7 @@ _add_alias icurl "curl -I"
 #  terminal won't update it.
 # Deferred: terminal geometry is per-shell.
 _bashrc_screen_width() {
-    _add_variable SCREEN_WIDTH $(tput cols)
+    _add_variable SCREEN_WIDTH "${COLUMNS:-$(tput cols)}"
     _add_variable SCREEN_WIDTH_HALF $((SCREEN_WIDTH / 2))
     _add_variable SCREEN_WIDTH_QUARTER $((SCREEN_WIDTH / 4))
 }
@@ -1882,7 +1876,7 @@ wow() {
     if [[ $# -ne 1 ]]; then
         return $(_error "" "<command>")
     fi
-    \ls  "$(which "$1")"
+    \ls  "$(type -P "$1")"
 }
 _add_function wow
 
@@ -1890,7 +1884,7 @@ wowz() {
     if [[ $# -ne 1 ]]; then
         return $(_error "" "<command>")
     fi
-    ls -alh "$(which "$1")"
+    ls -alh "$(type -P "$1")"
 }
 _add_function wowz
 
@@ -2591,7 +2585,7 @@ open_file_from_prior_cmd_in_less() {
     local _last_line=""
     case $OSTYPE in
     linux*|msys*)
-        if [[ ! -x $(which ansi2txt) ]]; then
+        if ! type -P ansi2txt >/dev/null 2>&1; then
             return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
         fi
         _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
@@ -2630,7 +2624,7 @@ _rename_function open_file_from_prior_cmd_in_less opf
 #     local _last_line=""
 #     case $OSTYPE in
 #     linux*|msys*)
-#         if [[ ! -x $(which ansi2txt) ]]; then
+#         if ! type -P ansi2txt >/dev/null 2>&1; then
 #             return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
 #         fi
 #         _last_line=$(eval "${_output}" | tail -n ${_num_prior} | head -n 1| ansi2txt)
@@ -2679,7 +2673,7 @@ open_file_from_prior_cmd_in_editor() {
     local _last_line=""
     case $OSTYPE in
     linux*|msys*)
-        if [[ ! -x $(which ansi2txt) ]]; then
+        if ! type -P ansi2txt >/dev/null 2>&1; then
             return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
         fi
         _last_line=$(eval "${_output}" | tail -n ${_num_prior} | head -n 1| ansi2txt)
@@ -2740,7 +2734,7 @@ open_file_from_prior_cmd_around() {
     local _last_line=""
     case $OSTYPE in
     linux*|msys*)
-        if [[ ! -x $(which ansi2txt) ]]; then
+        if ! type -P ansi2txt >/dev/null 2>&1; then
             return $(_error "ansi2txt not installed. Run 'apt-get install colorized-logs'")
         fi
         _last_line=$(eval "${_output}" | tail -n 1 | ansi2txt)
@@ -3277,13 +3271,21 @@ _bashrc_completions() {
     source_file ~/.git-completion # This needs to be re-sourced after
                                   #  the previous line. TODO: Consider moving above line
     # SSH auto-completion based on entries in known_hosts.
-    if [[ -f ~/.ssh/known_hosts ]]; then
-        ssh_complete="$(sed 's/[, ].*//' ~/.ssh/known_hosts | grep -v '\[' | sort | uniq)"
-        _add_alias hosts "echo \${ssh_complete}"
-    fi
-    if [[ -f ~/.ssh/config ]]; then
-        ssh_complete="$(cat <(echo $ssh_complete) <(grep "^Host " ~/.ssh/config | cut -d ' ' -f 2- | tr ' ' '\n') | sort | uniq)"
-    fi
+    # Host list for ssh/scp completion. Memoized in ${ssh_complete}.
+    _ssh_complete_hosts() {
+        if [[ -z ${ssh_complete+x} ]]; then
+            ssh_complete=""
+            if [[ -f ~/.ssh/known_hosts ]]; then
+                ssh_complete="$(sed 's/[, ].*//' ~/.ssh/known_hosts | grep -v '\[' | sort | uniq)"
+            fi
+            if [[ -f ~/.ssh/config ]]; then
+                ssh_complete="$(cat <(echo "${ssh_complete}") <(grep "^Host " ~/.ssh/config | cut -d ' ' -f 2- | tr ' ' '\n') | sort | uniq)"
+            fi
+        fi
+        echo "${ssh_complete}"
+    }
+    _add_function _ssh_complete_hosts
+    _add_alias hosts "_ssh_complete_hosts"
 
     _complete_most_recently_modified_file() {
         # echo -e "\nArgs:[$@] C:[${COMP_CWORD}] 1:[$1] 2:[$2]" # For debugging
@@ -3405,7 +3407,7 @@ _bashrc_completions() {
     _add_function _grep_completion
     complete -F _grep_completion gre gree && _add_completion_function gre gree
 
-    complete -W '$(echo ${ssh_complete})' ssh scp host getip && _add_completion_function ssh scp host getip
+    complete -W '$(_ssh_complete_hosts)' ssh scp host getip && _add_completion_function ssh scp host getip
     complete -o default -W '$(compgen -A function | grep -v ^_)' func && _add_completion_function func
     complete -o default -W '$(compgen -A function | grep ^_)' funcu && _add_completion_function funcu
     complete -f bk && _add_completion_function bk
@@ -3491,7 +3493,7 @@ _add_variable GIT_PAGER "less -iFXR"
 _add_variable MAN_PAGER "less -i"
 _add_variable LESS "-iFXR"
 _add_variable LESSEDIT "${EDITOR}"
-if [[ -x $(which source-highlight 2>/dev/null) ]]; then
+if type -P source-highlight >/dev/null 2>&1; then
     # _add_variable LESSOPEN "| /usr/share/source-highlight/src-hilite-lesspipe.sh %s"
     colors=$(tput colors)
     if [[ "${colors}" -eq 256  ]]; then
@@ -3554,26 +3556,30 @@ _add_function reboot-ssh-agent
 
 # Deferred: agent state is per-shell.
 _bashrc_ssh_init() {
-    if [[ -n $SSH_AGENT_PID ]] && ps -p $SSH_AGENT_PID >/dev/null; then
-       echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
-    else
-        _num_ssh_keys=$(find -L ~/.ssh -name 'id_*' 2>/dev/null | wc -l | awk -F' ' '{print $1}')
-        if [[ ${_num_ssh_keys:-0} -gt 0 ]]; then
-            # Never install packages from a shell startup file: it blocks every new
-            #  terminal on a sudo password prompt. Just say what is missing.
-            if [[ -z $(type -P keychain) ]]; then
-                _warning "keychain not installed; skipping ssh-agent setup. Install it with 'apt-get install keychain' / 'brew install keychain'."
-            else
-                # keychain is idempotent: it reuses a running agent instead of
-                #  spawning a new one, which is what leaked agents previously.
-                keychain --quiet id_rsa
-                _keychain_env=~/.keychain/$(uname -n)-sh
-                source_file "${_keychain_env}" no_output
-                unset _keychain_env
-            fi
-        fi
-        unset _num_ssh_keys
+    local _keys _keychain_env
+    if [[ -n ${SSH_AGENT_PID} ]] && kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
+        echo -e "${PURPLE}ssh-agent already running${ENDCOLOR}"
+        return 0
     fi
+
+    _keychain_env=~/.keychain/$(uname -n)-sh
+    if [[ -r ${_keychain_env} ]]; then
+        source_file "${_keychain_env}" no_output
+        if [[ -n ${SSH_AGENT_PID} ]] && kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
+            return 0
+        fi
+    fi
+
+    _keys=(~/.ssh/id_*)
+    [[ -e ${_keys[0]} ]] || return 0
+
+    if ! type -P keychain >/dev/null 2>&1; then
+        _warning "keychain not installed; skipping ssh-agent setup. Install it with 'apt-get install keychain' / 'brew install keychain'."
+        return 0
+    fi
+
+    keychain --quiet id_rsa
+    source_file "${_keychain_env}" no_output
 }
 _add_function _bashrc_ssh_init
 
