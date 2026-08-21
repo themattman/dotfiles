@@ -1231,7 +1231,7 @@ _add_alias es "open_file ~/.ssh/config"
 _add_alias vb "vim ~/.bashrc"
 _add_alias sb "_clear_environment; source ~/.bashrc;"
 _add_alias exts "find . -type f | awk -F'/' '{print \$NF}' | awk -F'.' '{print \$NF}' | sort | uniq -c | sort -h"
-_add_alias rb "rm ~/.emacs.d/configuration.el"
+_add_alias rb "rm -f ~/.emacs.d/configuration.el ~/.emacs.d/configuration.elc"
 # This command should wipe out the previous environment and start over
 _add_alias sbb "ps2; _clear_environment; source ~/.bash_profile"
 # Clear all custom aliases, useful when they get in the way
@@ -2796,7 +2796,15 @@ open_file() {
             return $(_error "[${_linux_path}] doesn't exist")
         fi
     fi
-    eval emacs ${EDITOR_OPTS} ${_linux_path}
+    # Talk to a shared daemon instead of starting a fresh Emacs every time.
+    # --alternate-editor="" makes emacsclient start the daemon itself on the
+    # first call, so there is nothing to launch by hand; every later call
+    # reuses it and skips startup entirely.
+    if command -v emacsclient >/dev/null 2>&1; then
+        eval emacsclient ${EMACSCLIENT_OPTS} "${_linux_path}"
+    else
+        eval emacs ${EDITOR_OPTS} "${_linux_path}"
+    fi
 }
 _add_function open_file
 _rename_function open_file e
@@ -3486,7 +3494,13 @@ _bashrc_terminal_init() {
     esac
 }
 _add_function _bashrc_terminal_init
-_add_variable EDITOR_OPTS "-nw" # --no-init"
+# --no-site-file skips Debian's /etc/emacs/site-start.d (~0.15s). Drop it if you
+# need dictionaries-common's ispell setup for flyspell.
+_add_variable EDITOR_OPTS "-nw --no-site-file" # --no-init"
+# -nw for a terminal frame; --alternate-editor="" auto-starts the daemon on the
+# first call. Note emacsclient does not accept --no-site-file: the daemon it
+# spawns pays that cost once, not per file.
+_add_variable EMACSCLIENT_OPTS '-nw --alternate-editor=""'
 _add_variable EDITOR "emacs ${EDITOR_OPTS}"
 _add_variable GIT_EDITOR "${EDITOR}"
 _add_variable GIT_PAGER "less -iFXR"

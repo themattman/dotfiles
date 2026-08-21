@@ -4091,7 +4091,9 @@ y | nl | sed -n '0~3p' | head                # Test sampling output
 <chatty_command> | sed -n '0~10p'            # Print every 10th line of output from cmd
 
 #
-# 07/22/2025
+# 08/20/2026
 #
 Command                                      Comments
 ------------------------------------------------------------------------------------------
+kill -0 <PID>                                # Same as ps -p <PID>
+type -P <exec_file>                          # Same as which <file>
