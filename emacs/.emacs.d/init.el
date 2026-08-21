@@ -15,75 +15,86 @@
 
 ;;; Packages
 
-(require 'package)
-;; melpa-stable first so it wins ties; gnu stays because built-in-adjacent
-;; libraries (eldoc, seq, ...) are only distributed there.
-(setq package-archives
-      '(("melpa-stable" . "https://stable.melpa.org/packages/")
-        ("melpa"        . "https://melpa.org/packages/")
-        ("gnu"          . "https://elpa.gnu.org/packages/")))
+;; package.el itself costs ~0.28s to load, and on a normal boot it is not needed
+;; at all: package-quickstart.el already contains every autoload and load-path
+;; entry. The only thing it references from package.el is one variable, so stub
+;; that and skip the require entirely. package.el is loaded lazily below, and
+;; only when a package is actually missing.
+(defvar package-activated-list nil
+  "Stubbed so package-quickstart.el can load without package.el.
+package.el's own `defvar' will not clobber this once it is non-nil.")
 
-;; `package-initialize' loads one autoloads file per installed package (~32 file
-;; loads, 0.4-1.5s depending on the page cache). `package-quickstart' collects
-;; all of them into a single pre-built file, which loads in ~0.08s. package.el
-;; regenerates it automatically whenever a package is installed or deleted.
-(setq package-quickstart t)
+(defvar mrk/packages
+  '(auto-complete auto-complete-clang clang-format diff-hl engine-mode
+    expand-region flycheck gnu-elpa-keyring-update helpful htmlize lsp-mode
+    lsp-ui markdown-mode mo-git-blame multi-term org-bullets symbol-overlay
+    use-package web-mode yaml-mode yasnippet)
+  "Packages this configuration expects to be installed.")
 
-(defvar mrk/package-quickstart-used nil
-  "Non-nil if packages were activated from the quickstart file.
-When that happens `package-alist' is deliberately left empty, so anything
-that needs it must call `package-initialize' first.")
+(defvar mrk/package-archives
+  '(("melpa-stable" . "https://stable.melpa.org/packages/")
+    ("melpa"        . "https://melpa.org/packages/")
+    ("gnu"          . "https://elpa.gnu.org/packages/"))
+  "Archives to use when something actually has to be installed.
+melpa-stable is first so it wins ties; gnu stays because built-in-adjacent
+libraries (eldoc, seq, ...) are only distributed there.")
+
+(defun mrk/install-missing-packages (missing)
+  "Load package.el the slow way and install MISSING, then refresh quickstart."
+  (require 'package)
+  (setq package-archives mrk/package-archives
+        package-quickstart t)
+  (package-initialize)
+  (package-refresh-contents)
+  (dolist (pkg missing)
+    (unless (package-installed-p pkg)
+      (package-install pkg)))
+  (package-quickstart-refresh))
 
 (let ((quickstart (locate-user-emacs-file "package-quickstart.el")))
   (if (file-readable-p quickstart)
-      (progn
-        (load quickstart nil t)
-        (setq mrk/package-quickstart-used t))
-    ;; First run (or the file was deleted): do it the slow way once, then build
-    ;; the quickstart file so subsequent boots are fast.
+      (load quickstart nil t)
+    ;; First run, or the file was deleted: build it once.
+    (require 'package)
+    (setq package-archives mrk/package-archives
+          package-quickstart t)
     (package-initialize)
     (package-quickstart-refresh)))
 
+;; Cheap membership test against the list quickstart just populated -- no
+;; filesystem work, no package.el. Only a genuinely missing package pays.
+;; Hand-rolled with dolist rather than `seq-remove': requiring seq for one
+;; filter costs 0.068s, which is more than everything else in this file.
+(let ((missing nil))
+  (dolist (pkg mrk/packages)
+    (unless (memq pkg package-activated-list)
+      (push pkg missing)))
+  (when missing
+    (message "Installing missing packages: %s" missing)
+    (mrk/install-missing-packages missing)))
+
 (defun mrk/rebuild-package-quickstart ()
   "Regenerate package-quickstart.el by hand.
-Only needed if packages were installed by something other than package.el."
+Needed if packages were installed by something other than package.el, or after
+deleting a package."
   (interactive)
+  (require 'package)
+  (setq package-archives mrk/package-archives
+        package-quickstart t)
   (package-initialize)
   (package-quickstart-refresh)
   (message "package-quickstart.el rebuilt"))
 
-;;; use-package
-
-;; Bootstrap use-package itself if this is a fresh machine.
-(unless (locate-library "use-package")
-  (package-initialize)
-  (package-refresh-contents)
-  (package-install 'use-package))
-
-(require 'use-package)
-(require 'use-package-ensure)
-(setq use-package-always-ensure t)
-
-;; `use-package-ensure-elpa' decides whether to install by calling
-;; `package-installed-p', which reads `package-alist' -- and the quickstart path
-;; above never populates it. Left alone, use-package would conclude that every
-;; package is missing and try to reinstall all of them on every boot. Consult
-;; the activation list and load-path first, and only fall back to real
-;; package.el machinery (paying for `package-initialize') when a package is
-;; genuinely absent.
-(defun mrk/use-package-ensure (name args state &rest rest)
-  "Ensure NAME is installed, trusting the quickstart activation list."
-  (let* ((package (or (and (consp args) (not (eq (car args) t)) (car args))
-                      name)))
-    (unless (or (memq package package-activated-list)
-                (package-built-in-p package)
-                (locate-library (symbol-name package)))
-      (when mrk/package-quickstart-used
-        (package-initialize)
-        (setq mrk/package-quickstart-used nil))
-      (apply #'use-package-ensure-elpa name args state rest))))
-
-(setq use-package-ensure-function #'mrk/use-package-ensure)
+;; NOTE: use-package is deliberately *not* required here. configuration.org is
+;; byte-compiled, and its own `eval-when-compile' pulls use-package in at
+;; compile time to expand the macros. The compiled output contains only plain
+;; autoload/add-hook/define-key forms, so nothing needs use-package at runtime.
+;; `use-package--warning' is the one exception -- it appears inside the error
+;; handlers of each expansion -- so provide a fallback rather than loading the
+;; whole library for a code path that should never run.
+(unless (fboundp 'use-package--warning)
+  (defun use-package--warning (keyword err)
+    (message "use-package error (%s): %S" keyword err)))
 
 ;;; Custom
 

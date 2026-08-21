@@ -8,16 +8,16 @@
 (defconst is-linux (eq system-type 'gnu/linux)
   "Non-nil when the current system is Linux.")
 
-(require 'use-package)
-(require 'use-package-ensure)
-(setq use-package-always-ensure t)
+;; Compile-time only. The byte-compiler needs every *macro* used in this file
+;; to be loadable now -- otherwise `use-package' and `defengine' compile into
+;; plain function calls and fail at runtime.
+(eval-when-compile
+  (setq use-package-always-ensure nil)
+  (require 'use-package)
+  (require 'cl-lib)
+  (require 'engine-mode))
 
-;; Eager on purpose: auto-compile has to be active *before* anything else is
-;; loaded for it to do its job. load-prefer-newer is also set in init.el, which
-;; runs earlier; it is repeated here so this file stands alone.
-(use-package auto-compile
-  :config (auto-compile-on-load-mode))
-
+;; Also set in init.el, which runs earlier; repeated so this file stands alone.
 (setq load-prefer-newer t)
 
 ;; Built-in: flyspell-mode is already autoloaded by Emacs, so there is nothing
@@ -40,17 +40,15 @@
   :commands (htmlize-buffer htmlize-file htmlize-region))
 (use-package multi-term
   :commands (multi-term multi-term-next multi-term-prev))
+;; :commands rather than :bind. Both defer the package, but :bind expands into
+;; bind-key calls, which loads the bind-key library at startup; plain
+;; global-set-key in the Keybindings section is free. The keys live there.
 (use-package helpful
-  ;; :bind both defers the package and installs the keys at startup.
-  :bind (("C-h f" . helpful-callable)
-         ("C-h v" . helpful-variable)
-         ("C-h k" . helpful-key)))
+  :commands (helpful-callable helpful-variable helpful-key helpful-at-point))
 (use-package expand-region
-  :bind ("C-=" . er/expand-region))     ;; jumps to beginning of word at point
+  :commands (er/expand-region))         ;; jumps to beginning of word at point
 (use-package symbol-overlay
-  :bind (("<f7>" . symbol-overlay-mode)
-         ("<f8>" . symbol-overlay-remove-all)
-         ("<f9>" . symbol-overlay-put)))
+  :commands (symbol-overlay-mode symbol-overlay-remove-all symbol-overlay-put))
 (use-package clang-format
   ;; Autoloads on first save in a C/C++/js buffer via mrk/enable-format-on-save.
   :commands (clang-format clang-format-buffer clang-format-region))
@@ -62,16 +60,33 @@
 ;; ---- deferred until a mode turns on ----------------------------------------
 (use-package org-bullets
   :hook (org-mode . org-bullets-mode))
+;; prog-mode rather than global: global-flycheck-mode loaded flycheck on every
+;; boot and ran a checker in buffers that can't be checked anyway. This also
+;; keeps it off the ~0.8s cost of opening an ordinary file.
 (use-package flycheck
-  ;; Was a separate (add-hook 'after-init-hook #'global-flycheck-mode); folding
-  ;; it in here means flycheck.el itself isn't loaded until that hook fires.
-  :hook (after-init . global-flycheck-mode))
+  :commands (flycheck-mode global-flycheck-mode)
+  :hook (prog-mode . flycheck-mode))
 
-;; ---- eager, on purpose -----------------------------------------------------
-;; engine-mode is loaded at startup (~0.05s) because the `defengine' calls in
-;; the Behavior section are macro expansions that need it, and because its
-;; C-x / keymap should exist immediately.
-(use-package engine-mode)
+;; ---- deferred onto the idle timer ------------------------------------------
+;; engine-mode plus its four `defengine' expansions cost ~0.07s at startup. The
+;; engines are only reachable through the C-x / prefix, so loading them two idle
+;; seconds in is indistinguishable in practice.
+(use-package engine-mode
+  :defer 2
+  :config
+  (defengine duckduckgo
+    "https://duckduckgo.com/?q=%s"
+    :keybinding "d")
+  (defengine github
+    "https://github.com/search?ref=simplesearch&q=%s"
+    :keybinding "g")
+  (defengine wikipedia
+    "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s"
+    :keybinding "w")
+  (defengine youtube
+    "https://www.youtube.com/results?search_query=%s"
+    :keybinding "y")
+  (engine-mode t))
 
 ;; ---- LSP -------------------------------------------------------------------
 (use-package lsp-mode
@@ -81,6 +96,11 @@
          (lsp-mode . (lambda ()
                        (when (featurep 'which-key)
                          (lsp-enable-which-key-integration)))))
+  :init
+  ;; Derive the workspace root from git/project.el instead of prompting
+  ;; "... is not part of any project. Select action:" on every new
+  ;; subdirectory. Must be set before lsp-mode loads.
+  (setq lsp-auto-guess-root t)
   :config
   ;; Don't hardcode /usr/bin/clangd: it lives in /opt/homebrew/opt/llvm/bin on
   ;; macOS and under the toolchain prefix on Linux build hosts.
@@ -116,15 +136,6 @@
 ;; (use-package ivy-mode)
 ;;(use-package alert)
 ;; https://github.com/BobVul/GrowlToToast
-
-;; Compile-time-only requires. The tangled configuration.el is byte-compiled, and
-;; the byte-compiler needs any *macro* used in this file to be loadable at
-;; compile time -- otherwise `defengine' compiles into a plain function call and
-;; fails at runtime.
-(eval-when-compile
-  (require 'use-package)
-  (require 'cl-lib)
-  (require 'engine-mode))
 
 ;; BOUND = (buffer-size)/2 or similar
 (defun mrk/insert-diary-header ()
@@ -394,10 +405,14 @@ erroring out to do the actual suppressing."
 (global-set-key (kbd "<M-up>"   ) 'gcm-scroll-down           )
 (global-set-key (kbd "<M-down>" ) 'gcm-scroll-up             )
 
-;; <f7>/<f8>/<f9> (symbol-overlay), C-= (expand-region) and C-h f/v/k
-;; (helpful) are bound by :bind in their use-package declarations, which both
-;; installs the key and defers the package.
+(global-set-key (kbd "<f7>"    ) 'symbol-overlay-mode       )
+(global-set-key (kbd "<f8>"    ) 'symbol-overlay-remove-all )
+(global-set-key (kbd "<f9>"    ) 'symbol-overlay-put        )
 (global-set-key (kbd "<f5>"    ) 'jpt-toggle-mark-word-at-point)
+(global-set-key (kbd "C-="     ) 'er/expand-region          )
+(global-set-key (kbd "C-h f"   ) 'helpful-callable          )
+(global-set-key (kbd "C-h v"   ) 'helpful-variable          )
+(global-set-key (kbd "C-h k"   ) 'helpful-key               )
 (global-set-key (kbd "C-c f"   ) 'eww-open-in-new-buffer    )
 ;; (global-set-key (kbd "<return>") 'newline                )
 ;; (global-set-key (kbd "C m"     ) 'insert-newline-before-line)
@@ -411,6 +426,7 @@ erroring out to do the actual suppressing."
 (global-set-key (kbd "C-c i t" ) 'insert-timestamp          )
 (global-set-key (kbd "C-c i i" ) 'insert-time               )
 (global-set-key (kbd "C-c t"   ) 'delete-trailing-whitespace)
+(global-set-key (kbd "C-c D"   ) 'diff-hl-mode              ) ; gutter diffs, on demand
 (global-set-key (kbd "C-c g c" ) 'mo-git-blame-current      ) ; Git-Blame
 (global-set-key (kbd "C-c g f" ) 'mo-git-blame-file         ) ; Git-Blame
 (global-set-key (kbd "C-c R"   ) 'reload-init-file          ) ; was C-c C-l
@@ -648,7 +664,9 @@ erroring out to do the actual suppressing."
 ;; (tool-bar-mode -1)                      ; Disable toolbar
 (menu-bar-mode 0)
 ;; (setq require-final-newline t)          ; Newline at end of file
-(which-function-mode 1)                 ; Show the function you are in
+; Show the function you are in. Global which-function-mode costs ~0.03s at
+; startup and only means anything in code buffers, so hook it to prog-mode.
+(add-hook 'prog-mode-hook #'which-function-mode)
 (fset 'yes-or-no-p 'y-or-n-p)           ; yes/no -> y/n
 ;; redisplay-dont-pause was removed in Emacs 24.5 and is a no-op; dropped.
 (setq scroll-margin 1                   ;  http://stackoverflow.com
@@ -662,11 +680,16 @@ erroring out to do the actual suppressing."
 (setq inhibit-startup-screen t)         ; Don't show the welcome screen
 ;; (set-window-scroll-bars (mini-buffer-window) nil nil) ; Hide tiny scrollbar in minibuffer
 (global-hl-line-mode)
-;; :hook rather than :config + add-hook -- :config only runs *after* the package
-;; is loaded, so that form loaded diff-hl at startup just to register two hooks.
+;; On demand only. Hooking diff-hl to prog-mode made every file opened inside a
+;; git repo shell out to git before the buffer appeared. C-c D turns it on for
+;; the current buffer, C-c C-d globally for the session. vc-dir keeps its hook:
+;; that buffer only exists when you've already asked for VC.
+;; :commands, not :bind -- :bind would pull the bind-key library into startup.
+;; The key is set with global-set-key in the Keybindings section.
 (use-package diff-hl
-  :hook ((prog-mode   . turn-on-diff-hl-mode)
-         (vc-dir-mode . turn-on-diff-hl-mode)))
+  :commands (diff-hl-mode turn-on-diff-hl-mode global-diff-hl-mode
+             diff-hl-dir-mode)
+  :hook (vc-dir-mode . turn-on-diff-hl-mode))
 
 ;; (use-package moody
 ;;   :config
@@ -731,19 +754,7 @@ erroring out to do the actual suppressing."
     (bookmark-bmenu-list)
     (switch-to-buffer "*Bookmark List*")))
 (add-hook 'emacs-startup-hook #'mrk/show-bookmark-list t)
-(defengine duckduckgo
-  "https://duckduckgo.com/?q=%s"
-  :keybinding "d")
-(defengine github
-  "https://github.com/search?ref=simplesearch&q=%s"
-  :keybinding "g")
-(defengine wikipedia
-  "http://www.wikipedia.org/search-redirect.php?language=en&go=Go&search=%s"
-  :keybinding "w")
-(defengine youtube
-  "https://www.youtube.com/results?search_query=%s"
-  :keybinding "y")
-(engine-mode t)
+; The search engines are defined in the `use-package engine-mode' :config block.
 
 
 ; Load Emacs Libraries
