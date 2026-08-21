@@ -4081,3 +4081,41 @@ Command                                      Comments
 ------------------------------------------------------------------------------------------
 column -t -s, file.csv                       # Display csv as a padded table
 cat file.csv | td -s ' ' | column -t -s,     # May help with space padding
+
+#
+# 04/17/2025
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+less -#5 <file>                              # Scroll 5 chars to the right/left for
+                                             #  smoother reading experience.
+
+#
+# 05/29/2025
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches # Drop filesystem cache
+
+#
+# 02/04/2026
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+cat <(cat schema.csv) <(head data.csv) | column -s, -t
+                                             # Pretty print csv aligned on commas
+
+#
+# 02/09/2026
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+ISODate(new Date(d.getTime() + i * 100).toISOString())
+                                             # js/mdb, generate ISODates in order
+
+#
+# 08/11/2026
+#
+Command                                      Comments
+------------------------------------------------------------------------------------------
+file -b <filename>                           # Only print out the type, not filename

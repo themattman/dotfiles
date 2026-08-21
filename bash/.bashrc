@@ -606,6 +606,8 @@ _append_variable_with_path_separator PATH "/bin"
 _append_variable_with_path_separator PATH "/opt/homebrew/bin" mac
 
 _append_variable_with_path_separator PATH "${HOME}/.cargo/bin"
+_append_variable_with_path_separator PATH "${HOME}/.local/bin"
+
 
 # Android Studio/Intellij Paths
 # _append_variable_with_path_separator PATH /usr/lib/jvm/java-1.7.0-openjdk-amd64/bin
@@ -676,6 +678,7 @@ if [[ ! -x $(which wget 2>/dev/null) ]]; then
 fi
 _add_alias icurl "curl -I"
 # TODO: check "_longopt" or something else to check for bash_completion
+_add_alias utc "date -u"
 
 
 ## 4) Aliases
@@ -710,10 +713,6 @@ linux*|msys*)
     _add_alias lg "ls -F --color -alth --group-directories-first"
     _add_alias ll "ls --color -ldh */" # Only list dirs
 
-    # Disk Usage
-    _add_alias dush "du -sh ./* | sort -h"
-    _add_alias dut "du -shx ./* | sort -rh | head"
-
     # Ubuntu Package Management
     _add_alias acs "sudo apt-cache search"
     # _add_alias agi "sudo apt-get install" # see agi function
@@ -727,6 +726,8 @@ linux*|msys*)
 
     # Tabs -> spaces
     _add_alias tab "expand -i --tabs=4"
+
+    _add_alias perms "stat -c %a" # <filename>
 ;;
 darwin*)
     # ls
@@ -748,6 +749,8 @@ darwin*)
 
     # Tabs -> spaces
     _add_alias tab "expand -t 4"
+
+    _add_alias perms "stat -f %p" # <filename>
 ;;
 esac
 
@@ -799,6 +802,10 @@ _add_alias blame  no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no
 _add_alias blamer no "cut -d':' -f1,2 | tr ':' ' ' | while read f g; do git --no-pager blame -L\$g,\$g \$f 2>/dev/null; done"
 _add_alias extensions "find . -type f | awk -F. '!a[\$NF]++{print \$NF}'"
 _add_alias spell "aspell -c -l en_US"
+# Disk Usage
+_add_alias dush "du -sh ./* | sort -h"
+_add_alias dut "du -shx ./* | sort -rh | head"
+
 # Job Control
 # http://www.tldp.org/LDP/gs/node5.html#secjobcontrol
 _add_alias f "fg"       # Yes, I'm really lazy
